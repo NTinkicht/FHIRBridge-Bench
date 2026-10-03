@@ -6,6 +6,7 @@ before confirmatory model inference. It contains no rendered FHIR or HL7 v2.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from hashlib import sha256
 from typing import Any
@@ -59,6 +60,17 @@ def _variant_for(
     return "held_out_variant_a" if (index - threshold) % 2 == 0 else "held_out_variant_b"
 
 
+def _canonical_manifest_bytes(payload: dict[str, Any]) -> bytes:
+    """Return a language-agnostic canonical JSON representation for hashing."""
+
+    return json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode("utf-8")
+
+
 def build_lab_manifest(
     *,
     base_seed: int,
@@ -109,7 +121,7 @@ def build_lab_manifest(
         }
     )
 
-    payload = {
+    payload: dict[str, Any] = {
         "manifest_version": "0.1.0",
         "base_seed": base_seed,
         "plan": {
@@ -120,6 +132,5 @@ def build_lab_manifest(
         },
         "entries": entries,
     }
-    canonical = repr(payload).encode("utf-8")
-    payload["manifest_sha256"] = sha256(canonical).hexdigest()
+    payload["manifest_sha256"] = sha256(_canonical_manifest_bytes(payload)).hexdigest()
     return payload
