@@ -1,0 +1,198 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://fhirbridge-bench.org/schema/projectability_contract.schema.yaml"
+$title: FHIRBridge Projectability Contract
+$type: object
+required:
+  - contract
+  - source
+  - target
+  - projectability_classes
+  - allowed_operations
+  - rules
+properties:
+  contract:
+    type: object
+    required:
+      - id
+      - version
+      - status
+      - clinical_domain
+    properties:
+      id:
+        type: string
+      version:
+        type: string
+      status:
+        type: string
+        enum: [draft, review, frozen, superseded]
+      freeze_status:
+        type: string
+        enum: [not_frozen, frozen]
+      clinical_domain:
+        type: string
+      study_role:
+        type: string
+    additionalProperties: true
+  source:
+    type: object
+    required: [standard, release]
+    additionalProperties: true
+  target:
+    type: object
+    required: [standard, version]
+    additionalProperties: true
+  scope:
+    type: object
+    additionalProperties: true
+  projectability_classes:
+    type: array
+    minItems: 5
+    uniqueItems: true
+    items:
+      type: string
+      enum:
+        - MUST_PRESERVE
+        - MAY_TRANSFORM
+        - MAY_LOSE
+        - MUST_NOT_INFER
+        - INDETERMINATE
+  allowed_operations:
+    type: array
+    uniqueItems: true
+    items:
+      type: string
+      enum:
+        - COPY
+        - NORMALIZE
+        - CODE_TRANSLATE
+        - UNIT_CONVERT
+        - AGGREGATE
+        - DECOMPOSE
+        - DERIVE_DECLARED
+        - DROP_DECLARED
+  precedence:
+    type: object
+    properties:
+      description:
+        type: string
+      order:
+        type: array
+        uniqueItems: true
+        items:
+          type: string
+          enum:
+            - MISATTRIBUTION
+            - CORRUPTION
+            - OMISSION
+            - FABRICATION
+    additionalProperties: false
+  rules:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      required:
+        - rule_id
+        - canonical_fact
+        - projectability
+        - source_paths
+        - target_paths
+        - allowed_operations
+        - equivalence
+        - failure_types
+        - status
+      properties:
+        rule_id:
+          type: string
+          minLength: 1
+        canonical_fact:
+          type: string
+          minLength: 1
+        projectability:
+          type: string
+          enum:
+            - MUST_PRESERVE
+            - MAY_TRANSFORM
+            - MAY_LOSE
+            - MUST_NOT_INFER
+            - INDETERMINATE
+        source_paths:
+          type: array
+          items:
+            type: string
+        target_paths:
+          type: array
+          items:
+            type: string
+        allowed_operations:
+          type: array
+          items:
+            type: string
+            enum:
+              - COPY
+              - NORMALIZE
+              - CODE_TRANSLATE
+              - UNIT_CONVERT
+              - AGGREGATE
+              - DECOMPOSE
+              - DERIVE_DECLARED
+              - DROP_DECLARED
+        equivalence:
+          type: object
+          required: [type]
+          properties:
+            type:
+              type: string
+          additionalProperties: true
+        failure_types:
+          type: array
+          items:
+            type: string
+            enum:
+              - FABRICATION
+              - CORRUPTION
+              - OMISSION
+              - MISATTRIBUTION
+        severity_default:
+          type: string
+          enum: [S0, S1, S2, S3]
+        evidence_basis:
+          type: array
+          items:
+            type: string
+        rationale:
+          type: string
+        expert_review_required:
+          type: boolean
+        prompt_exposure:
+          type: string
+          enum:
+            - PROMPT_EXPOSED
+            - PROMPT_HELD_OUT
+            - INDEPENDENT_INVARIANT
+            - EXPERT_DECISION
+            - NOT_APPLICABLE
+        status:
+          type: string
+          enum: [draft, reviewed, frozen, indeterminate]
+      additionalProperties: true
+  indeterminate_candidates:
+    type: array
+    items:
+      type: object
+      required: [candidate_id, reason]
+      properties:
+        candidate_id:
+          type: string
+        reason:
+          type: string
+      additionalProperties: true
+  validation_requirements:
+    type: array
+    items:
+      type: string
+  notes:
+    type: array
+    items:
+      type: string
+additionalProperties: true
