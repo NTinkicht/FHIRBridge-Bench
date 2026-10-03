@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fhirbridge-bench"
+version = "0.1.0.dev0"
+description = "Research tooling for source-grounded semantic verification of HL7 v2-FHIR transformations"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "FHIRBridge-Bench contributors" }
+]
+dependencies = [
+  "jsonschema>=4.23,<5",
+  "PyYAML>=6.0,<7"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-cov>=6,<7",
+  "ruff>=0.9,<1"
+]
+
+[project.scripts]
+fhirbridge-validate = "fhirbridge.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fhirbridge"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
