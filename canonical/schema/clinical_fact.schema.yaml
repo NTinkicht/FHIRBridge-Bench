@@ -47,12 +47,7 @@ properties:
         type: [string, "null"]
     additionalProperties: false
   value:
-    oneOf:
-      - type: string
-      - type: number
-      - type: integer
-      - type: boolean
-      - type: "null"
+    type: [string, number, boolean, "null"]
   unit:
     type: [object, "null"]
     properties:
