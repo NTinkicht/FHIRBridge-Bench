@@ -1,0 +1,124 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$title: FHIRBridge Canonical Clinical Fact
+$type: object
+$comment: >-
+  Draft canonical representation for standard-independent semantic facts.
+  This schema is intentionally compact and will evolve before Protocol v1.0 freeze.
+required:
+  - fact_id
+  - fact_type
+  - subject_ref
+  - provenance
+properties:
+  fact_id:
+    type: string
+  fact_type:
+    type: string
+    enum:
+      - patient_identity
+      - encounter
+      - observation
+      - condition
+      - allergy
+      - medication
+      - procedure
+      - diagnostic_report
+      - order
+      - immunization
+      - document
+      - relationship
+      - other
+  subject_ref:
+    type: string
+  encounter_ref:
+    type: [string, "null"]
+  concept:
+    type: [object, "null"]
+    properties:
+      system:
+        type: [string, "null"]
+      code:
+        type: [string, "null"]
+      display:
+        type: [string, "null"]
+      local_code:
+        type: [string, "null"]
+    additionalProperties: false
+  value:
+    oneOf:
+      - type: string
+      - type: number
+      - type: integer
+      - type: boolean
+      - type: "null"
+  unit:
+    type: [object, "null"]
+    properties:
+      system:
+        type: [string, "null"]
+      code:
+        type: [string, "null"]
+      display:
+        type: [string, "null"]
+    additionalProperties: false
+  temporal:
+    type: [object, "null"]
+    properties:
+      effective_start:
+        type: [string, "null"]
+      effective_end:
+        type: [string, "null"]
+      recorded_at:
+        type: [string, "null"]
+      precision:
+        type: [string, "null"]
+    additionalProperties: false
+  identifiers:
+    type: array
+    items:
+      type: object
+      required:
+        - value
+      properties:
+        system:
+          type: [string, "null"]
+        value:
+          type: string
+        type:
+          type: [string, "null"]
+      additionalProperties: false
+  relations:
+    type: array
+    items:
+      type: object
+      required:
+        - relation_type
+        - target_fact_id
+      properties:
+        relation_type:
+          type: string
+        target_fact_id:
+          type: string
+      additionalProperties: false
+  attributes:
+    type: object
+    additionalProperties: true
+  provenance:
+    type: object
+    required:
+      - scenario_id
+    properties:
+      scenario_id:
+        type: string
+      source_artifact:
+        type: [string, "null"]
+      source_path:
+        type: [string, "null"]
+      authoring_mode:
+        type: string
+        enum:
+          - scenario_authored
+          - imported_external
+          - derived_declared
+    additionalProperties: false
+additionalProperties: false
