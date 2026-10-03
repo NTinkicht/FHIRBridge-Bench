@@ -1,4 +1,4 @@
-from fhirbridge.verifier import LiftedFact, ground_source_fact
+from fhirbridge.verifier import LiftedFact, ground_graph, ground_source_fact
 
 
 def _source_observation(*, fact_id: str, time: str, value: float) -> dict:
@@ -17,11 +17,18 @@ def _source_observation(*, fact_id: str, time: str, value: float) -> dict:
     }
 
 
-def _target_observation(*, lifted_id: str, time: str, value: float) -> LiftedFact:
+def _target_observation(
+    *,
+    lifted_id: str,
+    time: str,
+    value: float,
+    subject_ref: str = "target-patient-1",
+    report_ref: str = "target-report-1",
+) -> LiftedFact:
     return LiftedFact(
         lifted_fact_id=lifted_id,
         fact_type="observation",
-        subject_ref="patient-1",
+        subject_ref=subject_ref,
         semantic_payload={
             "concept": {"system": "http://loinc.org", "code": "2345-7"},
             "value": value,
@@ -30,7 +37,7 @@ def _target_observation(*, lifted_id: str, time: str, value: float) -> LiftedFac
             "identifiers": [],
         },
         target_paths=("OBX-3", "OBX-5", "OBX-14"),
-        relationships=(("belongs_to_report", "report-1"),),
+        relationships=(("belongs_to_report", report_ref),),
     )
 
 
@@ -51,7 +58,14 @@ def test_grounding_uses_temporal_context_for_repeated_same_code() -> None:
         value=97,
     )
 
-    result = ground_source_fact(source, [early, matching])
+    result = ground_source_fact(
+        source,
+        [early, matching],
+        reference_map={
+            "patient-1": "target-patient-1",
+            "report-1": "target-report-1",
+        },
+    )
 
     assert result.status == "grounded"
     assert result.target_fact_id == "lifted-matching"
@@ -75,7 +89,14 @@ def test_grounding_reports_tie_as_ambiguous_instead_of_guessing() -> None:
         value=92,
     )
 
-    result = ground_source_fact(source, [first, second])
+    result = ground_source_fact(
+        source,
+        [first, second],
+        reference_map={
+            "patient-1": "target-patient-1",
+            "report-1": "target-report-1",
+        },
+    )
 
     assert result.status == "ambiguous"
     assert result.target_fact_id is None
@@ -94,7 +115,7 @@ def test_grounding_does_not_match_different_fact_type() -> None:
     target = LiftedFact(
         lifted_fact_id="lifted-report",
         fact_type="diagnostic_report",
-        subject_ref="patient-1",
+        subject_ref="target-patient-1",
         semantic_payload={},
         target_paths=("OBR",),
     )
@@ -105,24 +126,96 @@ def test_grounding_does_not_match_different_fact_type() -> None:
     assert result.rationale_code == "NO_GROUNDING_CANDIDATE"
 
 
-def test_grounding_penalizes_wrong_patient_attribution() -> None:
+def test_subject_mismatch_is_penalized_after_identity_is_resolved() -> None:
     source = _source_observation(
         fact_id="obs-1",
         time="2026-09-20T08:15:00+04:00",
         value=92,
     )
-    target = LiftedFact(
-        lifted_fact_id="lifted-wrong-patient",
-        fact_type="observation",
-        subject_ref="patient-2",
-        semantic_payload={
-            "concept": {"system": "http://loinc.org", "code": "2345-7"},
-            "temporal": {"effective_start": "2026-09-20T08:15:00+04:00"},
-            "identifiers": [],
-        },
-        target_paths=("OBX-3",),
+    target = _target_observation(
+        lifted_id="lifted-wrong-patient",
+        time="2026-09-20T08:15:00+04:00",
+        value=92,
+        subject_ref="target-patient-2",
     )
 
-    result = ground_source_fact(source, [target], minimum_score=20)
+    result = ground_source_fact(
+        source,
+        [target],
+        minimum_score=20,
+        reference_map={
+            "patient-1": "target-patient-1",
+            "report-1": "target-report-1",
+        },
+    )
 
     assert result.status == "unmatched"
+
+
+def test_raw_representation_ids_are_not_required_to_match() -> None:
+    source = _source_observation(
+        fact_id="obs-1",
+        time="2026-09-20T08:15:00+04:00",
+        value=92,
+    )
+    target = _target_observation(
+        lifted_id="lifted-obs-abc",
+        time="2026-09-20T08:15:00+04:00",
+        value=92,
+        subject_ref="Patient/abc",
+        report_ref="DiagnosticReport/xyz",
+    )
+
+    result = ground_source_fact(
+        source,
+        [target],
+        reference_map={
+            "patient-1": "Patient/abc",
+            "report-1": "DiagnosticReport/xyz",
+        },
+    )
+
+    assert result.status == "grounded"
+    assert result.target_fact_id == "lifted-obs-abc"
+    assert "subject_identity" in result.evidence["matched_keys"]
+
+
+def test_graph_grounding_propagates_patient_identity_to_dependent_facts() -> None:
+    source_patient = {
+        "fact_id": "patient-1",
+        "fact_type": "patient_identity",
+        "subject_ref": "patient-1",
+        "identifiers": [{"system": "urn:mrn", "value": "123"}],
+        "relations": [],
+    }
+    source_observation = _source_observation(
+        fact_id="obs-1",
+        time="2026-09-20T08:15:00+04:00",
+        value=92,
+    )
+    target_patient = LiftedFact(
+        lifted_fact_id="Patient/abc",
+        fact_type="patient_identity",
+        subject_ref="Patient/abc",
+        semantic_payload={
+            "identifiers": [{"system": "urn:mrn", "value": "123"}],
+        },
+        target_paths=("Patient.identifier",),
+    )
+    target_observation = _target_observation(
+        lifted_id="Observation/obs1",
+        time="2026-09-20T08:15:00+04:00",
+        value=92,
+        subject_ref="Patient/abc",
+        report_ref="target-report-1",
+    )
+
+    results = ground_graph(
+        [source_observation, source_patient],
+        [target_observation, target_patient],
+    )
+
+    assert results["patient-1"].status == "grounded"
+    assert results["patient-1"].target_fact_id == "Patient/abc"
+    assert results["obs-1"].status == "grounded"
+    assert results["obs-1"].target_fact_id == "Observation/obs1"
