@@ -1,0 +1,40 @@
+name: Protocol validation
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - protocol-v1
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install research tooling
+        run: python -m pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check src tests
+
+      - name: Test schemas and protocol artifacts
+        run: pytest -q
+
+      - name: Validate canonical development example explicitly
+        run: >-
+          fhirbridge-validate
+          canonical/examples/LAB-001-example.yaml
+          canonical/schema/clinical_fact_graph.schema.yaml
+          --schema-dir canonical/schema
