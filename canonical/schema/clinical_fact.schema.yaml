@@ -1,4 +1,5 @@
 $schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://fhirbridge-bench.org/schema/clinical_fact.schema.yaml"
 $title: FHIRBridge Canonical Clinical Fact
 $type: object
 $comment: >-
