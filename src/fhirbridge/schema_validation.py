@@ -54,6 +54,20 @@ def _schema_resource(schema: dict[str, Any]) -> Resource[Any]:
     return Resource.from_contents(schema, default_specification=DRAFT202012)
 
 
+def _unique_directories(schema_directories: Iterable[str | Path]) -> list[Path]:
+    """Return schema directories once each, preserving request order."""
+
+    unique: list[Path] = []
+    seen: set[Path] = set()
+    for directory in schema_directories:
+        path = Path(directory).resolve()
+        if path in seen:
+            continue
+        seen.add(path)
+        unique.append(path)
+    return unique
+
+
 def build_registry(schema_directories: Iterable[str | Path]) -> Registry[Any]:
     """Build a local registry for schemas carrying stable ``$id`` values.
 
@@ -63,10 +77,9 @@ def build_registry(schema_directories: Iterable[str | Path]) -> Registry[Any]:
     """
 
     registry: Registry[Any] = Registry()
-    seen_ids: set[str] = set()
+    schema_id_sources: dict[str, Path] = {}
 
-    for directory in schema_directories:
-        schema_dir = Path(directory)
+    for schema_dir in _unique_directories(schema_directories):
         if not schema_dir.exists():
             continue
         for schema_path in sorted(schema_dir.glob("*.y*ml")):
@@ -76,10 +89,15 @@ def build_registry(schema_directories: Iterable[str | Path]) -> Registry[Any]:
             schema_id = schema.get("$id")
             if not schema_id:
                 continue
-            if schema_id in seen_ids:
-                raise ValueError(f"duplicate schema $id {schema_id!r}: {schema_path}")
+
+            prior = schema_id_sources.get(schema_id)
+            if prior is not None and prior != schema_path:
+                raise ValueError(
+                    f"duplicate schema $id {schema_id!r}: {prior} and {schema_path}"
+                )
+
             registry = registry.with_resource(schema_id, _schema_resource(schema))
-            seen_ids.add(schema_id)
+            schema_id_sources[schema_id] = schema_path
 
     return registry
 
