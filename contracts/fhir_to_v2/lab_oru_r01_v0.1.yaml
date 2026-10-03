@@ -1,0 +1,375 @@
+contract:
+  id: F2V-LAB-ORU-R01-001
+  version: 0.1.0
+  status: draft
+  freeze_status: not_frozen
+  clinical_domain: laboratory_results
+  study_role: primary_stress_direction
+
+source:
+  standard: HL7_FHIR
+  release: R4
+  implementation_guide: US_Core
+  implementation_guide_version: 9.0.0
+  profiles:
+    - http://hl7.org/fhir/us/core/StructureDefinition/us-core-diagnosticreport-lab
+    - http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-lab
+    - http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient
+
+target:
+  standard: HL7_v2
+  version: 2.5.1
+  implementation_guide: Laboratory_Results_Interface
+  implementation_guide_edition: 5
+  errata: 2024DEC
+  message: ORU^R01
+  realm: US
+
+scope:
+  included:
+    - general_laboratory_reporting
+    - chemistry_style_results
+    - hematology_style_results
+    - atomic_results
+    - simple_panels
+  deferred:
+    - microbiology_susceptibility
+    - clinical_genomics
+    - newborn_dried_bloodspot_screening
+    - public_health_specific_extensions
+    - unreviewed_local_fhir_extensions
+
+projectability_classes:
+  - MUST_PRESERVE
+  - MAY_TRANSFORM
+  - MAY_LOSE
+  - MUST_NOT_INFER
+  - INDETERMINATE
+
+allowed_operations:
+  - COPY
+  - NORMALIZE
+  - CODE_TRANSLATE
+  - UNIT_CONVERT
+  - AGGREGATE
+  - DECOMPOSE
+  - DERIVE_DECLARED
+  - DROP_DECLARED
+
+precedence:
+  description: >-
+    Error classification precedence is resolved at the canonical-fact level to
+    avoid double counting. Misattribution/corruption takes precedence over an
+    omission-plus-fabrication pair when the same source fact is represented in
+    the wrong semantic relationship.
+  order:
+    - MISATTRIBUTION
+    - CORRUPTION
+    - OMISSION
+    - FABRICATION
+
+rules:
+  - rule_id: PATIENT_IDENTIFIER_001
+    canonical_fact: patient.identifier
+    projectability: MUST_PRESERVE
+    source_paths:
+      - Patient.identifier
+    target_paths:
+      - PID-3
+    allowed_operations:
+      - COPY
+      - NORMALIZE
+    equivalence:
+      type: identifier
+      preserve_value: true
+      namespace_change_requires_declared_rule: true
+    failure_types:
+      - OMISSION
+      - CORRUPTION
+      - MISATTRIBUTION
+    severity_default: S3
+    evidence_basis:
+      - HL7_v2.5.1_LRI_Ed5
+      - US_Core_9.0.0
+    expert_review_required: true
+    status: draft
+
+  - rule_id: PATIENT_NAME_001
+    canonical_fact: patient.name
+    projectability: MAY_TRANSFORM
+    source_paths:
+      - Patient.name
+    target_paths:
+      - PID-5
+    allowed_operations:
+      - COPY
+      - NORMALIZE
+      - DECOMPOSE
+    equivalence:
+      type: human_name
+      order_insensitive_components:
+        - given
+      preserve_family: true
+      preserve_given: true
+    failure_types:
+      - OMISSION
+      - CORRUPTION
+    severity_default: S2
+    expert_review_required: true
+    status: draft
+
+  - rule_id: PATIENT_BIRTHDATE_001
+    canonical_fact: patient.birthDate
+    projectability: MUST_PRESERVE
+    source_paths:
+      - Patient.birthDate
+    target_paths:
+      - PID-7
+    allowed_operations:
+      - COPY
+      - NORMALIZE
+    equivalence:
+      type: date
+      precision_policy: preserve_source_precision
+    failure_types:
+      - OMISSION
+      - CORRUPTION
+    severity_default: S2
+    expert_review_required: true
+    status: draft
+
+  - rule_id: REPORT_STATUS_001
+    canonical_fact: report.status
+    projectability: MAY_TRANSFORM
+    source_paths:
+      - DiagnosticReport.status
+    target_paths:
+      - OBR-25
+    allowed_operations:
+      - CODE_TRANSLATE
+    equivalence:
+      type: code_map
+      mapping_source: contract_status_map
+    failure_types:
+      - OMISSION
+      - CORRUPTION
+    severity_default: S2
+    expert_review_required: true
+    status: draft
+
+  - rule_id: REPORT_CODE_001
+    canonical_fact: report.code
+    projectability: MUST_PRESERVE
+    source_paths:
+      - DiagnosticReport.code
+    target_paths:
+      - OBR-4
+    allowed_operations:
+      - COPY
+      - CODE_TRANSLATE
+    equivalence:
+      type: coded_concept
+      accepted_equivalence:
+        - exact_code_system_pair
+        - approved_concept_map_equivalent
+    failure_types:
+      - OMISSION
+      - CORRUPTION
+    severity_default: S2
+    expert_review_required: true
+    status: draft
+
+  - rule_id: OBSERVATION_CODE_001
+    canonical_fact: observation.code
+    projectability: MUST_PRESERVE
+    source_paths:
+      - Observation.code
+    target_paths:
+      - OBX-3
+    allowed_operations:
+      - COPY
+      - CODE_TRANSLATE
+    equivalence:
+      type: coded_concept
+      accepted_equivalence:
+        - exact_code_system_pair
+        - approved_concept_map_equivalent
+    failure_types:
+      - OMISSION
+      - CORRUPTION
+      - MISATTRIBUTION
+    severity_default: S2
+    expert_review_required: true
+    status: draft
+
+  - rule_id: OBSERVATION_VALUE_001
+    canonical_fact: observation.value
+    projectability: MUST_PRESERVE
+    source_paths:
+      - Observation.value[x]
+      - Observation.component.value[x]
+    target_paths:
+      - OBX-5
+    allowed_operations:
+      - COPY
+      - NORMALIZE
+      - UNIT_CONVERT
+    equivalence:
+      type: typed_value
+      numeric_tolerance: exact_unless_declared
+      coded_values_require_semantic_equivalence: true
+    failure_types:
+      - OMISSION
+      - CORRUPTION
+      - MISATTRIBUTION
+    severity_default: S3
+    expert_review_required: true
+    status: draft
+
+  - rule_id: OBSERVATION_UNIT_001
+    canonical_fact: observation.unit
+    projectability: MAY_TRANSFORM
+    source_paths:
+      - Observation.valueQuantity.unit
+      - Observation.valueQuantity.code
+      - Observation.valueQuantity.system
+      - Observation.component.valueQuantity
+    target_paths:
+      - OBX-6
+    allowed_operations:
+      - COPY
+      - NORMALIZE
+      - UNIT_CONVERT
+    equivalence:
+      type: ucum_quantity
+      require_value_unit_joint_equivalence: true
+    failure_types:
+      - OMISSION
+      - CORRUPTION
+    severity_default: S3
+    expert_review_required: true
+    status: draft
+
+  - rule_id: OBSERVATION_REFERENCE_RANGE_001
+    canonical_fact: observation.referenceRange
+    projectability: MAY_TRANSFORM
+    source_paths:
+      - Observation.referenceRange
+      - Observation.component.referenceRange
+    target_paths:
+      - OBX-7
+    allowed_operations:
+      - COPY
+      - NORMALIZE
+    equivalence:
+      type: reference_range
+      preserve_bounds_when_structured: true
+    failure_types:
+      - OMISSION
+      - CORRUPTION
+    severity_default: S2
+    expert_review_required: true
+    status: draft
+
+  - rule_id: OBSERVATION_INTERPRETATION_001
+    canonical_fact: observation.interpretation
+    projectability: MAY_TRANSFORM
+    source_paths:
+      - Observation.interpretation
+    target_paths:
+      - OBX-8
+    allowed_operations:
+      - COPY
+      - CODE_TRANSLATE
+    equivalence:
+      type: coded_concept
+      mapping_source: contract_interpretation_map
+    failure_types:
+      - OMISSION
+      - CORRUPTION
+    severity_default: S2
+    expert_review_required: true
+    status: draft
+
+  - rule_id: OBSERVATION_STATUS_001
+    canonical_fact: observation.status
+    projectability: MAY_TRANSFORM
+    source_paths:
+      - Observation.status
+    target_paths:
+      - OBX-11
+    allowed_operations:
+      - CODE_TRANSLATE
+    equivalence:
+      type: code_map
+      mapping_source: contract_observation_status_map
+    failure_types:
+      - OMISSION
+      - CORRUPTION
+    severity_default: S2
+    expert_review_required: true
+    status: draft
+
+  - rule_id: FREE_TEXT_INFERENCE_001
+    canonical_fact: ungrounded_clinical_assertion
+    projectability: MUST_NOT_INFER
+    source_paths:
+      - DiagnosticReport.presentedForm
+      - DiagnosticReport.conclusion
+      - Observation.note
+    target_paths:
+      - NTE
+      - OBX-5
+    allowed_operations: []
+    equivalence:
+      type: source_grounding_required
+    failure_types:
+      - FABRICATION
+    severity_default: S2
+    expert_review_required: true
+    status: draft
+
+indeterminate_candidates:
+  - candidate_id: REPORT_IDENTIFIER_MAPPING
+    reason: >-
+      DiagnosticReport identifiers and v2 order/report identifiers can represent
+      different business identifiers. Exact permitted loci require profile-level
+      review before a MUST_PRESERVE rule is frozen.
+  - candidate_id: REPORT_EFFECTIVE_TIME_MAPPING
+    reason: >-
+      DiagnosticReport effective time can reflect clinically relevant time while
+      v2 laboratory messages expose multiple report/specimen/observation time
+      fields. The rule must be split by canonical time semantics before scoring.
+  - candidate_id: REPORT_ISSUED_TIME_MAPPING
+    reason: >-
+      Exact reverse mapping requires LRI Edition 5 field-level review and must
+      not be inferred from a generic v2 mapping.
+  - candidate_id: SPECIMEN_CONTEXT_MAPPING
+    reason: >-
+      SPM/OBR representation depends on the selected laboratory scenario and
+      profile constraints. Freeze only after explicit LRI review.
+  - candidate_id: ENCOUNTER_CONTEXT_MAPPING
+    reason: >-
+      Encounter information may not be uniformly required for all laboratory
+      result scenarios and must be scoped by profile/use case.
+
+validation_requirements:
+  - independent_lri_field_review
+  - external_expert_contract_review
+  - clean_room_renderer_review
+  - lifting_parser_validation
+  - terminology_service_validation
+  - ucum_equivalence_tests
+  - seeded_fault_qualification
+  - blinded_expert_gold_validation
+
+notes:
+  - >-
+      This file is a study contract, not an HL7 implementation guide and not a
+      production interface specification.
+  - >-
+      Draft mappings marked expert_review_required must not be treated as frozen
+      truth in confirmatory experiments.
+  - >-
+      Any ambiguity discovered before freeze is moved to INDETERMINATE rather
+      than resolved by observing which output a model or converter produces.
