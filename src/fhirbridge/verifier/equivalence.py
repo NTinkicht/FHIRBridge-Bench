@@ -7,7 +7,7 @@ contain no FHIR-path or HL7 v2 field-position logic.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from math import isclose
 from typing import Protocol, runtime_checkable
 
@@ -153,7 +153,7 @@ def normalize_datetime(value: str) -> datetime:
     parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     if parsed.tzinfo is None:
         raise ValueError(f"timezone required for instant comparison: {value!r}")
-    return parsed.astimezone(timezone.utc)
+    return parsed.astimezone(UTC)
 
 
 def instants_equivalent(source: str, target: str) -> EquivalenceResult:
