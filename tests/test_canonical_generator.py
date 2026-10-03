@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-yaml = pytest.importorskip("yaml")
+import yaml
 
 from fhirbridge.canonical import generate_lab_scenario
 from fhirbridge.schema_validation import validate_document
