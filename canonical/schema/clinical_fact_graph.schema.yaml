@@ -78,6 +78,26 @@ properties:
         type: [string, "null"]
       synthetic_only:
         type: boolean
+      partition:
+        type: string
+        enum:
+          - development
+          - pilot
+          - confirmatory
+          - external
+      primary_endpoint_eligible:
+        type: boolean
+      contract_state:
+        type: string
+        enum:
+          - SCORABLE
+          - INDETERMINATE
+      expected_rule_ids:
+        type: array
+        uniqueItems: true
+        items:
+          type: string
+          minLength: 1
       notes:
         type: [string, "null"]
     additionalProperties: false
