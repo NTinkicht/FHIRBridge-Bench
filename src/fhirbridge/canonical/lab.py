@@ -53,7 +53,8 @@ def generate_lab_scenario(
         template = _TEMPLATE_RULES[template_id]
     except KeyError as exc:
         supported = ", ".join(sorted(_TEMPLATE_RULES))
-        raise ValueError(f"unsupported template {template_id!r}; choose one of {supported}") from exc
+        message = f"unsupported template {template_id!r}; choose one of {supported}"
+        raise ValueError(message) from exc
 
     rng = Random(seed)
     suffix = f"{seed:08d}"
@@ -62,8 +63,7 @@ def generate_lab_scenario(
     observation_id = f"obs-glucose-{suffix}"
     specimen_id = f"specimen-{suffix}"
 
-    offset_hours = 4 if template_id != "LAB-009" else rng.choice([-5, 0, 4, 8])
-    tz = timezone(timedelta(hours=offset_hours))
+    tz = timezone(timedelta(hours=4))
     base = datetime(2026, 1, 1, 8, 0, tzinfo=tz) + timedelta(
         days=rng.randint(0, 250),
         minutes=rng.randint(0, 240),
