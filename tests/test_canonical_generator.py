@@ -1,8 +1,9 @@
 from pathlib import Path
 
+import yaml
+
 from fhirbridge.canonical import generate_lab_scenario
 from fhirbridge.schema_validation import validate_document
-import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_DIR = ROOT / "canonical" / "schema"
