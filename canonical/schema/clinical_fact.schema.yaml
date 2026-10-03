@@ -18,6 +18,7 @@ properties:
       - patient_identity
       - encounter
       - observation
+      - specimen
       - condition
       - allergy
       - medication
