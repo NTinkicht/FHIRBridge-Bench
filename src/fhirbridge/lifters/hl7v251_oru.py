@@ -149,7 +149,10 @@ def _unit(value: str) -> dict[str, Any] | None:
     return {"system": system, "code": code, "display": display}
 
 
-def _reference_range(value: str, unit: dict[str, Any] | None) -> dict[str, Any] | None:
+def _reference_range(
+    value: str,
+    unit: dict[str, Any] | None,
+) -> dict[str, Any] | None:
     if not value or "-" not in value:
         return None
     low, high = value.split("-", 1)
@@ -166,8 +169,15 @@ def _parse_segments(artifact: str) -> list[list[str]]:
     return [line.split("|") for line in normalized.split("\r") if line.strip()]
 
 
-def _segment_index(segments: list[list[str]], name: str) -> list[tuple[int, list[str]]]:
-    return [(index, segment) for index, segment in enumerate(segments) if segment[0] == name]
+def _segment_index(
+    segments: list[list[str]],
+    name: str,
+) -> list[tuple[int, list[str]]]:
+    return [
+        (index, segment)
+        for index, segment in enumerate(segments)
+        if segment[0] == name
+    ]
 
 
 def _patient_fact(pid: list[str], path: str) -> LiftedFact:
@@ -211,9 +221,18 @@ def _patient_fact(pid: list[str], path: str) -> LiftedFact:
     )
 
 
-def _report_fact(obr: list[str], path: str, *, patient_id: str, observation_ids: list[str], specimen_id: str | None) -> LiftedFact:
+def _report_fact(
+    obr: list[str],
+    path: str,
+    *,
+    patient_id: str,
+    observation_ids: list[str],
+    specimen_id: str | None,
+) -> LiftedFact:
     lifted_id = "v2::report::1"
-    relationships = [("has_result", observation_id) for observation_id in observation_ids]
+    relationships = [
+        ("has_result", observation_id) for observation_id in observation_ids
+    ]
     if specimen_id is not None:
         relationships.append(("has_specimen", specimen_id))
     effective = _ts_to_iso(_field(obr, 7))
@@ -236,7 +255,10 @@ def _report_fact(obr: list[str], path: str, *, patient_id: str, observation_ids:
             {"relation_type": relation_type, "target_fact_id": target_id}
             for relation_type, target_id in relationships
         ],
-        "attributes": {"status": _status(_field(obr, 25)), "category": "laboratory"},
+        "attributes": {
+            "status": _status(_field(obr, 25)),
+            "category": "laboratory",
+        },
     }
     return LiftedFact(
         lifted_fact_id=lifted_id,
@@ -248,7 +270,14 @@ def _report_fact(obr: list[str], path: str, *, patient_id: str, observation_ids:
     )
 
 
-def _observation_fact(obx: list[str], path: str, *, patient_id: str, report_id: str, specimen_id: str | None) -> LiftedFact:
+def _observation_fact(
+    obx: list[str],
+    path: str,
+    *,
+    patient_id: str,
+    report_id: str,
+    specimen_id: str | None,
+) -> LiftedFact:
     set_id = _field(obx, 1) or "unknown"
     lifted_id = f"v2::obx::{set_id}"
     value_type = _field(obx, 2)
@@ -320,12 +349,19 @@ def _observation_fact(obx: list[str], path: str, *, patient_id: str, report_id: 
     )
 
 
-def _specimen_fact(spm: list[str], path: str, *, patient_id: str, observation_ids: list[str]) -> LiftedFact:
+def _specimen_fact(
+    spm: list[str],
+    path: str,
+    *,
+    patient_id: str,
+    observation_ids: list[str],
+) -> LiftedFact:
     set_id = _field(spm, 1) or "1"
     lifted_id = f"v2::spm::{set_id}"
     identifier = _identifier_from_ei(_field(spm, 2))
     relationships = [
-        ("specimen_for_observation", observation_id) for observation_id in observation_ids
+        ("specimen_for_observation", observation_id)
+        for observation_id in observation_ids
     ]
     effective = _ts_to_iso(_field(spm, 17))
     payload = {
@@ -372,7 +408,12 @@ class Hl7V251OruLifter:
     def lifter_version(self) -> str:
         return _LIFTER_VERSION
 
-    def lift(self, artifact: str | dict[str, Any], *, artifact_id: str) -> LiftResult:
+    def lift(
+        self,
+        artifact: str | dict[str, Any],
+        *,
+        artifact_id: str,
+    ) -> LiftResult:
         if not isinstance(artifact, str):
             raise TypeError("HL7 v2 lifter requires ER7 text")
         segments = _parse_segments(artifact)
@@ -391,7 +432,9 @@ class Hl7V251OruLifter:
         obx_items = _segment_index(segments, "OBX")
         spm_items = _segment_index(segments, "SPM")
         if len(pid_items) != 1 or len(obr_items) != 1:
-            raise ValueError("development ORU slice requires exactly one PID and one OBR")
+            raise ValueError(
+                "development ORU slice requires exactly one PID and one OBR"
+            )
         if len(spm_items) > 1:
             warnings.append(
                 LiftWarning(
