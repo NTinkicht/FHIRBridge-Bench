@@ -1,6 +1,7 @@
 """Standard-independent semantic verification utilities."""
 
-from .classifier import ClassificationResult, SemanticDecision, classify_graph
+from .classifier import ClassificationResult, SemanticDecision
+from .contract_classifier import classify_graph
 from .equivalence import (
     EquivalenceResult,
     ExactTerminologyEquivalence,
