@@ -1,5 +1,3 @@
-import pathlib
-
 from fhirbridge.canonical import generate_lab_scenario
 from fhirbridge.lifters import FhirR4LabLifter
 from fhirbridge.renderers import FhirR4LabRendererA
@@ -7,7 +5,7 @@ from fhirbridge.schema_validation import load_yaml
 from fhirbridge.verifier import classify_graph
 
 
-_CONTRACT_PATH = pathlib.Path("contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml")
+_CONTRACT_PATH = "contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml"
 
 
 def _round_trip(template_id: str, seed: int):
