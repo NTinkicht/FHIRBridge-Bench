@@ -98,11 +98,22 @@ def _concept_key(payload: dict[str, Any]) -> tuple[object, object] | None:
     return system, code
 
 
-def _temporal_start(payload: dict[str, Any]) -> object | None:
+def _coded_value_key(attributes: dict[str, Any]) -> tuple[object, object] | None:
+    coded_value = attributes.get("value_code")
+    if not isinstance(coded_value, dict):
+        return None
+    system = coded_value.get("system")
+    code = coded_value.get("code")
+    if system is None and code is None:
+        return None
+    return system, code
+
+
+def _temporal_value(payload: dict[str, Any], key: str) -> object | None:
     temporal = payload.get("temporal")
     if not isinstance(temporal, dict):
         return None
-    return temporal.get("effective_start")
+    return temporal.get(key)
 
 
 def _same_time(source: object | None, target: object | None) -> bool:
@@ -188,10 +199,16 @@ def _compare_grounded_fact(
         checks["unit"] = {"source": source_unit, "target": target_unit}
         return "unit", checks
 
-    source_time = _temporal_start(source)
-    target_time = _temporal_start(target_payload)
-    if not _same_time(source_time, target_time):
-        checks["effective_time"] = {"source": source_time, "target": target_time}
+    source_effective = _temporal_value(source, "effective_start")
+    target_effective = _temporal_value(target_payload, "effective_start")
+    if not _same_time(source_effective, target_effective):
+        checks["effective_time"] = {"source": source_effective, "target": target_effective}
+        return "temporal", checks
+
+    source_recorded = _temporal_value(source, "recorded_at")
+    target_recorded = _temporal_value(target_payload, "recorded_at")
+    if not _same_time(source_recorded, target_recorded):
+        checks["recorded_at"] = {"source": source_recorded, "target": target_recorded}
         return "temporal", checks
 
     source_attributes = (
@@ -202,6 +219,12 @@ def _compare_grounded_fact(
         if isinstance(target_payload.get("attributes"), dict)
         else {}
     )
+
+    source_value_code = _coded_value_key(source_attributes)
+    target_value_code = _coded_value_key(target_attributes)
+    if source_value_code != target_value_code:
+        checks["value_code"] = {"source": source_value_code, "target": target_value_code}
+        return "terminology", checks
 
     attribute_subtypes = {
         "status": "status",
