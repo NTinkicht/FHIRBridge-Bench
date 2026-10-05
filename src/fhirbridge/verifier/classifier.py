@@ -203,13 +203,21 @@ def _compare_grounded_fact(
         else {}
     )
 
-    for key in ("status", "reference_range", "interpretation", "birthDate", "name"):
+    attribute_subtypes = {
+        "status": "status",
+        "reference_range": "other",
+        "interpretation": "other",
+        "birthDate": "other",
+        "name": "other",
+        "type_label": "terminology",
+        "collection_method_label": "terminology",
+    }
+    for key, subtype in attribute_subtypes.items():
         if key in source_attributes and source_attributes.get(key) != target_attributes.get(key):
             checks[key] = {
                 "source": source_attributes.get(key),
                 "target": target_attributes.get(key),
             }
-            subtype = "status" if key == "status" else "other"
             return subtype, checks
 
     required_relations = _translated_required_relations(source, reference_map)
