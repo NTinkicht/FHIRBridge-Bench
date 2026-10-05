@@ -8,9 +8,9 @@ verifier's eventual classification is correct.
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass
 from hashlib import sha256
-import json
 from typing import Any, Literal
 
 from .artifact_faults import ArtifactMutation
@@ -155,7 +155,9 @@ def manifest_for_multi_fault(
         affected_fact_ids=fault.affected_fact_ids,
         target_paths=(),
         metadata={
-            "component_mutations": tuple(component.mutation for component in fault.components)
+            "component_mutations": tuple(
+                component.mutation for component in fault.components
+            )
         },
     )
 
