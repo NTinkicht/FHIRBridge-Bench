@@ -48,6 +48,18 @@ def test_contract_policy_includes_declared_fields_and_excludes_report_identifier
     assert not policy.scores("diagnostic_report", "identifiers")
 
 
+def test_contract_policy_retains_projectability_per_scored_field() -> None:
+    policy = compile_verification_policy(load_yaml(_CONTRACT_PATH))
+
+    assert (
+        policy.projectability("diagnostic_report", "temporal.recorded_at")
+        == "MUST_PRESERVE"
+    )
+    assert policy.projectability("observation", "unit") == "MAY_TRANSFORM"
+    assert policy.projectability("observation", "value") == "MUST_PRESERVE"
+    assert policy.projectability("diagnostic_report", "identifiers") is None
+
+
 def test_unfrozen_report_identifier_mapping_is_not_scored_by_contract_policy() -> None:
     source = generate_lab_scenario("LAB-001", 9201)
     target_graph = deepcopy(source)
@@ -60,7 +72,10 @@ def test_unfrozen_report_identifier_mapping_is_not_scored_by_contract_policy() -
     result = classify_graph(source["facts"], _lift_graph(target_graph), policy=policy)
 
     assert result.faithful
-    assert all(decision.classification == "VERIFIED_EQUIVALENT" for decision in result.decisions)
+    assert all(
+        decision.classification == "VERIFIED_EQUIVALENT"
+        for decision in result.decisions
+    )
 
 
 def test_declared_report_issued_time_remains_scored_by_contract_policy() -> None:
@@ -81,3 +96,25 @@ def test_declared_report_issued_time_remains_scored_by_contract_policy() -> None
         and "recorded_at" in decision.evidence
         for decision in result.decisions
     )
+
+
+def test_absent_required_report_issued_time_is_classified_as_omission() -> None:
+    source = generate_lab_scenario("LAB-001", 9203)
+    target_graph = deepcopy(source)
+    report = next(
+        fact for fact in target_graph["facts"] if fact["fact_type"] == "diagnostic_report"
+    )
+    report["temporal"]["recorded_at"] = None
+
+    policy = compile_verification_policy(load_yaml(_CONTRACT_PATH))
+    result = classify_graph(source["facts"], _lift_graph(target_graph), policy=policy)
+
+    assert not result.faithful
+    omissions = [
+        decision
+        for decision in result.decisions
+        if decision.classification == "OMISSION"
+        and decision.evidence.get("omitted_field") == "temporal.recorded_at"
+    ]
+    assert omissions
+    assert omissions[0].evidence["projectability"] == "MUST_PRESERVE"
