@@ -103,12 +103,20 @@ class Hl7V251OruDevelopmentValidator:
             name = segment[0]
             if name == "PID" and not _field(segment, 3):
                 findings.append(
-                    _finding("PID3_REQUIRED", "PID-3 is required in this slice.", f"PID[{index}]-3")
+                    _finding(
+                        "PID3_REQUIRED",
+                        "PID-3 is required in this slice.",
+                        f"PID[{index}]-3",
+                    )
                 )
             elif name == "OBR":
                 if not _field(segment, 4):
                     findings.append(
-                        _finding("OBR4_REQUIRED", "OBR-4 is required in this slice.", f"OBR[{index}]-4")
+                        _finding(
+                            "OBR4_REQUIRED",
+                            "OBR-4 is required in this slice.",
+                            f"OBR[{index}]-4",
+                        )
                     )
                 self._check_ts(findings, _field(segment, 7), f"OBR[{index}]-7")
                 self._check_ts(findings, _field(segment, 22), f"OBR[{index}]-22")
@@ -126,7 +134,11 @@ class Hl7V251OruDevelopmentValidator:
             elif name == "SPM":
                 if not _field(segment, 2):
                     findings.append(
-                        _finding("SPM2_REQUIRED", "SPM-2 is required when SPM is present.", f"SPM[{index}]-2")
+                        _finding(
+                            "SPM2_REQUIRED",
+                            "SPM-2 is required when SPM is present.",
+                            f"SPM[{index}]-2",
+                        )
                     )
                 self._check_ts(findings, _field(segment, 17), f"SPM[{index}]-17")
             elif name not in {"MSH", "PID", "OBR", "OBX", "SPM"}:
