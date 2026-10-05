@@ -1,0 +1,468 @@
+"""Independent HL7 v2.5.1 ORU^R01 laboratory artifact lifter.
+
+The parser reconstructs candidate canonical facts from ER7 text. It does not
+import reference-renderer mapping functions and does not decide semantic
+correctness. Equivalence and projectability remain verifier responsibilities.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from fhirbridge.verifier.model import LiftedFact
+
+from .base import LiftResult, LiftWarning
+
+_LIFTER_ID = "hl7v251-lri-oru-lifter"
+_LIFTER_VERSION = "0.1.0-dev"
+
+
+def _unescape(value: str) -> str:
+    return (
+        value.replace("\\F\\", "|")
+        .replace("\\S\\", "^")
+        .replace("\\R\\", "~")
+        .replace("\\T\\", "&")
+        .replace("\\E\\", "\\")
+    )
+
+
+def _field(segment: list[str], number: int) -> str:
+    return segment[number] if number < len(segment) else ""
+
+
+def _components(value: str) -> list[str]:
+    return [_unescape(item) for item in value.split("^")]
+
+
+def _component(value: str, number: int) -> str | None:
+    values = _components(value)
+    index = number - 1
+    if index >= len(values) or values[index] == "":
+        return None
+    return values[index]
+
+
+def _system_uri(alias: str | None) -> str | None:
+    aliases = {
+        "LN": "http://loinc.org",
+        "UCUM": "http://unitsofmeasure.org",
+        "FBRLAB": "urn:fhirbridge:synthetic:lab",
+        "FBRRES": "urn:fhirbridge:synthetic:result",
+    }
+    if alias is None:
+        return None
+    return aliases.get(alias, alias)
+
+
+def _concept(value: str) -> dict[str, Any] | None:
+    code = _component(value, 1)
+    display = _component(value, 2)
+    system = _system_uri(_component(value, 3))
+    if code is None and display is None and system is None:
+        return None
+    return {
+        "system": system,
+        "code": code,
+        "display": display,
+        "local_code": None,
+    }
+
+
+def _ts_to_iso(value: str) -> str | None:
+    value = value.strip()
+    if not value:
+        return None
+    if len(value) == 8 and value.isdigit():
+        return f"{value[0:4]}-{value[4:6]}-{value[6:8]}"
+    if len(value) < 14 or not value[:14].isdigit():
+        return value
+    result = (
+        f"{value[0:4]}-{value[4:6]}-{value[6:8]}T"
+        f"{value[8:10]}:{value[10:12]}:{value[12:14]}"
+    )
+    suffix = value[14:]
+    if len(suffix) == 5 and suffix[0] in "+-" and suffix[1:].isdigit():
+        result += f"{suffix[0]}{suffix[1:3]}:{suffix[3:5]}"
+    return result
+
+
+def _number(value: str) -> int | float | str | None:
+    if value == "":
+        return None
+    try:
+        if "." not in value and "e" not in value.lower():
+            return int(value)
+        return float(value)
+    except ValueError:
+        return _unescape(value)
+
+
+def _status(status: str) -> str | None:
+    mapping = {
+        "R": "registered",
+        "P": "preliminary",
+        "F": "final",
+        "C": "corrected",
+        "X": "cancelled",
+        "U": "unknown",
+    }
+    return mapping.get(status) if status else None
+
+
+def _interpretation(code: str) -> dict[str, Any] | None:
+    if not code:
+        return None
+    displays = {"N": "Normal", "H": "High", "L": "Low"}
+    return {"code": code, "display": displays.get(code)}
+
+
+def _identifier_from_cx(value: str) -> dict[str, Any] | None:
+    parts = _components(value)
+    identifier_value = parts[0] if parts else ""
+    if not identifier_value:
+        return None
+    system = parts[3] if len(parts) > 3 and parts[3] else None
+    identifier_type = parts[4] if len(parts) > 4 and parts[4] else None
+    return {"system": system, "value": identifier_value, "type": identifier_type}
+
+
+def _identifier_from_ei(value: str) -> dict[str, Any] | None:
+    parts = _components(value)
+    if not parts or not parts[0]:
+        return None
+    return {
+        "system": parts[1] if len(parts) > 1 and parts[1] else None,
+        "value": parts[0],
+        "type": "specimen",
+    }
+
+
+def _unit(value: str) -> dict[str, Any] | None:
+    if not value:
+        return None
+    code = _component(value, 1)
+    display = _component(value, 2)
+    system = _system_uri(_component(value, 3))
+    if code is None and display is None and system is None:
+        return None
+    return {"system": system, "code": code, "display": display}
+
+
+def _reference_range(value: str, unit: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not value or "-" not in value:
+        return None
+    low, high = value.split("-", 1)
+    result = {
+        "low": _number(low),
+        "high": _number(high),
+        "unit": unit.get("code") if isinstance(unit, dict) else None,
+    }
+    return result
+
+
+def _parse_segments(artifact: str) -> list[list[str]]:
+    normalized = artifact.replace("\n", "\r")
+    return [line.split("|") for line in normalized.split("\r") if line.strip()]
+
+
+def _segment_index(segments: list[list[str]], name: str) -> list[tuple[int, list[str]]]:
+    return [(index, segment) for index, segment in enumerate(segments) if segment[0] == name]
+
+
+def _patient_fact(pid: list[str], path: str) -> LiftedFact:
+    identifiers = [
+        identifier
+        for repetition in _field(pid, 3).split("~")
+        if repetition
+        if (identifier := _identifier_from_cx(repetition)) is not None
+    ]
+    family = _component(_field(pid, 5), 1)
+    given = _component(_field(pid, 5), 2)
+    name = None
+    if family is not None or given is not None:
+        name = {"family": family, "given": [given] if given is not None else []}
+    birth_date = _ts_to_iso(_field(pid, 7))
+    identity_token = identifiers[0]["value"] if identifiers else "unidentified"
+    lifted_id = f"v2::patient::{identity_token}"
+    payload = {
+        "fact_type": "patient_identity",
+        "subject_ref": lifted_id,
+        "encounter_ref": None,
+        "concept": None,
+        "value": None,
+        "unit": None,
+        "temporal": {
+            "effective_start": birth_date,
+            "effective_end": None,
+            "recorded_at": None,
+            "precision": "day" if birth_date else None,
+        },
+        "identifiers": identifiers,
+        "relations": [],
+        "attributes": {"name": name, "birthDate": birth_date},
+    }
+    return LiftedFact(
+        lifted_fact_id=lifted_id,
+        fact_type="patient_identity",
+        subject_ref=lifted_id,
+        semantic_payload=payload,
+        target_paths=(path,),
+    )
+
+
+def _report_fact(obr: list[str], path: str, *, patient_id: str, observation_ids: list[str], specimen_id: str | None) -> LiftedFact:
+    lifted_id = "v2::report::1"
+    relationships = [("has_result", observation_id) for observation_id in observation_ids]
+    if specimen_id is not None:
+        relationships.append(("has_specimen", specimen_id))
+    effective = _ts_to_iso(_field(obr, 7))
+    issued = _ts_to_iso(_field(obr, 22))
+    payload = {
+        "fact_type": "diagnostic_report",
+        "subject_ref": patient_id,
+        "encounter_ref": None,
+        "concept": _concept(_field(obr, 4)),
+        "value": None,
+        "unit": None,
+        "temporal": {
+            "effective_start": effective,
+            "effective_end": None,
+            "recorded_at": issued,
+            "precision": "second" if effective else None,
+        },
+        "identifiers": [],
+        "relations": [
+            {"relation_type": relation_type, "target_fact_id": target_id}
+            for relation_type, target_id in relationships
+        ],
+        "attributes": {"status": _status(_field(obr, 25)), "category": "laboratory"},
+    }
+    return LiftedFact(
+        lifted_fact_id=lifted_id,
+        fact_type="diagnostic_report",
+        subject_ref=patient_id,
+        semantic_payload=payload,
+        target_paths=(path,),
+        relationships=tuple(relationships),
+    )
+
+
+def _observation_fact(obx: list[str], path: str, *, patient_id: str, report_id: str, specimen_id: str | None) -> LiftedFact:
+    set_id = _field(obx, 1) or "unknown"
+    lifted_id = f"v2::obx::{set_id}"
+    value_type = _field(obx, 2)
+    raw_value = _field(obx, 5)
+    attributes: dict[str, Any] = {"status": _status(_field(obx, 11))}
+    unit = _unit(_field(obx, 6))
+    if value_type in {"CWE", "CE"}:
+        coded = _concept(raw_value)
+        if coded is not None:
+            attributes["value_code"] = {
+                "system": coded.get("system"),
+                "code": coded.get("code"),
+                "display": coded.get("display"),
+            }
+        display = coded.get("display") if coded is not None else None
+        value: Any = display.lower() if isinstance(display, str) else None
+        unit = None
+    elif value_type == "NM":
+        value = _number(raw_value)
+    elif value_type == "ST":
+        lowered = _unescape(raw_value).lower()
+        if lowered == "true":
+            value = True
+        elif lowered == "false":
+            value = False
+        else:
+            value = _unescape(raw_value)
+    else:
+        value = _unescape(raw_value) if raw_value else None
+
+    reference_range = _reference_range(_field(obx, 7), unit)
+    if reference_range is not None:
+        attributes["reference_range"] = reference_range
+    interpretation = _interpretation(_field(obx, 8))
+    if interpretation is not None:
+        attributes["interpretation"] = interpretation
+
+    relationships = [("belongs_to_report", report_id)]
+    if specimen_id is not None:
+        relationships.append(("specimen", specimen_id))
+    effective = _ts_to_iso(_field(obx, 14))
+    payload = {
+        "fact_type": "observation",
+        "subject_ref": patient_id,
+        "encounter_ref": None,
+        "concept": _concept(_field(obx, 3)),
+        "value": value,
+        "unit": unit,
+        "temporal": {
+            "effective_start": effective,
+            "effective_end": None,
+            "recorded_at": None,
+            "precision": "second" if effective else None,
+        },
+        "identifiers": [],
+        "relations": [
+            {"relation_type": relation_type, "target_fact_id": target_id}
+            for relation_type, target_id in relationships
+        ],
+        "attributes": attributes,
+    }
+    return LiftedFact(
+        lifted_fact_id=lifted_id,
+        fact_type="observation",
+        subject_ref=patient_id,
+        semantic_payload=payload,
+        target_paths=(path,),
+        relationships=tuple(relationships),
+    )
+
+
+def _specimen_fact(spm: list[str], path: str, *, patient_id: str, observation_ids: list[str]) -> LiftedFact:
+    set_id = _field(spm, 1) or "1"
+    lifted_id = f"v2::spm::{set_id}"
+    identifier = _identifier_from_ei(_field(spm, 2))
+    relationships = [
+        ("specimen_for_observation", observation_id) for observation_id in observation_ids
+    ]
+    effective = _ts_to_iso(_field(spm, 17))
+    payload = {
+        "fact_type": "specimen",
+        "subject_ref": patient_id,
+        "encounter_ref": None,
+        "concept": None,
+        "value": None,
+        "unit": None,
+        "temporal": {
+            "effective_start": effective,
+            "effective_end": None,
+            "recorded_at": None,
+            "precision": "second" if effective else None,
+        },
+        "identifiers": [identifier] if identifier is not None else [],
+        "relations": [
+            {"relation_type": relation_type, "target_fact_id": target_id}
+            for relation_type, target_id in relationships
+        ],
+        "attributes": {
+            "type_label": _component(_field(spm, 4), 1),
+            "collection_method_label": _component(_field(spm, 7), 1),
+        },
+    }
+    return LiftedFact(
+        lifted_fact_id=lifted_id,
+        fact_type="specimen",
+        subject_ref=patient_id,
+        semantic_payload=payload,
+        target_paths=(path,),
+        relationships=tuple(relationships),
+    )
+
+
+class Hl7V251OruLifter:
+    """Lift the in-scope v2.5.1 ORU^R01 laboratory slice into candidates."""
+
+    @property
+    def lifter_id(self) -> str:
+        return _LIFTER_ID
+
+    @property
+    def lifter_version(self) -> str:
+        return _LIFTER_VERSION
+
+    def lift(self, artifact: str | dict[str, Any], *, artifact_id: str) -> LiftResult:
+        if not isinstance(artifact, str):
+            raise TypeError("HL7 v2 lifter requires ER7 text")
+        segments = _parse_segments(artifact)
+        if not segments or segments[0][0] != "MSH":
+            raise ValueError("HL7 v2 artifact must begin with MSH")
+        message_type = _field(segments[0], 8)
+        version = _field(segments[0], 11)
+        if not message_type.startswith("ORU^R01"):
+            raise ValueError("HL7 v2 lab lifter currently requires ORU^R01")
+        if version != "2.5.1":
+            raise ValueError("HL7 v2 lab lifter currently requires version 2.5.1")
+
+        warnings: list[LiftWarning] = []
+        pid_items = _segment_index(segments, "PID")
+        obr_items = _segment_index(segments, "OBR")
+        obx_items = _segment_index(segments, "OBX")
+        spm_items = _segment_index(segments, "SPM")
+        if len(pid_items) != 1 or len(obr_items) != 1:
+            raise ValueError("development ORU slice requires exactly one PID and one OBR")
+        if len(spm_items) > 1:
+            warnings.append(
+                LiftWarning(
+                    code="MULTIPLE_SPECIMENS_OUTSIDE_DEV_SLICE",
+                    message="Only the first SPM is lifted by the development slice.",
+                    target_paths=tuple(f"SPM[{index}]" for index, _ in spm_items),
+                )
+            )
+
+        patient = _patient_fact(pid_items[0][1], f"PID[{pid_items[0][0]}]")
+        observation_ids = [
+            f"v2::obx::{_field(segment, 1) or position + 1}"
+            for position, (_, segment) in enumerate(obx_items)
+        ]
+        specimen_id = None
+        if spm_items:
+            specimen_id = f"v2::spm::{_field(spm_items[0][1], 1) or '1'}"
+        report_id = "v2::report::1"
+
+        report = _report_fact(
+            obr_items[0][1],
+            f"OBR[{obr_items[0][0]}]",
+            patient_id=patient.lifted_fact_id,
+            observation_ids=observation_ids,
+            specimen_id=specimen_id,
+        )
+        observations = [
+            _observation_fact(
+                segment,
+                f"OBX[{segment_index}]",
+                patient_id=patient.lifted_fact_id,
+                report_id=report_id,
+                specimen_id=specimen_id,
+            )
+            for segment_index, segment in obx_items
+        ]
+        facts: list[LiftedFact] = [patient, report]
+        if spm_items:
+            facts.append(
+                _specimen_fact(
+                    spm_items[0][1],
+                    f"SPM[{spm_items[0][0]}]",
+                    patient_id=patient.lifted_fact_id,
+                    observation_ids=observation_ids,
+                )
+            )
+        facts.extend(observations)
+
+        known = {"MSH", "PID", "OBR", "OBX", "SPM"}
+        for index, segment in enumerate(segments):
+            if segment[0] not in known:
+                warnings.append(
+                    LiftWarning(
+                        code="UNLIFTED_SEGMENT",
+                        message=f"Segment {segment[0]} is outside the development slice.",
+                        target_paths=(f"segment[{index}]",),
+                    )
+                )
+
+        return LiftResult(
+            artifact_id=artifact_id,
+            lifter_id=self.lifter_id,
+            lifter_version=self.lifter_version,
+            source_standard="HL7_v2.5.1",
+            source_profile="LRI_Edition_5_ORU_R01_development_slice",
+            facts=tuple(facts),
+            warnings=tuple(warnings),
+            metadata={
+                "message_type": message_type,
+                "version": version,
+                "observation_count": len(observations),
+                "semantic_verdict_emitted": False,
+            },
+        )
