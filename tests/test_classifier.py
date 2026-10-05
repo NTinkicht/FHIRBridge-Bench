@@ -2,11 +2,16 @@ from copy import deepcopy
 
 from fhirbridge.canonical import generate_lab_scenario
 from fhirbridge.faults import (
+    corrupt_interpretation,
     corrupt_numeric_value,
     corrupt_observation_code,
     corrupt_patient_identifier,
+    corrupt_reference_range,
+    corrupt_result_status,
+    corrupt_specimen_type,
     corrupt_unit_without_conversion,
     fabricate_observation,
+    misattribute_result_to_patient,
     omit_required_observation,
     shift_observation_time,
 )
@@ -134,8 +139,60 @@ def test_seeded_temporal_fault_is_classified_as_corruption() -> None:
     )
 
 
+def test_seeded_status_fault_is_classified_as_corruption() -> None:
+    source = generate_lab_scenario("LAB-001", 8107)
+    mutated = corrupt_result_status(source, replacement_status="preliminary")
+
+    result = classify_graph(source["facts"], _target_with_representation_local_refs(mutated.graph))
+
+    assert any(
+        d.classification == "CORRUPTION" and d.error_subtype == "status"
+        for d in result.decisions
+    )
+
+
+def test_seeded_interpretation_fault_is_classified_as_corruption() -> None:
+    source = generate_lab_scenario("LAB-001", 8108)
+    mutated = corrupt_interpretation(source, replacement_code="H", replacement_display="High")
+
+    result = classify_graph(source["facts"], _target_with_representation_local_refs(mutated.graph))
+
+    assert any(
+        d.classification == "CORRUPTION"
+        and "interpretation" in d.evidence
+        for d in result.decisions
+    )
+
+
+def test_seeded_reference_range_fault_is_classified_as_corruption() -> None:
+    source = generate_lab_scenario("LAB-001", 8109)
+    mutated = corrupt_reference_range(source, high_delta=15)
+
+    result = classify_graph(source["facts"], _target_with_representation_local_refs(mutated.graph))
+
+    assert any(
+        d.classification == "CORRUPTION"
+        and "reference_range" in d.evidence
+        for d in result.decisions
+    )
+
+
+def test_seeded_specimen_type_fault_is_classified_as_corruption() -> None:
+    source = generate_lab_scenario("LAB-006", 8110)
+    mutated = corrupt_specimen_type(source, replacement_type_label="whole_blood")
+
+    result = classify_graph(source["facts"], _target_with_representation_local_refs(mutated.graph))
+
+    assert any(
+        d.classification == "CORRUPTION"
+        and d.error_subtype == "terminology"
+        and "type_label" in d.evidence
+        for d in result.decisions
+    )
+
+
 def test_seeded_omission_is_not_double_counted_as_fabrication() -> None:
-    source = generate_lab_scenario("LAB-005", 8107)
+    source = generate_lab_scenario("LAB-005", 8111)
     mutated = omit_required_observation(source)
 
     result = classify_graph(source["facts"], _target_with_representation_local_refs(mutated.graph))
@@ -145,7 +202,7 @@ def test_seeded_omission_is_not_double_counted_as_fabrication() -> None:
 
 
 def test_seeded_fabrication_is_detected_without_corrupting_supported_facts() -> None:
-    source = generate_lab_scenario("LAB-001", 8108)
+    source = generate_lab_scenario("LAB-001", 8112)
     mutated = fabricate_observation(source)
 
     result = classify_graph(source["facts"], _target_with_representation_local_refs(mutated.graph))
@@ -155,12 +212,11 @@ def test_seeded_fabrication_is_detected_without_corrupting_supported_facts() -> 
 
 
 def test_wrong_subject_has_misattribution_precedence() -> None:
-    source = generate_lab_scenario("LAB-001", 8109)
-    target_graph = deepcopy(source)
-    observation = next(f for f in target_graph["facts"] if f["fact_type"] == "observation")
-    observation["subject_ref"] = "foreign-patient"
+    source = generate_lab_scenario("LAB-001", 8113)
+    mutated = misattribute_result_to_patient(source, foreign_subject_ref="foreign-patient")
 
-    result = classify_graph(source["facts"], _target_with_representation_local_refs(target_graph))
+    result = classify_graph(source["facts"], _target_with_representation_local_refs(mutated.graph))
 
     assert "MISATTRIBUTION" in _classes(result)
     assert "FABRICATION" not in _classes(result)
+    assert "OMISSION" not in _classes(result)
