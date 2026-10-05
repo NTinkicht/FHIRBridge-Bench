@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import pytest
-
 from fhirbridge.canonical import generate_lab_scenario
 from fhirbridge.lifters import FhirR4LabLifter
 from fhirbridge.renderers import FhirR4LabRendererA
@@ -130,10 +128,10 @@ def test_renderer_does_not_encode_report_membership_through_derived_from() -> No
     )
 
 
-@pytest.mark.parametrize("template_id", ["LAB-001", "LAB-004", "LAB-006", "LAB-011"])
-def test_fhir_reference_slice_has_no_indeterminate_decisions(template_id: str) -> None:
-    _, _, _, result = _round_trip(template_id, 9100)
-
-    assert all(
-        decision.classification != "INDETERMINATE" for decision in result.decisions
-    )
+def test_fhir_reference_slice_has_no_indeterminate_decisions() -> None:
+    for index, template_id in enumerate(("LAB-001", "LAB-004", "LAB-006", "LAB-011")):
+        _, _, _, result = _round_trip(template_id, 9100 + index)
+        assert all(
+            decision.classification != "INDETERMINATE"
+            for decision in result.decisions
+        )
