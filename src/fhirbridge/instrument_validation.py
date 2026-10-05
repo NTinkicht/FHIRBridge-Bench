@@ -9,9 +9,9 @@ pilot calibration and preregistration.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from math import sqrt
-from typing import Iterable
 
 _Z_95 = 1.959963984540054
 
