@@ -194,7 +194,9 @@ def _compare_grounded_fact(
         checks["effective_time"] = {"source": source_time, "target": target_time}
         return "temporal", checks
 
-    source_attributes = source.get("attributes") if isinstance(source.get("attributes"), dict) else {}
+    source_attributes = (
+        source.get("attributes") if isinstance(source.get("attributes"), dict) else {}
+    )
     target_attributes = (
         target_payload.get("attributes")
         if isinstance(target_payload.get("attributes"), dict)
@@ -219,6 +221,31 @@ def _compare_grounded_fact(
 
     checks["grounding"] = grounding.evidence
     return None, checks
+
+
+def _ambiguity_implies_absence(source: dict[str, Any], grounding: GroundingResult) -> bool:
+    """Return true when every tied candidate contradicts a strong identity key.
+
+    This lets a missing panel member be classified as an omission when the only
+    remaining same-type candidates all carry different observation concepts.
+    It never selects one of the tied candidates.
+    """
+
+    if not grounding.candidates:
+        return False
+
+    source_has_concept = _concept_key(source) is not None
+    source_has_identifier = bool(_identifier_set(source))
+
+    if source_has_concept and all(
+        "concept" in candidate.conflicting_keys for candidate in grounding.candidates
+    ):
+        return True
+    if source_has_identifier and all(
+        "identifier" in candidate.conflicting_keys for candidate in grounding.candidates
+    ):
+        return True
+    return False
 
 
 def _looks_misattributed(
@@ -287,18 +314,35 @@ def classify_graph(
         result = grounding[source_id]
 
         if result.status == "ambiguous":
-            decisions.append(
-                SemanticDecision(
-                    decision_id=f"{source_id}:indeterminate",
-                    classification="INDETERMINATE",
-                    source_fact_ids=(source_id,),
-                    primary_endpoint_eligible=False,
-                    evidence={
-                        "rationale_code": result.rationale_code,
-                        "candidate_ids": [c.target_fact_id for c in result.candidates],
-                    },
+            if _ambiguity_implies_absence(source, result):
+                decisions.append(
+                    SemanticDecision(
+                        decision_id=f"{source_id}:omission",
+                        classification="OMISSION",
+                        source_fact_ids=(source_id,),
+                        error_subtype="other",
+                        severity=(
+                            "S3" if source.get("fact_type") == "observation" else "S2"
+                        ),
+                        evidence={
+                            "rationale_code": "NO_SEMANTICALLY_COMPATIBLE_TIED_CANDIDATE",
+                            "candidate_ids": [c.target_fact_id for c in result.candidates],
+                        },
+                    )
                 )
-            )
+            else:
+                decisions.append(
+                    SemanticDecision(
+                        decision_id=f"{source_id}:indeterminate",
+                        classification="INDETERMINATE",
+                        source_fact_ids=(source_id,),
+                        primary_endpoint_eligible=False,
+                        evidence={
+                            "rationale_code": result.rationale_code,
+                            "candidate_ids": [c.target_fact_id for c in result.candidates],
+                        },
+                    )
+                )
             continue
 
         if result.status == "unmatched":
@@ -330,7 +374,9 @@ def classify_graph(
                         classification="OMISSION",
                         source_fact_ids=(source_id,),
                         error_subtype="other",
-                        severity="S3" if source.get("fact_type") == "observation" else "S2",
+                        severity=(
+                            "S3" if source.get("fact_type") == "observation" else "S2"
+                        ),
                         evidence={"rationale_code": result.rationale_code},
                     )
                 )
@@ -374,7 +420,10 @@ def classify_graph(
                     target_fact_ids=(target.lifted_fact_id,),
                     error_subtype=subtype,
                     severity=severity,
-                    evidence={"rationale_code": f"SEMANTIC_{subtype.upper()}_MISMATCH", **evidence},
+                    evidence={
+                        "rationale_code": f"SEMANTIC_{subtype.upper()}_MISMATCH",
+                        **evidence,
+                    },
                 )
             )
         else:
