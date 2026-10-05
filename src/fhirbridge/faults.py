@@ -37,6 +37,14 @@ def _patient(graph: dict[str, Any]) -> dict[str, Any]:
     return next(fact for fact in graph["facts"] if fact.get("fact_type") == "patient_identity")
 
 
+def _report(graph: dict[str, Any]) -> dict[str, Any]:
+    return next(fact for fact in graph["facts"] if fact.get("fact_type") == "diagnostic_report")
+
+
+def _specimen(graph: dict[str, Any]) -> dict[str, Any]:
+    return next(fact for fact in graph["facts"] if fact.get("fact_type") == "specimen")
+
+
 def corrupt_numeric_value(
     graph: dict[str, Any],
     *,
@@ -146,6 +154,38 @@ def corrupt_patient_identifier(
     )
 
 
+def misattribute_result_to_patient(
+    graph: dict[str, Any],
+    *,
+    foreign_subject_ref: str = "patient-foreign-target",
+) -> MutatedGraph:
+    """F006: attach an otherwise correct result to a wrong patient reference.
+
+    This is a target-side semantic mutant. The foreign reference intentionally
+    does not become a new canonical source fact; adding such a fact would turn
+    the case into a mixed misattribution-plus-fabrication mutant.
+    """
+
+    mutated = deepcopy(graph)
+    observation = _observations(mutated)[0]
+    original = observation["subject_ref"]
+    observation["subject_ref"] = foreign_subject_ref
+    return MutatedGraph(
+        graph=mutated,
+        fault=SeededFault(
+            fault_id="F006",
+            expected_class="MISATTRIBUTION",
+            expected_severity="S3",
+            affected_fact_ids=(observation["fact_id"],),
+            mutation={
+                "field": "subject_ref",
+                "before": original,
+                "after": foreign_subject_ref,
+            },
+        ),
+    )
+
+
 def omit_required_observation(graph: dict[str, Any]) -> MutatedGraph:
     """F008: remove one observation and its direct graph relationships."""
 
@@ -210,6 +250,127 @@ def shift_observation_time(
     )
 
 
+def corrupt_result_status(
+    graph: dict[str, Any],
+    *,
+    replacement_status: str = "preliminary",
+) -> MutatedGraph:
+    """F011: change a report/result status without source support."""
+
+    mutated = deepcopy(graph)
+    observation = _observations(mutated)[0]
+    original = observation["attributes"].get("status")
+    observation["attributes"]["status"] = replacement_status
+    return MutatedGraph(
+        graph=mutated,
+        fault=SeededFault(
+            fault_id="F011",
+            expected_class="CORRUPTION",
+            expected_severity="S2",
+            affected_fact_ids=(observation["fact_id"],),
+            mutation={
+                "field": "attributes.status",
+                "before": original,
+                "after": replacement_status,
+            },
+        ),
+    )
+
+
+def corrupt_interpretation(
+    graph: dict[str, Any],
+    *,
+    replacement_code: str = "H",
+    replacement_display: str = "High",
+) -> MutatedGraph:
+    """F012: replace interpretation semantics while retaining the result value."""
+
+    mutated = deepcopy(graph)
+    observation = next(
+        fact
+        for fact in _observations(mutated)
+        if isinstance(fact.get("attributes", {}).get("interpretation"), dict)
+    )
+    original = deepcopy(observation["attributes"]["interpretation"])
+    observation["attributes"]["interpretation"] = {
+        "code": replacement_code,
+        "display": replacement_display,
+    }
+    return MutatedGraph(
+        graph=mutated,
+        fault=SeededFault(
+            fault_id="F012",
+            expected_class="CORRUPTION",
+            expected_severity="S2",
+            affected_fact_ids=(observation["fact_id"],),
+            mutation={
+                "field": "attributes.interpretation",
+                "before": original,
+                "after": deepcopy(observation["attributes"]["interpretation"]),
+            },
+        ),
+    )
+
+
+def corrupt_reference_range(
+    graph: dict[str, Any],
+    *,
+    high_delta: float = 25.0,
+) -> MutatedGraph:
+    """F013: alter one structured reference-range bound."""
+
+    mutated = deepcopy(graph)
+    observation = next(
+        fact
+        for fact in _observations(mutated)
+        if isinstance(fact.get("attributes", {}).get("reference_range"), dict)
+    )
+    reference_range = observation["attributes"]["reference_range"]
+    original = deepcopy(reference_range)
+    reference_range["high"] = reference_range["high"] + high_delta
+    return MutatedGraph(
+        graph=mutated,
+        fault=SeededFault(
+            fault_id="F013",
+            expected_class="CORRUPTION",
+            expected_severity="S2",
+            affected_fact_ids=(observation["fact_id"],),
+            mutation={
+                "field": "attributes.reference_range.high",
+                "before": original,
+                "after": deepcopy(reference_range),
+            },
+        ),
+    )
+
+
+def corrupt_specimen_type(
+    graph: dict[str, Any],
+    *,
+    replacement_type_label: str = "whole_blood",
+) -> MutatedGraph:
+    """F015: replace specimen type with a non-equivalent semantic type."""
+
+    mutated = deepcopy(graph)
+    specimen = _specimen(mutated)
+    original = specimen["attributes"].get("type_label")
+    specimen["attributes"]["type_label"] = replacement_type_label
+    return MutatedGraph(
+        graph=mutated,
+        fault=SeededFault(
+            fault_id="F015",
+            expected_class="CORRUPTION",
+            expected_severity="S2",
+            affected_fact_ids=(specimen["fact_id"],),
+            mutation={
+                "field": "attributes.type_label",
+                "before": original,
+                "after": replacement_type_label,
+            },
+        ),
+    )
+
+
 def fabricate_observation(graph: dict[str, Any]) -> MutatedGraph:
     """F001: add an unsupported but structurally plausible observation fact."""
 
@@ -228,7 +389,7 @@ def fabricate_observation(graph: dict[str, Any]) -> MutatedGraph:
     fabricated["provenance"] = deepcopy(source["provenance"])
     mutated["facts"].append(fabricated)
 
-    report = next(fact for fact in mutated["facts"] if fact.get("fact_type") == "diagnostic_report")
+    report = _report(mutated)
     report["relations"].append(
         {"relation_type": "has_result", "target_fact_id": fabricated_id}
     )
