@@ -7,8 +7,8 @@ renderers, verifier decisions, model outputs, or contract-scoring logic.
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 
 @dataclass(frozen=True)
@@ -74,10 +74,7 @@ def agreement_statistics(
         )
     ac1 = _safe_ratio(observed - expected_ac1, 1.0 - expected_ac1)
 
-    matrix = {
-        left: {right: 0 for right in labels}
-        for left in labels
-    }
+    matrix = {left: {right: 0 for right in labels} for left in labels}
     for left, right in zip(a, b, strict=True):
         matrix[left][right] += 1
 
