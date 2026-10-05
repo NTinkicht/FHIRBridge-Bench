@@ -51,9 +51,15 @@ def test_f009_report_time_omission_stays_structurally_valid_but_semantically_fai
     assert mutant.expected_classification == "OMISSION"
     assert structural.valid
     assert not semantic.faithful
-    # Field-level omission classification is intentionally not asserted yet.
-    # The current classifier recognizes the semantic failure but still needs a
-    # frozen rule for distinguishing absent required fields from altered fields.
+    assert "OMISSION" in _classes(semantic)
+    report_omissions = [
+        decision
+        for decision in semantic.decisions
+        if decision.classification == "OMISSION"
+        and decision.evidence.get("omitted_field") == "temporal.recorded_at"
+    ]
+    assert report_omissions
+    assert report_omissions[0].evidence["projectability"] == "MUST_PRESERVE"
 
 
 def test_f016_unsupported_derived_assertion_is_valid_but_fabricated() -> None:
