@@ -1,0 +1,183 @@
+scenario_set:
+  id: LAB-CORE-001
+  version: 0.1.0
+  status: draft
+  purpose: >-
+    Canonical scenario families for the first laboratory benchmark slice. These
+    are semantic scenario specifications, not rendered FHIR or HL7 v2 gold.
+  source_profile: FHIR_R4_US_Core_9.0.0
+  target_profile: HL7_v2.5.1_LRI_Ed5_ORU_R01
+  contract: contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml
+
+principles:
+  - Every scenario originates as canonical facts before rendering.
+  - No scenario is authored by copying a deterministic converter output.
+  - Scenario IDs, patient IDs, accession/order IDs, and values are synthetic.
+  - Clinical values remain plausible but are not intended for clinical decision support.
+  - INDETERMINATE facts are retained for ambiguity analysis but excluded from the primary endpoint.
+  - Confirmatory scenario values and seeds will be frozen before model inference.
+
+scenario_families:
+  - id: LAB-001
+    name: single_numeric_normal
+    description: Single atomic chemistry result with numeric value, UCUM unit, normal reference range, and final status.
+    required_fact_groups:
+      - patient_identity
+      - diagnostic_report
+      - observation_numeric
+    required_features:
+      - report_code
+      - report_status_final
+      - report_effective_time
+      - report_issued_time
+      - observation_code
+      - observation_numeric_value
+      - observation_unit
+      - observation_reference_range
+      - observation_interpretation_normal
+      - observation_status_final
+      - observation_effective_time
+    primary_endpoint_eligible: true
+
+  - id: LAB-002
+    name: single_numeric_high
+    description: Atomic numeric result above its reference range with high interpretation flag.
+    required_fact_groups: [patient_identity, diagnostic_report, observation_numeric]
+    required_features:
+      - observation_numeric_value
+      - observation_unit
+      - observation_reference_range
+      - observation_interpretation_high
+    primary_endpoint_eligible: true
+
+  - id: LAB-003
+    name: single_numeric_low
+    description: Atomic numeric result below its reference range with low interpretation flag.
+    required_fact_groups: [patient_identity, diagnostic_report, observation_numeric]
+    required_features:
+      - observation_numeric_value
+      - observation_unit
+      - observation_reference_range
+      - observation_interpretation_low
+    primary_endpoint_eligible: true
+
+  - id: LAB-004
+    name: coded_qualitative_result
+    description: Coded qualitative laboratory result such as detected/not-detected or positive/negative.
+    required_fact_groups: [patient_identity, diagnostic_report, observation_coded]
+    required_features:
+      - observation_code
+      - observation_coded_value
+      - observation_status_final
+    primary_endpoint_eligible: true
+
+  - id: LAB-005
+    name: simple_panel
+    description: One DiagnosticReport containing multiple atomic Observation results with explicit report-to-result relationships.
+    required_fact_groups: [patient_identity, diagnostic_report, observation_numeric]
+    multiplicity:
+      observations_min: 3
+      observations_max: 8
+    required_features:
+      - report_to_observation_relationships
+      - distinct_observation_codes
+      - observation_values
+    primary_endpoint_eligible: true
+
+  - id: LAB-006
+    name: specimen_linked_result
+    description: Laboratory report and result explicitly linked to a specimen with identifier, type, and collection time.
+    required_fact_groups: [patient_identity, diagnostic_report, observation_numeric, specimen]
+    required_features:
+      - specimen_identifier
+      - specimen_type
+      - specimen_collection_time
+      - report_specimen_relationship
+    primary_endpoint_eligible: true
+
+  - id: LAB-007
+    name: preliminary_report
+    description: Preliminary report with required effective and issued times and preliminary observation/report status semantics.
+    required_fact_groups: [patient_identity, diagnostic_report, observation_numeric]
+    required_features:
+      - report_status_preliminary
+      - report_effective_time
+      - report_issued_time
+      - observation_status_preliminary_or_equivalent
+    primary_endpoint_eligible: true
+
+  - id: LAB-008
+    name: corrected_report
+    description: Corrected/amended result preserving identity and clinical context while status and value reflect the corrected state.
+    required_fact_groups: [patient_identity, diagnostic_report, observation_numeric]
+    required_features:
+      - report_status_corrected_or_amended
+      - report_effective_time
+      - report_issued_time
+      - observation_status_corrected_or_equivalent
+    primary_endpoint_eligible: true
+
+  - id: LAB-009
+    name: timezone_normalization
+    description: Report and observation timestamps expressed with explicit offsets to test normalization without semantic time drift.
+    required_fact_groups: [patient_identity, diagnostic_report, observation_numeric]
+    required_features:
+      - timezone_aware_report_time
+      - timezone_aware_observation_time
+    allowed_transformations:
+      - NORMALIZE
+    primary_endpoint_eligible: true
+
+  - id: LAB-010
+    name: identifier_namespace_preservation
+    description: Patient and specimen identifiers use explicit namespaces/assigning authorities to test identity preservation beyond raw value strings.
+    required_fact_groups: [patient_identity, specimen, diagnostic_report, observation_numeric]
+    required_features:
+      - patient_identifier_namespace
+      - specimen_identifier_namespace
+    primary_endpoint_eligible: true
+
+  - id: LAB-011
+    name: repeated_observations_same_code
+    description: Same analyte code repeated at distinct times or contexts to test relationship and temporal attribution.
+    required_fact_groups: [patient_identity, diagnostic_report, observation_numeric]
+    multiplicity:
+      observations_min: 2
+    required_features:
+      - same_observation_code
+      - distinct_effective_times
+      - distinct_values
+    primary_endpoint_eligible: true
+
+  - id: LAB-012
+    name: component_topology_ambiguity
+    description: Observation component/panel topology for which more than one v2 serialization may be defensible.
+    required_fact_groups: [patient_identity, diagnostic_report, observation_component]
+    expected_contract_state: INDETERMINATE
+    purpose_in_study: ambiguity_and_contract_sensitivity
+    primary_endpoint_eligible: false
+
+planned_variation_axes:
+  patient_identifier_namespace:
+    levels: [single_namespace, multiple_namespaces]
+  observation_cardinality:
+    levels: [single, small_panel, repeated_same_code]
+  value_representation:
+    levels: [numeric, coded_qualitative]
+  result_interpretation:
+    levels: [normal, high, low, absent_when_not_applicable]
+  report_status:
+    levels: [preliminary, final, corrected]
+  specimen_context:
+    levels: [absent, present]
+  timestamp_offset:
+    levels: [utc, positive_offset, negative_offset]
+  implementation_variant:
+    levels: [canonical_profile, held_out_variant_a, held_out_variant_b]
+
+freeze_requirements:
+  - contract_v1_frozen
+  - canonical_schema_frozen
+  - scenario_generation_seed_manifest_created
+  - no_model_outputs_seen_for_confirmatory_cases
+  - held_out_variants_not_exposed_to_mapping_aware_prompts
