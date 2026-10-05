@@ -12,19 +12,23 @@ from .equivalence import (
 )
 from .grounding import ground_graph, ground_source_fact, score_candidate
 from .model import GroundingCandidate, GroundingResult, LiftedFact
+from .policy import FactComparisonPolicy, VerificationPolicy, compile_verification_policy
 
 __all__ = [
     "ClassificationResult",
     "EquivalenceResult",
     "ExactTerminologyEquivalence",
     "ExactUnitEquivalence",
+    "FactComparisonPolicy",
     "GroundingCandidate",
     "GroundingResult",
     "LiftedFact",
     "SemanticDecision",
     "TerminologyEquivalenceProvider",
     "UnitEquivalenceProvider",
+    "VerificationPolicy",
     "classify_graph",
+    "compile_verification_policy",
     "ground_graph",
     "ground_source_fact",
     "identifiers_equivalent",
