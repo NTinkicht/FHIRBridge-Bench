@@ -17,8 +17,9 @@ from typing import Any
 from .equivalence import instants_equivalent
 from .grounding import ground_graph, score_candidate
 from .model import GroundingResult, LiftedFact
+from .policy import VerificationPolicy
 
-_VERIFIER_VERSION = "0.2.0-dev"
+_VERIFIER_VERSION = "0.3.0-dev"
 
 
 @dataclass(frozen=True)
@@ -155,61 +156,83 @@ def _translated_required_relations(
     return translated
 
 
+def _scores(
+    policy: VerificationPolicy | None,
+    source: dict[str, Any],
+    field: str,
+) -> bool:
+    if policy is None:
+        return True
+    fact_type = source.get("fact_type")
+    return isinstance(fact_type, str) and policy.scores(fact_type, field)
+
+
 def _compare_grounded_fact(
     source: dict[str, Any],
     target: LiftedFact,
     *,
     reference_map: dict[str, str],
     grounding: GroundingResult,
+    policy: VerificationPolicy | None,
 ) -> tuple[str | None, dict[str, Any]]:
     """Return the first deterministic semantic mismatch, if any.
 
     The order is intentional and stable. Attribution is handled before this
     function. For ordinary corruption we prefer clinically concrete subtypes
-    over a generic payload-difference label.
+    over a generic payload-difference label. When ``policy`` is supplied, only
+    fields declared projectable by the contract are scored.
     """
 
     target_payload = target.semantic_payload
     checks: dict[str, Any] = {}
 
-    source_concept = _concept_key(source)
-    target_concept = _concept_key(target_payload)
-    if source_concept != target_concept:
-        checks["concept"] = {"source": source_concept, "target": target_concept}
-        return "terminology", checks
+    if _scores(policy, source, "concept"):
+        source_concept = _concept_key(source)
+        target_concept = _concept_key(target_payload)
+        if source_concept != target_concept:
+            checks["concept"] = {"source": source_concept, "target": target_concept}
+            return "terminology", checks
 
-    source_identifiers = _identifier_set(source)
-    target_identifiers = _identifier_set(target_payload)
-    if source_identifiers != target_identifiers:
-        checks["identifiers"] = {
-            "source": sorted(map(str, source_identifiers)),
-            "target": sorted(map(str, target_identifiers)),
-        }
-        return "identifier", checks
+    if _scores(policy, source, "identifiers"):
+        source_identifiers = _identifier_set(source)
+        target_identifiers = _identifier_set(target_payload)
+        if source_identifiers != target_identifiers:
+            checks["identifiers"] = {
+                "source": sorted(map(str, source_identifiers)),
+                "target": sorted(map(str, target_identifiers)),
+            }
+            return "identifier", checks
 
-    source_value = source.get("value")
-    target_value = target_payload.get("value")
-    if source_value != target_value:
-        checks["value"] = {"source": source_value, "target": target_value}
-        return "value", checks
+    if _scores(policy, source, "value"):
+        source_value = source.get("value")
+        target_value = target_payload.get("value")
+        if source_value != target_value:
+            checks["value"] = {"source": source_value, "target": target_value}
+            return "value", checks
 
-    source_unit = source.get("unit")
-    target_unit = target_payload.get("unit")
-    if source_unit != target_unit:
-        checks["unit"] = {"source": source_unit, "target": target_unit}
-        return "unit", checks
+    if _scores(policy, source, "unit"):
+        source_unit = source.get("unit")
+        target_unit = target_payload.get("unit")
+        if source_unit != target_unit:
+            checks["unit"] = {"source": source_unit, "target": target_unit}
+            return "unit", checks
 
-    source_effective = _temporal_value(source, "effective_start")
-    target_effective = _temporal_value(target_payload, "effective_start")
-    if not _same_time(source_effective, target_effective):
-        checks["effective_time"] = {"source": source_effective, "target": target_effective}
-        return "temporal", checks
+    if _scores(policy, source, "temporal.effective_start"):
+        source_effective = _temporal_value(source, "effective_start")
+        target_effective = _temporal_value(target_payload, "effective_start")
+        if not _same_time(source_effective, target_effective):
+            checks["effective_time"] = {
+                "source": source_effective,
+                "target": target_effective,
+            }
+            return "temporal", checks
 
-    source_recorded = _temporal_value(source, "recorded_at")
-    target_recorded = _temporal_value(target_payload, "recorded_at")
-    if not _same_time(source_recorded, target_recorded):
-        checks["recorded_at"] = {"source": source_recorded, "target": target_recorded}
-        return "temporal", checks
+    if _scores(policy, source, "temporal.recorded_at"):
+        source_recorded = _temporal_value(source, "recorded_at")
+        target_recorded = _temporal_value(target_payload, "recorded_at")
+        if not _same_time(source_recorded, target_recorded):
+            checks["recorded_at"] = {"source": source_recorded, "target": target_recorded}
+            return "temporal", checks
 
     source_attributes = (
         source.get("attributes") if isinstance(source.get("attributes"), dict) else {}
@@ -220,11 +243,12 @@ def _compare_grounded_fact(
         else {}
     )
 
-    source_value_code = _coded_value_key(source_attributes)
-    target_value_code = _coded_value_key(target_attributes)
-    if source_value_code != target_value_code:
-        checks["value_code"] = {"source": source_value_code, "target": target_value_code}
-        return "terminology", checks
+    if _scores(policy, source, "attributes.value_code"):
+        source_value_code = _coded_value_key(source_attributes)
+        target_value_code = _coded_value_key(target_attributes)
+        if source_value_code != target_value_code:
+            checks["value_code"] = {"source": source_value_code, "target": target_value_code}
+            return "terminology", checks
 
     attribute_subtypes = {
         "status": "status",
@@ -234,15 +258,22 @@ def _compare_grounded_fact(
         "name": "other",
         "type_label": "terminology",
         "collection_method_label": "terminology",
+        "collection_quantity": "unit",
     }
     for key, subtype in attribute_subtypes.items():
-        if key in source_attributes and source_attributes.get(key) != target_attributes.get(key):
+        policy_field = f"attributes.{key}"
+        if not _scores(policy, source, policy_field):
+            continue
+        if source_attributes.get(key) != target_attributes.get(key):
             checks[key] = {
                 "source": source_attributes.get(key),
                 "target": target_attributes.get(key),
             }
             return subtype, checks
 
+    # Relationship comparison remains independently enforced during grounding.
+    # It is not yet contract-filtered because relationship-specific rules are
+    # still being added to Contract v0.2 before the Protocol v1.0 freeze.
     required_relations = _translated_required_relations(source, reference_map)
     target_relations = set(target.relationships)
     missing_relations = required_relations - target_relations
@@ -251,6 +282,11 @@ def _compare_grounded_fact(
         return "relationship", checks
 
     checks["grounding"] = grounding.evidence
+    if policy is not None:
+        checks["verification_policy"] = {
+            "contract_id": policy.contract_id,
+            "contract_version": policy.contract_version,
+        }
     return None, checks
 
 
@@ -285,13 +321,7 @@ def _looks_misattributed(
     *,
     reference_map: dict[str, str],
 ) -> LiftedFact | None:
-    """Find one strong same-fact candidate whose subject attribution conflicts.
-
-    This secondary pass exists because the conservative grounding threshold may
-    intentionally reject a wrong-patient candidate. A uniquely strong candidate
-    with matching concept/time/relationships but conflicting subject identity is
-    classified as MISATTRIBUTION rather than as omission plus fabrication.
-    """
+    """Find one strong same-fact candidate whose subject attribution conflicts."""
 
     candidates: list[tuple[int, LiftedFact]] = []
     for target in targets:
@@ -316,13 +346,15 @@ def classify_graph(
     target_facts: list[LiftedFact],
     *,
     minimum_grounding_score: int = 10,
+    policy: VerificationPolicy | None = None,
 ) -> ClassificationResult:
     """Classify semantic outcomes for one canonical source and lifted target.
 
     Precedence is enforced as MISATTRIBUTION > CORRUPTION > OMISSION >
     FABRICATION. Extra target facts are therefore considered fabrication only
     after all source facts have had an opportunity to ground or be recognized as
-    misattributed.
+    misattributed. When provided, ``policy`` limits field comparisons to the
+    projectability contract while preserving independent grounding evidence.
     """
 
     grounding = ground_graph(
@@ -440,6 +472,7 @@ def classify_graph(
             target,
             reference_map=reference_map,
             grounding=result,
+            policy=policy,
         )
         if subtype is not None:
             severity = "S3" if subtype in {"value", "unit", "identifier"} else "S2"
