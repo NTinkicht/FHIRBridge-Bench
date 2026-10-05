@@ -4,7 +4,6 @@ import fhirbridge.renderers
 import fhirbridge.schema_validation
 import fhirbridge.verifier
 
-
 _CONTRACT_PATH = "contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml"
 
 
