@@ -155,7 +155,10 @@ def _observation_resource(
     unit = fact.get("unit")
     value_code = attributes.get("value_code")
     if isinstance(value_code, dict):
-        resource["valueCodeableConcept"] = _codeable_concept(value_code)
+        coded_value = _codeable_concept(value_code)
+        if value is not None:
+            coded_value["text"] = str(value)
+        resource["valueCodeableConcept"] = coded_value
     elif isinstance(value, (int, float)) and not isinstance(value, bool):
         resource["valueQuantity"] = _quantity(value, unit)
     elif isinstance(value, bool):
@@ -195,13 +198,9 @@ def _observation_resource(
             }
         ]
 
-    report_refs = _find_relation(fact, "belongs_to_report")
-    if report_refs:
-        report_fact_id = report_refs[0]
-        if report_fact_id in resource_ids:
-            report_type, report_id = resource_ids[report_fact_id]
-            resource["derivedFrom"] = [_reference(report_type, report_id)]
-
+    # Report membership is represented by DiagnosticReport.result. We do not
+    # encode a synthetic inverse through Observation.derivedFrom because a
+    # DiagnosticReport is not the semantic source of the observation result.
     specimen_refs = _find_relation(fact, "specimen")
     if specimen_refs:
         specimen_fact_id = specimen_refs[0]
