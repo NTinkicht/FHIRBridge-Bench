@@ -41,7 +41,15 @@ _REQUIRED_PROJECTABILITY = {"MUST_PRESERVE", "MAY_TRANSFORM"}
 
 
 def _present(value: Any) -> bool:
-    return value is not None and value not in {""}
+    """Whether a lifted/source field contains an actual assertion."""
+
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return value != ""
+    if isinstance(value, (list, dict, tuple, set, frozenset)):
+        return len(value) > 0
+    return True
 
 
 def _mismatch_field(decision: SemanticDecision) -> tuple[str, Any, Any] | None:
