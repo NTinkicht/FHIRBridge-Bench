@@ -1,0 +1,103 @@
+manifest:
+  schema_version: 0.1.0
+  status: candidate
+  purpose: >-
+    Candidate dependency pins for FHIRBridge-Bench Protocol v1.0. These values
+    are not frozen until the protocol freeze gate is satisfied and artifact
+    hashes / exact local implementations are recorded.
+
+terminology:
+  loinc:
+    content_version: "2.83"
+    release_date: "2026-08-19"
+    confirmatory_mode: local_snapshot
+    live_fhir_service_role: audit_only
+    live_fhir_service_maturity: beta
+    local_snapshot_sha256: unresolved
+    local_provider_implementation: unresolved
+    local_provider_version: unresolved
+    license_review: required_before_public_release
+
+  hl7_terminology:
+    package: hl7.terminology
+    version: "7.4.0"
+    r4_package: hl7.terminology.r4
+    status_date: "2026-09-22"
+    package_sha256: unresolved
+
+units:
+  ucum:
+    content_version: "2.2"
+    essence_revision_date: "2024-06-17"
+    essence_sha256: unresolved
+    implementation: unresolved
+    implementation_version: unresolved
+    official_functional_tests_passed: false
+    project_lab_conversion_matrix_passed: false
+
+structural_validation:
+  fhir:
+    validator_wrapper: org.hl7.fhir.validator-wrapper
+    validator_wrapper_version: "1.0.82"
+    validator_wrapper_commit: fe316e7
+    core_version: "6.10.0"
+    validator_artifact_sha256: unresolved
+    runtime: unresolved
+    packages:
+      fhir_r4: unresolved
+      us_core: unresolved
+      hl7_terminology_r4: "7.4.0"
+    network_during_confirmatory_scoring: disabled_where_practical
+
+  hl7v2:
+    target: HL7_v2.5.1_LRI_Ed5_ORU_R01
+    errata: 2024DEC
+    validator: unresolved
+    validator_version: unresolved
+    profile_artifact: unresolved
+    profile_artifact_sha256: unresolved
+    support_level: unresolved
+
+semantic_policy:
+  code_equivalence:
+    exact_code_system_pair: allowed
+    frozen_approved_mapping: allowed
+    reviewed_contract_equivalence: allowed
+    display_string_only: forbidden
+    lexical_similarity_only: forbidden
+    embedding_similarity_only: forbidden
+    hierarchy_proximity_only: forbidden
+    unversioned_live_translate_only: forbidden
+
+  unit_equivalence:
+    exact_unit_with_value_tolerance: allowed
+    ucum_conversion: candidate_until_provider_qualified
+    joint_value_unit_equivalence_required: true
+
+network_policy:
+  confirmatory_primary_oracle: local_pinned_dependencies
+  live_terminology_services: audit_only
+  silent_network_fallback: forbidden
+
+freeze_gate:
+  unresolved_token: unresolved
+  required_before_status_frozen:
+    - terminology.loinc.local_snapshot_sha256
+    - terminology.loinc.local_provider_implementation
+    - terminology.loinc.local_provider_version
+    - terminology.hl7_terminology.package_sha256
+    - units.ucum.essence_sha256
+    - units.ucum.implementation
+    - units.ucum.implementation_version
+    - structural_validation.fhir.validator_artifact_sha256
+    - structural_validation.fhir.runtime
+    - structural_validation.fhir.packages.fhir_r4
+    - structural_validation.fhir.packages.us_core
+    - structural_validation.hl7v2.validator
+    - structural_validation.hl7v2.validator_version
+    - structural_validation.hl7v2.profile_artifact
+    - structural_validation.hl7v2.profile_artifact_sha256
+    - structural_validation.hl7v2.support_level
+  required_boolean_true_before_status_frozen:
+    - units.ucum.official_functional_tests_passed
+    - units.ucum.project_lab_conversion_matrix_passed
