@@ -54,7 +54,9 @@ def _concept(codeable: Any) -> dict[str, Any] | None:
         "system": coding.get("system") if coding else None,
         "code": coding.get("code") if coding else None,
         "display": (
-            coding.get("display") if coding and coding.get("display") is not None else codeable.get("text")
+            coding.get("display")
+            if coding and coding.get("display") is not None
+            else codeable.get("text")
         ),
         "local_code": None,
     }
@@ -99,7 +101,9 @@ def _unit_from_quantity(quantity: Any) -> dict[str, Any] | None:
     }
 
 
-def _observation_value(resource: dict[str, Any]) -> tuple[Any, dict[str, Any] | None, dict[str, Any]]:
+def _observation_value(
+    resource: dict[str, Any],
+) -> tuple[Any, dict[str, Any] | None, dict[str, Any]]:
     attributes: dict[str, Any] = {}
     quantity = resource.get("valueQuantity")
     if isinstance(quantity, dict):
@@ -166,7 +170,11 @@ def _patient_fact(resource: dict[str, Any], path: str) -> LiftedFact:
     resource_id = str(resource["id"])
     lifted_id = _local_id("Patient", resource_id)
     names = resource.get("name", [])
-    name = deepcopy(names[0]) if isinstance(names, list) and names and isinstance(names[0], dict) else None
+    name = (
+        deepcopy(names[0])
+        if isinstance(names, list) and names and isinstance(names[0], dict)
+        else None
+    )
     birth_date = resource.get("birthDate")
     payload = {
         "fact_type": "patient_identity",
@@ -194,7 +202,12 @@ def _patient_fact(resource: dict[str, Any], path: str) -> LiftedFact:
     )
 
 
-def _observation_fact(resource: dict[str, Any], path: str) -> LiftedFact:
+def _observation_fact(
+    resource: dict[str, Any],
+    path: str,
+    *,
+    observation_report_links: dict[str, list[str]],
+) -> LiftedFact:
     resource_id = str(resource["id"])
     lifted_id = _local_id("Observation", resource_id)
     value, unit, value_attributes = _observation_value(resource)
@@ -206,13 +219,10 @@ def _observation_fact(resource: dict[str, Any], path: str) -> LiftedFact:
     if interpretation is not None:
         attributes["interpretation"] = interpretation
 
-    relationships: list[tuple[str, str]] = []
-    derived_from = resource.get("derivedFrom", [])
-    if isinstance(derived_from, list):
-        for reference in derived_from:
-            target = _reference_id(reference)
-            if target is not None and target.startswith("fhir::DiagnosticReport/"):
-                relationships.append(("belongs_to_report", target))
+    relationships: list[tuple[str, str]] = [
+        ("belongs_to_report", report_id)
+        for report_id in observation_report_links.get(lifted_id, [])
+    ]
     specimen = _reference_id(resource.get("specimen"))
     if specimen is not None:
         relationships.append(("specimen", specimen))
@@ -302,7 +312,9 @@ def _specimen_fact(
 ) -> LiftedFact:
     resource_id = str(resource["id"])
     lifted_id = _local_id("Specimen", resource_id)
-    collection = resource.get("collection") if isinstance(resource.get("collection"), dict) else {}
+    collection = (
+        resource.get("collection") if isinstance(resource.get("collection"), dict) else {}
+    )
     specimen_type = resource.get("type") if isinstance(resource.get("type"), dict) else {}
     method = collection.get("method") if isinstance(collection.get("method"), dict) else {}
     relationships = tuple(
@@ -342,6 +354,40 @@ def _specimen_fact(
     )
 
 
+def _inverse_report_links(
+    entries: list[tuple[int, dict[str, Any]]],
+) -> dict[str, list[str]]:
+    links: dict[str, list[str]] = {}
+    for _, resource in entries:
+        if resource.get("resourceType") != "DiagnosticReport" or resource.get("id") is None:
+            continue
+        report_id = _local_id("DiagnosticReport", str(resource["id"]))
+        results = resource.get("result", [])
+        if not isinstance(results, list):
+            continue
+        for reference in results:
+            observation_id = _reference_id(reference)
+            if observation_id is None or not observation_id.startswith("fhir::Observation/"):
+                continue
+            links.setdefault(observation_id, []).append(report_id)
+    return links
+
+
+def _inverse_specimen_links(
+    entries: list[tuple[int, dict[str, Any]]],
+) -> dict[str, list[str]]:
+    links: dict[str, list[str]] = {}
+    for _, resource in entries:
+        if resource.get("resourceType") != "Observation" or resource.get("id") is None:
+            continue
+        specimen_id = _reference_id(resource.get("specimen"))
+        if specimen_id is None:
+            continue
+        observation_id = _local_id("Observation", str(resource["id"]))
+        links.setdefault(specimen_id, []).append(observation_id)
+    return links
+
+
 class FhirR4LabLifter:
     """Lift the in-scope FHIR R4 laboratory slice into verifier candidates."""
 
@@ -361,16 +407,8 @@ class FhirR4LabLifter:
 
         warnings: list[LiftWarning] = []
         entries = _resource_entries(artifact)
-
-        observation_specimen_links: dict[str, list[str]] = {}
-        for _, resource in entries:
-            if resource.get("resourceType") != "Observation" or resource.get("id") is None:
-                continue
-            specimen_id = _reference_id(resource.get("specimen"))
-            if specimen_id is None:
-                continue
-            observation_id = _local_id("Observation", str(resource["id"]))
-            observation_specimen_links.setdefault(specimen_id, []).append(observation_id)
+        observation_report_links = _inverse_report_links(entries)
+        observation_specimen_links = _inverse_specimen_links(entries)
 
         facts: list[LiftedFact] = []
         for index, resource in entries:
@@ -389,7 +427,13 @@ class FhirR4LabLifter:
             if resource_type == "Patient":
                 facts.append(_patient_fact(resource, path))
             elif resource_type == "Observation":
-                facts.append(_observation_fact(resource, path))
+                facts.append(
+                    _observation_fact(
+                        resource,
+                        path,
+                        observation_report_links=observation_report_links,
+                    )
+                )
             elif resource_type == "DiagnosticReport":
                 facts.append(_report_fact(resource, path))
             elif resource_type == "Specimen":
