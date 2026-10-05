@@ -11,11 +11,8 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import Any
 
-from .classifier import (
-    ClassificationResult,
-    SemanticDecision,
-    classify_graph as _classify_graph_base,
-)
+from .classifier import ClassificationResult, SemanticDecision
+from .classifier import classify_graph as _classify_graph_base
 from .model import LiftedFact
 from .policy import VerificationPolicy
 
