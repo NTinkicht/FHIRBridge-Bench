@@ -115,8 +115,30 @@ def test_seeded_code_fault_is_classified_as_corruption() -> None:
     )
 
 
+def test_coded_result_value_code_is_compared_independently_of_display() -> None:
+    source = generate_lab_scenario("LAB-004", 8105)
+    target_graph = deepcopy(source)
+    observation = next(
+        fact for fact in target_graph["facts"] if fact["fact_type"] == "observation"
+    )
+    observation["attributes"]["value_code"]["code"] = "POS"
+    observation["attributes"]["value_code"]["display"] = "Positive"
+
+    result = classify_graph(
+        source["facts"],
+        _target_with_representation_local_refs(target_graph),
+    )
+
+    assert any(
+        decision.classification == "CORRUPTION"
+        and decision.error_subtype == "terminology"
+        and "value_code" in decision.evidence
+        for decision in result.decisions
+    )
+
+
 def test_seeded_identifier_fault_is_classified_as_corruption() -> None:
-    source = generate_lab_scenario("LAB-001", 8105)
+    source = generate_lab_scenario("LAB-001", 8106)
     mutated = corrupt_patient_identifier(source)
 
     result = classify_graph(source["facts"], _target_with_representation_local_refs(mutated.graph))
@@ -128,7 +150,7 @@ def test_seeded_identifier_fault_is_classified_as_corruption() -> None:
 
 
 def test_seeded_temporal_fault_is_classified_as_corruption() -> None:
-    source = generate_lab_scenario("LAB-001", 8106)
+    source = generate_lab_scenario("LAB-001", 8107)
     mutated = shift_observation_time(source, minutes=45)
 
     result = classify_graph(source["facts"], _target_with_representation_local_refs(mutated.graph))
@@ -139,8 +161,29 @@ def test_seeded_temporal_fault_is_classified_as_corruption() -> None:
     )
 
 
+def test_report_recorded_timestamp_is_part_of_semantic_fidelity() -> None:
+    source = generate_lab_scenario("LAB-001", 8108)
+    target_graph = deepcopy(source)
+    report = next(
+        fact for fact in target_graph["facts"] if fact["fact_type"] == "diagnostic_report"
+    )
+    report["temporal"]["recorded_at"] = "2026-01-15T19:00:00+00:00"
+
+    result = classify_graph(
+        source["facts"],
+        _target_with_representation_local_refs(target_graph),
+    )
+
+    assert any(
+        decision.classification == "CORRUPTION"
+        and decision.error_subtype == "temporal"
+        and "recorded_at" in decision.evidence
+        for decision in result.decisions
+    )
+
+
 def test_seeded_status_fault_is_classified_as_corruption() -> None:
-    source = generate_lab_scenario("LAB-001", 8107)
+    source = generate_lab_scenario("LAB-001", 8109)
     mutated = corrupt_result_status(source, replacement_status="preliminary")
 
     result = classify_graph(source["facts"], _target_with_representation_local_refs(mutated.graph))
@@ -152,7 +195,7 @@ def test_seeded_status_fault_is_classified_as_corruption() -> None:
 
 
 def test_seeded_interpretation_fault_is_classified_as_corruption() -> None:
-    source = generate_lab_scenario("LAB-001", 8108)
+    source = generate_lab_scenario("LAB-001", 8110)
     mutated = corrupt_interpretation(source, replacement_code="H", replacement_display="High")
 
     result = classify_graph(source["facts"], _target_with_representation_local_refs(mutated.graph))
@@ -165,7 +208,7 @@ def test_seeded_interpretation_fault_is_classified_as_corruption() -> None:
 
 
 def test_seeded_reference_range_fault_is_classified_as_corruption() -> None:
-    source = generate_lab_scenario("LAB-001", 8109)
+    source = generate_lab_scenario("LAB-001", 8111)
     mutated = corrupt_reference_range(source, high_delta=15)
 
     result = classify_graph(source["facts"], _target_with_representation_local_refs(mutated.graph))
@@ -178,7 +221,7 @@ def test_seeded_reference_range_fault_is_classified_as_corruption() -> None:
 
 
 def test_seeded_specimen_type_fault_is_classified_as_corruption() -> None:
-    source = generate_lab_scenario("LAB-006", 8110)
+    source = generate_lab_scenario("LAB-006", 8112)
     mutated = corrupt_specimen_type(source, replacement_type_label="whole_blood")
 
     result = classify_graph(source["facts"], _target_with_representation_local_refs(mutated.graph))
@@ -192,7 +235,7 @@ def test_seeded_specimen_type_fault_is_classified_as_corruption() -> None:
 
 
 def test_seeded_omission_is_not_double_counted_as_fabrication() -> None:
-    source = generate_lab_scenario("LAB-005", 8111)
+    source = generate_lab_scenario("LAB-005", 8113)
     mutated = omit_required_observation(source)
 
     result = classify_graph(source["facts"], _target_with_representation_local_refs(mutated.graph))
@@ -202,7 +245,7 @@ def test_seeded_omission_is_not_double_counted_as_fabrication() -> None:
 
 
 def test_seeded_fabrication_is_detected_without_corrupting_supported_facts() -> None:
-    source = generate_lab_scenario("LAB-001", 8112)
+    source = generate_lab_scenario("LAB-001", 8114)
     mutated = fabricate_observation(source)
 
     result = classify_graph(source["facts"], _target_with_representation_local_refs(mutated.graph))
@@ -212,7 +255,7 @@ def test_seeded_fabrication_is_detected_without_corrupting_supported_facts() -> 
 
 
 def test_wrong_subject_has_misattribution_precedence() -> None:
-    source = generate_lab_scenario("LAB-001", 8113)
+    source = generate_lab_scenario("LAB-001", 8115)
     mutated = misattribute_result_to_patient(source, foreign_subject_ref="foreign-patient")
 
     result = classify_graph(source["facts"], _target_with_representation_local_refs(mutated.graph))
