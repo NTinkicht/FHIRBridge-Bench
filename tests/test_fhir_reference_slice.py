@@ -1,22 +1,22 @@
-from fhirbridge.canonical import generate_lab_scenario
-from fhirbridge.lifters import FhirR4LabLifter
-from fhirbridge.renderers import FhirR4LabRendererA
-from fhirbridge.schema_validation import load_yaml
-from fhirbridge.verifier import classify_graph
+import fhirbridge.canonical
+import fhirbridge.lifters
+import fhirbridge.renderers
+import fhirbridge.schema_validation
+import fhirbridge.verifier
 
 
 _CONTRACT_PATH = "contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml"
 
 
 def _round_trip(template_id: str, seed: int):
-    graph = generate_lab_scenario(template_id, seed)
-    contract = load_yaml(_CONTRACT_PATH)
-    rendered = FhirR4LabRendererA().render(graph, contract=contract)
-    lifted = FhirR4LabLifter().lift(
+    graph = fhirbridge.canonical.generate_lab_scenario(template_id, seed)
+    contract = fhirbridge.schema_validation.load_yaml(_CONTRACT_PATH)
+    rendered = fhirbridge.renderers.FhirR4LabRendererA().render(graph, contract=contract)
+    lifted = fhirbridge.lifters.FhirR4LabLifter().lift(
         rendered.artifact,
         artifact_id=f"{template_id}-{seed}-fhir-a",
     )
-    result = classify_graph(graph["facts"], list(lifted.facts))
+    result = fhirbridge.verifier.classify_graph(graph["facts"], list(lifted.facts))
     return graph, rendered, lifted, result
 
 
