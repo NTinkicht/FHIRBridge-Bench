@@ -136,6 +136,16 @@ Before differential comparison, the implementer must record:
 - any accidental exposure or unavoidable shared utility;
 - known unsupported cases.
 
+The declaration must validate against:
+
+- `renderer_validation/schema/renderer_implementation_declaration.schema.json`
+
+A non-assertive completion template is provided at:
+
+- `renderer_validation/examples/renderer_b_declaration_template.yaml`
+
+The template is not an independence claim. The independent implementer must replace all placeholders, record any exposure truthfully, and set `declaration_complete: true` only after the initial clean-room implementation and tests have been committed.
+
 ## Differential comparison phase
 
 Only after Renderer B's implementation and initial tests are committed may the two renderers be compared.
@@ -152,6 +162,12 @@ For every disagreement, record:
 - adjudication decision;
 - whether the affected rule must become `INDETERMINATE` or receive an amendment before freeze.
 
+Each differential record must validate against:
+
+- `renderer_validation/schema/renderer_disagreement.schema.json`
+
+The controlled vocabulary intentionally forbids majority-vote resolution and preserves `CONTRACT_AMBIGUITY` and `INDETERMINATE` as explicit outcomes. An external converter can be recorded only as a comparator and the schema requires `used_as_ground_truth: false`.
+
 Do not silently modify Renderer B to match Renderer A.
 
 ## External converter use
@@ -162,10 +178,10 @@ After clean-room implementation, one or more external converters may be used as 
 
 Renderer B is considered ready for the Protocol v1.0 freeze only when:
 
-- independence declaration is archived;
+- independence declaration is archived and schema-valid;
 - supported scenario tests pass;
 - structural/profile validation is documented;
 - differential comparison is complete on the development scenario set;
-- every substantive disagreement is logged and adjudicated;
+- every substantive disagreement is logged in a schema-valid record and adjudicated;
 - no contract rule is changed merely to make the two implementations agree;
 - any unresolved standards ambiguity is marked `INDETERMINATE` for the primary endpoint.
