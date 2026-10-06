@@ -1,0 +1,64 @@
+schema_version: "0.1.0"
+manifest_id: "FREEZE-TO-BE-ASSIGNED"
+freeze_timestamp: null
+protocol_version: "TO_BE_FROZEN"
+repository_commit: "0000000"
+freeze_complete: false
+instrument_components:
+  projectability_contract:
+    artifact_id: "projectability-contract"
+    version: "TO_BE_FROZEN"
+    path_or_ref: "contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml"
+    sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  verifier:
+    artifact_id: "semantic-verifier"
+    version: "TO_BE_FROZEN"
+    path_or_ref: "src/fhirbridge/verifier"
+    sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  fhir_lifter:
+    artifact_id: "fhir-r4-lifter"
+    version: "TO_BE_FROZEN"
+    path_or_ref: "src/fhirbridge/lifters/fhir_r4.py"
+    sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  hl7v2_lifter:
+    artifact_id: "hl7-v251-oru-lifter"
+    version: "TO_BE_FROZEN"
+    path_or_ref: "src/fhirbridge/lifters/hl7v251_oru.py"
+    sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  canonical_schema:
+    artifact_id: "canonical-clinical-fact-graph-schema"
+    version: "TO_BE_FROZEN"
+    path_or_ref: "canonical/schema/clinical_fact_graph.schema.yaml"
+    sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  severity_policy:
+    artifact_id: "severity-policy"
+    version: "TO_BE_FROZEN"
+    path_or_ref: "TO_BE_FROZEN"
+    sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  precedence_policy:
+    artifact_id: "error-precedence-policy"
+    version: "TO_BE_FROZEN"
+    path_or_ref: "TO_BE_FROZEN"
+    sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+dependencies: []
+sealed_set:
+  split: "sealed_test"
+  bundle_id: "SEALED-TO-BE-ASSIGNED"
+  bundle_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  case_count: 0
+  case_manifest_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  opened: false
+  opened_at: null
+  opened_by_role_ids: []
+  sampling_notes: null
+  enrichment_or_weighting_plan_ref: null
+blinding:
+  role_ids: []
+  model_identity_hidden: true
+  generation_strategy_hidden: true
+  verifier_verdict_hidden: true
+  claimed_provenance_hidden: true
+  other_reviewer_labels_hidden: true
+  controls_verified: false
+acceptance_gate: null
+post_freeze_amendments: []
