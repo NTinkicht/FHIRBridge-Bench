@@ -48,7 +48,7 @@ def test_contract_policy_includes_declared_fields_and_excludes_report_identifier
     assert not policy.scores("diagnostic_report", "identifiers")
 
 
-def test_contract_policy_retains_projectability_per_scored_field() -> None:
+def test_contract_policy_retains_projectability_and_rule_ids_per_scored_field() -> None:
     policy = compile_verification_policy(load_yaml(_CONTRACT_PATH))
 
     assert (
@@ -58,6 +58,17 @@ def test_contract_policy_retains_projectability_per_scored_field() -> None:
     assert policy.projectability("observation", "unit") == "MAY_TRANSFORM"
     assert policy.projectability("observation", "value") == "MUST_PRESERVE"
     assert policy.projectability("diagnostic_report", "identifiers") is None
+
+    assert policy.rules_for_field("diagnostic_report", "temporal.recorded_at") == (
+        "REPORT_ISSUED_TIME_001",
+    )
+    assert policy.rules_for_field("observation", "unit") == (
+        "OBSERVATION_UNIT_001",
+    )
+    assert policy.rules_for_field("observation", "value") == (
+        "OBSERVATION_VALUE_001",
+    )
+    assert policy.rules_for_field("diagnostic_report", "identifiers") == ()
 
 
 def test_unfrozen_report_identifier_mapping_is_not_scored_by_contract_policy() -> None:
