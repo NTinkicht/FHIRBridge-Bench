@@ -271,15 +271,17 @@ def _compare_grounded_fact(
             }
             return subtype, checks
 
-    # Relationship comparison remains independently enforced during grounding.
-    # It is not yet contract-filtered because relationship-specific rules are
-    # still being added to Contract v0.2 before the Protocol v1.0 freeze.
-    required_relations = _translated_required_relations(source, reference_map)
-    target_relations = set(target.relationships)
-    missing_relations = required_relations - target_relations
-    if missing_relations:
-        checks["missing_relations"] = sorted(missing_relations)
-        return "relationship", checks
+    # Relationship semantics are scored only when the frozen contract explicitly
+    # places them in scope. With no VerificationPolicy, development diagnostics
+    # preserve the previous broad relationship check. This prevents an
+    # implementation-local graph edge from silently becoming confirmatory truth.
+    if _scores(policy, source, "relations"):
+        required_relations = _translated_required_relations(source, reference_map)
+        target_relations = set(target.relationships)
+        missing_relations = required_relations - target_relations
+        if missing_relations:
+            checks["missing_relations"] = sorted(missing_relations)
+            return "relationship", checks
 
     checks["grounding"] = grounding.evidence
     if policy is not None:
