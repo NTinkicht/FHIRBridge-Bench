@@ -19,7 +19,7 @@ from .grounding import ground_graph, score_candidate
 from .model import GroundingResult, LiftedFact
 from .policy import VerificationPolicy
 
-_VERIFIER_VERSION = "0.3.0-dev"
+_VERIFIER_VERSION = "0.4.0-dev"
 
 
 @dataclass(frozen=True)
@@ -167,6 +167,18 @@ def _scores(
     return isinstance(fact_type, str) and policy.scores(fact_type, field)
 
 
+def _absence_is_scoreable(
+    policy: VerificationPolicy | None,
+    source: dict[str, Any],
+) -> bool:
+    """Whether absence of the whole source fact can drive the primary endpoint."""
+
+    if policy is None:
+        return True
+    fact_type = source.get("fact_type")
+    return isinstance(fact_type, str) and policy.has_required_scope(fact_type)
+
+
 def _compare_grounded_fact(
     source: dict[str, Any],
     target: LiftedFact,
@@ -271,10 +283,9 @@ def _compare_grounded_fact(
             }
             return subtype, checks
 
-    # Relationship semantics are scored only when the frozen contract explicitly
-    # places them in scope. With no VerificationPolicy, development diagnostics
-    # preserve the previous broad relationship check. This prevents an
-    # implementation-local graph edge from silently becoming confirmatory truth.
+    # Relationship semantics are scored only when the contract explicitly places
+    # them in scope. With no VerificationPolicy, development diagnostics preserve
+    # the broad relationship check.
     if _scores(policy, source, "relations"):
         required_relations = _translated_required_relations(source, reference_map)
         target_relations = set(target.relationships)
@@ -292,12 +303,17 @@ def _compare_grounded_fact(
     return None, checks
 
 
-def _ambiguity_implies_absence(source: dict[str, Any], grounding: GroundingResult) -> bool:
-    """Return true when every tied candidate contradicts a strong identity key.
+def _ambiguity_implies_absence(
+    source: dict[str, Any],
+    grounding: GroundingResult,
+    *,
+    policy: VerificationPolicy | None,
+) -> bool:
+    """Return true when every tied candidate contradicts a scored identity key.
 
-    This lets a missing panel member be classified as an omission when the only
-    remaining same-type candidates all carry different observation concepts.
-    It never selects one of the tied candidates.
+    A conflict in an unscored identifier or concept must not create a
+    confirmatory omission. This prevents grounding heuristics from enlarging the
+    measurement construct beyond the projectability contract.
     """
 
     if not grounding.candidates:
@@ -306,12 +322,16 @@ def _ambiguity_implies_absence(source: dict[str, Any], grounding: GroundingResul
     source_has_concept = _concept_key(source) is not None
     source_has_identifier = bool(_identifier_set(source))
 
-    if source_has_concept and all(
-        "concept" in candidate.conflicting_keys for candidate in grounding.candidates
+    if (
+        source_has_concept
+        and _scores(policy, source, "concept")
+        and all("concept" in candidate.conflicting_keys for candidate in grounding.candidates)
     ):
         return True
-    if source_has_identifier and all(
-        "identifier" in candidate.conflicting_keys for candidate in grounding.candidates
+    if (
+        source_has_identifier
+        and _scores(policy, source, "identifiers")
+        and all("identifier" in candidate.conflicting_keys for candidate in grounding.candidates)
     ):
         return True
     return False
@@ -322,15 +342,32 @@ def _looks_misattributed(
     targets: list[LiftedFact],
     *,
     reference_map: dict[str, str],
+    policy: VerificationPolicy | None,
 ) -> LiftedFact | None:
-    """Find one strong same-fact candidate whose subject attribution conflicts."""
+    """Find one strong same-fact candidate whose subject attribution conflicts.
 
+    Under a contract-scoped analysis, only evidence dimensions that are in the
+    comparison scope may make the candidate strong enough to stand in for the
+    source fact. Subject mismatch itself is handled separately so it can remain
+    diagnostic-only until a reviewed subject-attribution rule exists.
+    """
+
+    matched_key_to_field = {
+        "concept": "concept",
+        "identifier": "identifiers",
+        "effective_time": "temporal.effective_start",
+        "relationship": "relations",
+    }
     candidates: list[tuple[int, LiftedFact]] = []
     for target in targets:
         candidate = score_candidate(source, target, reference_map=reference_map)
         if candidate is None or "subject_identity" not in candidate.conflicting_keys:
             continue
-        strong_keys = {"concept", "identifier", "effective_time", "relationship"}
+        strong_keys = {
+            key
+            for key, field in matched_key_to_field.items()
+            if policy is None or _scores(policy, source, field)
+        }
         if not (strong_keys & set(candidate.matched_keys)):
             continue
         candidates.append((candidate.score, target))
@@ -343,6 +380,73 @@ def _looks_misattributed(
     return candidates[0][1]
 
 
+def _pair_decision(
+    source: dict[str, Any],
+    target: LiftedFact,
+    *,
+    reference_map: dict[str, str],
+    grounding: GroundingResult,
+    policy: VerificationPolicy | None,
+    scope_note: str | None = None,
+) -> SemanticDecision:
+    """Build the corruption/equivalence decision for one supported fact pair."""
+
+    source_id = str(source["fact_id"])
+    subtype, evidence = _compare_grounded_fact(
+        source,
+        target,
+        reference_map=reference_map,
+        grounding=grounding,
+        policy=policy,
+    )
+    if scope_note is not None:
+        evidence = {**evidence, "scope_note": scope_note}
+
+    if subtype is not None:
+        severity = "S3" if subtype in {"value", "unit", "identifier"} else "S2"
+        return SemanticDecision(
+            decision_id=f"{source_id}:corruption:{subtype}",
+            classification="CORRUPTION",
+            source_fact_ids=(source_id,),
+            target_fact_ids=(target.lifted_fact_id,),
+            error_subtype=subtype,
+            severity=severity,
+            evidence={
+                "rationale_code": f"SEMANTIC_{subtype.upper()}_MISMATCH",
+                **evidence,
+            },
+        )
+
+    return SemanticDecision(
+        decision_id=f"{source_id}:verified",
+        classification="VERIFIED_EQUIVALENT",
+        source_fact_ids=(source_id,),
+        target_fact_ids=(target.lifted_fact_id,),
+        severity="S0",
+        evidence={"rationale_code": "FACT_SEMANTICS_PRESERVED", **evidence},
+    )
+
+
+def _unscored_absence_decision(
+    source: dict[str, Any],
+    *,
+    rationale_code: str,
+    extra_evidence: dict[str, Any] | None = None,
+) -> SemanticDecision:
+    source_id = str(source["fact_id"])
+    return SemanticDecision(
+        decision_id=f"{source_id}:indeterminate:out_of_scope_absence",
+        classification="INDETERMINATE",
+        source_fact_ids=(source_id,),
+        primary_endpoint_eligible=False,
+        evidence={
+            "rationale_code": rationale_code,
+            "scope_note": "NO_REQUIRED_PROJECTABILITY_RULE_FOR_WHOLE_FACT_ABSENCE",
+            **(extra_evidence or {}),
+        },
+    )
+
+
 def classify_graph(
     source_facts: list[dict[str, Any]],
     target_facts: list[LiftedFact],
@@ -352,11 +456,11 @@ def classify_graph(
 ) -> ClassificationResult:
     """Classify semantic outcomes for one canonical source and lifted target.
 
-    Precedence is enforced as MISATTRIBUTION > CORRUPTION > OMISSION >
-    FABRICATION. Extra target facts are therefore considered fabrication only
-    after all source facts have had an opportunity to ground or be recognized as
-    misattributed. When provided, ``policy`` limits field comparisons to the
-    projectability contract while preserving independent grounding evidence.
+    Development diagnostics preserve precedence MISATTRIBUTION > CORRUPTION >
+    OMISSION > FABRICATION. In contract-scoped analysis, that precedence applies
+    only to dimensions explicitly licensed by the projectability contract.
+    Grounding may use additional context to find candidates, but unlicensed
+    context cannot by itself create a primary semantic-fidelity failure.
     """
 
     grounding = ground_graph(
@@ -375,26 +479,38 @@ def classify_graph(
     decisions: list[SemanticDecision] = []
 
     for source in source_facts:
-        source_id = source["fact_id"]
+        source_id = str(source["fact_id"])
         result = grounding[source_id]
 
         if result.status == "ambiguous":
-            if _ambiguity_implies_absence(source, result):
-                decisions.append(
-                    SemanticDecision(
-                        decision_id=f"{source_id}:omission",
-                        classification="OMISSION",
-                        source_fact_ids=(source_id,),
-                        error_subtype="other",
-                        severity=(
-                            "S3" if source.get("fact_type") == "observation" else "S2"
-                        ),
-                        evidence={
-                            "rationale_code": "NO_SEMANTICALLY_COMPATIBLE_TIED_CANDIDATE",
-                            "candidate_ids": [c.target_fact_id for c in result.candidates],
-                        },
+            if _ambiguity_implies_absence(source, result, policy=policy):
+                evidence = {
+                    "rationale_code": "NO_SEMANTICALLY_COMPATIBLE_TIED_CANDIDATE",
+                    "candidate_ids": [c.target_fact_id for c in result.candidates],
+                }
+                if _absence_is_scoreable(policy, source):
+                    decisions.append(
+                        SemanticDecision(
+                            decision_id=f"{source_id}:omission",
+                            classification="OMISSION",
+                            source_fact_ids=(source_id,),
+                            error_subtype="other",
+                            severity=(
+                                "S3"
+                                if source.get("fact_type") == "observation"
+                                else "S2"
+                            ),
+                            evidence=evidence,
+                        )
                     )
-                )
+                else:
+                    decisions.append(
+                        _unscored_absence_decision(
+                            source,
+                            rationale_code="AMBIGUOUS_FACT_ABSENCE_OUTSIDE_REQUIRED_SCOPE",
+                            extra_evidence=evidence,
+                        )
+                    )
             else:
                 decisions.append(
                     SemanticDecision(
@@ -411,28 +527,41 @@ def classify_graph(
             continue
 
         if result.status == "unmatched":
-            misattributed = _looks_misattributed(
+            subject_conflict_candidate = _looks_misattributed(
                 source,
                 target_facts,
                 reference_map=reference_map,
+                policy=policy,
             )
-            if misattributed is not None:
-                used_target_ids.add(misattributed.lifted_fact_id)
-                decisions.append(
-                    SemanticDecision(
-                        decision_id=f"{source_id}:misattribution",
-                        classification="MISATTRIBUTION",
-                        source_fact_ids=(source_id,),
-                        target_fact_ids=(misattributed.lifted_fact_id,),
-                        error_subtype="attribution",
-                        severity="S3",
-                        evidence={
-                            "rationale_code": "WRONG_SUBJECT_ATTRIBUTION",
-                            "target_subject_ref": misattributed.subject_ref,
-                        },
+            if subject_conflict_candidate is not None:
+                used_target_ids.add(subject_conflict_candidate.lifted_fact_id)
+                if _scores(policy, source, "subject_ref"):
+                    decisions.append(
+                        SemanticDecision(
+                            decision_id=f"{source_id}:misattribution",
+                            classification="MISATTRIBUTION",
+                            source_fact_ids=(source_id,),
+                            target_fact_ids=(subject_conflict_candidate.lifted_fact_id,),
+                            error_subtype="attribution",
+                            severity="S3",
+                            evidence={
+                                "rationale_code": "WRONG_SUBJECT_ATTRIBUTION",
+                                "target_subject_ref": subject_conflict_candidate.subject_ref,
+                            },
+                        )
                     )
-                )
-            else:
+                else:
+                    decisions.append(
+                        _pair_decision(
+                            source,
+                            subject_conflict_candidate,
+                            reference_map=reference_map,
+                            grounding=result,
+                            policy=policy,
+                            scope_note="SUBJECT_ATTRIBUTION_OUTSIDE_CONTRACT_SCOPE",
+                        )
+                    )
+            elif _absence_is_scoreable(policy, source):
                 decisions.append(
                     SemanticDecision(
                         decision_id=f"{source_id}:omission",
@@ -445,6 +574,13 @@ def classify_graph(
                         evidence={"rationale_code": result.rationale_code},
                     )
                 )
+            else:
+                decisions.append(
+                    _unscored_absence_decision(
+                        source,
+                        rationale_code="NO_GROUNDING_CANDIDATE_OUTSIDE_REQUIRED_SCOPE",
+                    )
+                )
             continue
 
         assert result.target_fact_id is not None
@@ -452,7 +588,7 @@ def classify_graph(
         used_target_ids.add(target.lifted_fact_id)
 
         conflicts = set(result.evidence.get("conflicting_keys", []))
-        if "subject_identity" in conflicts:
+        if "subject_identity" in conflicts and _scores(policy, source, "subject_ref"):
             decisions.append(
                 SemanticDecision(
                     decision_id=f"{source_id}:misattribution",
@@ -469,44 +605,50 @@ def classify_graph(
             )
             continue
 
-        subtype, evidence = _compare_grounded_fact(
-            source,
-            target,
-            reference_map=reference_map,
-            grounding=result,
-            policy=policy,
+        scope_note = None
+        if "subject_identity" in conflicts and not _scores(policy, source, "subject_ref"):
+            scope_note = "SUBJECT_ATTRIBUTION_OUTSIDE_CONTRACT_SCOPE"
+        decisions.append(
+            _pair_decision(
+                source,
+                target,
+                reference_map=reference_map,
+                grounding=result,
+                policy=policy,
+                scope_note=scope_note,
+            )
         )
-        if subtype is not None:
-            severity = "S3" if subtype in {"value", "unit", "identifier"} else "S2"
-            decisions.append(
-                SemanticDecision(
-                    decision_id=f"{source_id}:corruption:{subtype}",
-                    classification="CORRUPTION",
-                    source_fact_ids=(source_id,),
-                    target_fact_ids=(target.lifted_fact_id,),
-                    error_subtype=subtype,
-                    severity=severity,
-                    evidence={
-                        "rationale_code": f"SEMANTIC_{subtype.upper()}_MISMATCH",
-                        **evidence,
-                    },
-                )
-            )
-        else:
-            decisions.append(
-                SemanticDecision(
-                    decision_id=f"{source_id}:verified",
-                    classification="VERIFIED_EQUIVALENT",
-                    source_fact_ids=(source_id,),
-                    target_fact_ids=(target.lifted_fact_id,),
-                    severity="S0",
-                    evidence={"rationale_code": "FACT_SEMANTICS_PRESERVED", **evidence},
-                )
-            )
 
     for target in target_facts:
         if target.lifted_fact_id in used_target_ids:
             continue
+        if policy is not None and not policy.forbids_ungrounded_inference:
+            decisions.append(
+                SemanticDecision(
+                    decision_id=f"{target.lifted_fact_id}:indeterminate:unsupported_target",
+                    classification="INDETERMINATE",
+                    target_fact_ids=(target.lifted_fact_id,),
+                    primary_endpoint_eligible=False,
+                    evidence={
+                        "rationale_code": "NO_MUST_NOT_INFER_RULE_FOR_UNSUPPORTED_TARGET",
+                        "contract_id": policy.contract_id,
+                        "contract_version": policy.contract_version,
+                    },
+                )
+            )
+            continue
+
+        fabrication_evidence: dict[str, Any] = {
+            "rationale_code": "UNSUPPORTED_TARGET_FACT"
+        }
+        if policy is not None:
+            fabrication_evidence.update(
+                {
+                    "contract_id": policy.contract_id,
+                    "contract_version": policy.contract_version,
+                    "rule_ids": list(policy.must_not_infer_rule_ids),
+                }
+            )
         decisions.append(
             SemanticDecision(
                 decision_id=f"{target.lifted_fact_id}:fabrication",
@@ -514,7 +656,7 @@ def classify_graph(
                 target_fact_ids=(target.lifted_fact_id,),
                 error_subtype="unsupported_assertion",
                 severity="S2",
-                evidence={"rationale_code": "UNSUPPORTED_TARGET_FACT"},
+                evidence=fabrication_evidence,
             )
         )
 
