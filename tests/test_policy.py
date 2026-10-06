@@ -1,6 +1,7 @@
 from copy import deepcopy
 
 from fhirbridge.canonical import generate_lab_scenario
+from fhirbridge.faults import fabricate_observation, misattribute_result_to_patient
 from fhirbridge.schema_validation import load_yaml
 from fhirbridge.verifier import LiftedFact, classify_graph, compile_verification_policy
 
@@ -46,6 +47,7 @@ def test_contract_policy_includes_declared_fields_and_excludes_report_identifier
     assert policy.scores("observation", "attributes.value_code")
     assert policy.scores("specimen", "attributes.collection_method_label")
     assert not policy.scores("diagnostic_report", "identifiers")
+    assert not policy.scores("observation", "subject_ref")
 
 
 def test_contract_policy_retains_projectability_and_rule_ids_per_scored_field() -> None:
@@ -69,6 +71,13 @@ def test_contract_policy_retains_projectability_and_rule_ids_per_scored_field() 
         "OBSERVATION_VALUE_001",
     )
     assert policy.rules_for_field("diagnostic_report", "identifiers") == ()
+
+
+def test_contract_policy_retains_explicit_forbidden_inference_rule() -> None:
+    policy = compile_verification_policy(load_yaml(_CONTRACT_PATH))
+
+    assert policy.must_not_infer_rule_ids == ("FREE_TEXT_INFERENCE_001",)
+    assert policy.forbids_ungrounded_inference is True
 
 
 def test_unfrozen_report_identifier_mapping_is_not_scored_by_contract_policy() -> None:
@@ -162,3 +171,95 @@ def test_unfrozen_relationship_mapping_is_not_scored_by_contract_policy() -> Non
         and decision.error_subtype == "relationship"
         for decision in development_diagnostic.decisions
     )
+
+
+def test_unreviewed_subject_misattribution_is_diagnostic_not_confirmatory() -> None:
+    source = generate_lab_scenario("LAB-001", 9205)
+    mutated = misattribute_result_to_patient(
+        source,
+        foreign_subject_ref="patient-foreign",
+    )
+    lifted = _lift_graph(mutated.graph)
+    policy = compile_verification_policy(load_yaml(_CONTRACT_PATH))
+
+    scoped = classify_graph(source["facts"], lifted, policy=policy)
+    assert scoped.faithful
+    assert all(decision.classification != "MISATTRIBUTION" for decision in scoped.decisions)
+    observation_decision = next(
+        decision
+        for decision in scoped.decisions
+        if decision.source_fact_ids
+        and decision.source_fact_ids[0].startswith("observation-")
+    )
+    assert observation_decision.evidence.get("scope_note") == (
+        "SUBJECT_ATTRIBUTION_OUTSIDE_CONTRACT_SCOPE"
+    )
+
+    development_diagnostic = classify_graph(source["facts"], lifted)
+    assert not development_diagnostic.faithful
+    assert any(
+        decision.classification == "MISATTRIBUTION"
+        for decision in development_diagnostic.decisions
+    )
+
+
+def test_fabrication_requires_and_cites_must_not_infer_rule() -> None:
+    source = generate_lab_scenario("LAB-001", 9206)
+    mutated = fabricate_observation(source)
+    policy = compile_verification_policy(load_yaml(_CONTRACT_PATH))
+
+    result = classify_graph(source["facts"], _lift_graph(mutated.graph), policy=policy)
+
+    fabrications = [
+        decision for decision in result.decisions if decision.classification == "FABRICATION"
+    ]
+    assert fabrications
+    assert not result.faithful
+    assert fabrications[0].evidence["rule_ids"] == ["FREE_TEXT_INFERENCE_001"]
+
+
+def test_unscored_fact_type_absence_is_indeterminate_not_omission() -> None:
+    policy = compile_verification_policy(load_yaml(_CONTRACT_PATH))
+    source = [
+        {
+            "fact_id": "encounter-1",
+            "fact_type": "encounter",
+            "subject_ref": "patient-1",
+        }
+    ]
+
+    result = classify_graph(source, [], policy=policy)
+
+    assert result.faithful
+    assert len(result.decisions) == 1
+    decision = result.decisions[0]
+    assert decision.classification == "INDETERMINATE"
+    assert decision.primary_endpoint_eligible is False
+    assert decision.evidence["scope_note"] == (
+        "NO_REQUIRED_PROJECTABILITY_RULE_FOR_WHOLE_FACT_ABSENCE"
+    )
+
+
+def test_may_lose_only_fact_absence_is_not_scored_as_omission() -> None:
+    contract = {
+        "contract": {"id": "TEST-MAY-LOSE", "version": "0.0.1"},
+        "rules": [
+            {
+                "rule_id": "OBS_UNIT_LOSS",
+                "canonical_fact": "observation.unit",
+                "projectability": "MAY_LOSE",
+            }
+        ],
+    }
+    policy = compile_verification_policy(contract)
+    source = generate_lab_scenario("LAB-001", 9207)
+    observation = next(
+        fact for fact in source["facts"] if fact["fact_type"] == "observation"
+    )
+
+    result = classify_graph([observation], [], policy=policy)
+
+    assert result.faithful
+    assert len(result.decisions) == 1
+    assert result.decisions[0].classification == "INDETERMINATE"
+    assert result.decisions[0].primary_endpoint_eligible is False
