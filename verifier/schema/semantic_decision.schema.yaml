@@ -1,7 +1,7 @@
 $schema: "https://json-schema.org/draft/2020-12/schema"
 $id: "https://fhirbridge-bench.org/schema/semantic_decision.schema.yaml"
-$title: FHIRBridge Semantic Verification Decision
-$type: object
+title: FHIRBridge Semantic Verification Decision
+type: object
 required:
   - decision_id
   - verifier_version
@@ -21,14 +21,25 @@ properties:
     required:
       - contract_id
       - contract_version
-      - rule_id
+      - rule_ids
     properties:
       contract_id:
         type: string
+        minLength: 1
       contract_version:
         type: string
-      rule_id:
-        type: string
+        minLength: 1
+      rule_ids:
+        type: array
+        uniqueItems: true
+        items:
+          type: string
+          minLength: 1
+        description: >-
+          Exact projectability-rule identifiers governing this decision. The
+          array may be empty only for a non-endpoint decision for which no
+          contract rule places the disputed dimension in scoring scope. Fake
+          aggregate rule identifiers are forbidden.
     additionalProperties: false
   source_fact_ids:
     type: array
@@ -108,6 +119,7 @@ properties:
     properties:
       rationale_code:
         type: string
+        minLength: 1
       terminology_checks:
         type: array
         items:
@@ -134,6 +146,12 @@ properties:
           type: string
       structural_validation_ref:
         type: [string, "null"]
+      decision_details:
+        type: object
+        additionalProperties: true
+        description: >-
+          Machine-readable classifier and grounding evidence that is useful for
+          audit but is not itself an additional scoring rule.
     additionalProperties: false
   model_claimed_provenance:
     type: [object, "null"]
@@ -165,4 +183,19 @@ properties:
     description: >-
       Human-readable rendering of structured evidence. This field is never the
       authoritative basis for scoring.
+allOf:
+  - if:
+      properties:
+        primary_endpoint_eligible:
+          const: true
+      required:
+        - primary_endpoint_eligible
+    then:
+      properties:
+        contract:
+          properties:
+            rule_ids:
+              minItems: 1
+          required:
+            - rule_ids
 additionalProperties: false
