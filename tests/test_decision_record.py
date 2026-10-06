@@ -59,13 +59,20 @@ def _policy():
     return compile_verification_policy(load_yaml(CONTRACT_PATH))
 
 
-def _observation_decision(result, classification: str):
+def _decision_for_fact_type(
+    result,
+    source_facts: list[dict],
+    *,
+    classification: str,
+    fact_type: str,
+):
+    source_by_id = {fact["fact_id"]: fact for fact in source_facts}
     return next(
         decision
         for decision in result.decisions
         if decision.classification == classification
-        and decision.source_fact_ids
-        and decision.source_fact_ids[0].startswith("observation-")
+        and len(decision.source_fact_ids) == 1
+        and source_by_id[decision.source_fact_ids[0]]["fact_type"] == fact_type
     )
 
 
@@ -74,7 +81,12 @@ def test_verified_observation_emits_exact_fact_rule_union(tmp_path: Path) -> Non
     lifted = _lift_graph(source)
     policy = _policy()
     result = classify_graph(source["facts"], lifted, policy=policy)
-    decision = _observation_decision(result, "VERIFIED_EQUIVALENT")
+    decision = _decision_for_fact_type(
+        result,
+        source["facts"],
+        classification="VERIFIED_EQUIVALENT",
+        fact_type="observation",
+    )
 
     record = emit_semantic_decision_record(
         decision,
@@ -107,7 +119,12 @@ def test_value_corruption_emits_only_value_rule_ids(tmp_path: Path) -> None:
     lifted = _lift_graph(mutated)
     policy = _policy()
     result = classify_graph(source["facts"], lifted, policy=policy)
-    decision = _observation_decision(result, "CORRUPTION")
+    decision = _decision_for_fact_type(
+        result,
+        source["facts"],
+        classification="CORRUPTION",
+        fact_type="observation",
+    )
 
     record = emit_semantic_decision_record(
         decision,
@@ -135,7 +152,12 @@ def test_required_field_omission_emits_omitted_field_rule_ids(tmp_path: Path) ->
     lifted = _lift_graph(mutated)
     policy = _policy()
     result = classify_graph(source["facts"], lifted, policy=policy)
-    decision = _observation_decision(result, "OMISSION")
+    decision = _decision_for_fact_type(
+        result,
+        source["facts"],
+        classification="OMISSION",
+        fact_type="observation",
+    )
 
     record = emit_semantic_decision_record(
         decision,
