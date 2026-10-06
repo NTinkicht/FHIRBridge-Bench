@@ -2,6 +2,11 @@
 
 from .classifier import ClassificationResult, SemanticDecision
 from .contract_classifier import classify_graph
+from .decision_record import (
+    emit_classification_records,
+    emit_semantic_decision_record,
+    governing_rule_ids,
+)
 from .equivalence import (
     EquivalenceResult,
     ExactTerminologyEquivalence,
@@ -30,6 +35,9 @@ __all__ = [
     "VerificationPolicy",
     "classify_graph",
     "compile_verification_policy",
+    "emit_classification_records",
+    "emit_semantic_decision_record",
+    "governing_rule_ids",
     "ground_graph",
     "ground_source_fact",
     "identifiers_equivalent",
