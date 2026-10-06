@@ -175,6 +175,9 @@ def test_unfrozen_relationship_mapping_is_not_scored_by_contract_policy() -> Non
 
 def test_unreviewed_subject_misattribution_is_diagnostic_not_confirmatory() -> None:
     source = generate_lab_scenario("LAB-001", 9205)
+    observation_id = next(
+        fact["fact_id"] for fact in source["facts"] if fact["fact_type"] == "observation"
+    )
     mutated = misattribute_result_to_patient(
         source,
         foreign_subject_ref="patient-foreign",
@@ -188,8 +191,7 @@ def test_unreviewed_subject_misattribution_is_diagnostic_not_confirmatory() -> N
     observation_decision = next(
         decision
         for decision in scoped.decisions
-        if decision.source_fact_ids
-        and decision.source_fact_ids[0].startswith("observation-")
+        if observation_id in decision.source_fact_ids
     )
     assert observation_decision.evidence.get("scope_note") == (
         "SUBJECT_ATTRIBUTION_OUTSIDE_CONTRACT_SCOPE"
