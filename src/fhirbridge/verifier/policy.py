@@ -15,6 +15,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+_REQUIRED_PROJECTABILITY = frozenset({"MUST_PRESERVE", "MAY_TRANSFORM"})
+
 
 @dataclass(frozen=True)
 class FactComparisonPolicy:
@@ -37,6 +39,15 @@ class FactComparisonPolicy:
 
         return self.field_rule_ids.get(field, ())
 
+    def required_fields(self) -> frozenset[str]:
+        """Fields whose source assertions must survive in some licensed form."""
+
+        return frozenset(
+            field
+            for field, projectability in self.field_projectability.items()
+            if projectability in _REQUIRED_PROJECTABILITY
+        )
+
 
 @dataclass(frozen=True)
 class VerificationPolicy:
@@ -45,6 +56,7 @@ class VerificationPolicy:
     contract_id: str
     contract_version: str
     by_fact_type: dict[str, FactComparisonPolicy]
+    must_not_infer_rule_ids: tuple[str, ...]
 
     def scores(self, fact_type: str, field: str) -> bool:
         policy = self.by_fact_type.get(fact_type)
@@ -63,6 +75,23 @@ class VerificationPolicy:
         if policy is None:
             return ()
         return policy.rules_for_field(field)
+
+    def required_fields(self, fact_type: str) -> frozenset[str]:
+        """Return fields that make absence of this source fact scoreable."""
+
+        policy = self.by_fact_type.get(fact_type)
+        if policy is None:
+            return frozenset()
+        return policy.required_fields()
+
+    def has_required_scope(self, fact_type: str) -> bool:
+        return bool(self.required_fields(fact_type))
+
+    @property
+    def forbids_ungrounded_inference(self) -> bool:
+        """Whether the contract contains an explicit MUST_NOT_INFER rule."""
+
+        return bool(self.must_not_infer_rule_ids)
 
 
 _CANONICAL_FIELD_MAP: dict[str, tuple[str, tuple[str, ...]]] = {
@@ -94,18 +123,24 @@ _CANONICAL_FIELD_MAP: dict[str, tuple[str, tuple[str, ...]]] = {
         ("attributes.collection_quantity",),
     ),
     "specimen.collection.time": ("specimen", ("temporal.effective_start",)),
+    # Subject attribution remains outside the current v0.2 contract. These
+    # mappings are future-facing: they become scoreable only if an externally
+    # reviewed contract adds the corresponding canonical rule.
+    "report.subject": ("diagnostic_report", ("subject_ref",)),
+    "observation.subject": ("observation", ("subject_ref",)),
+    "specimen.subject": ("specimen", ("subject_ref",)),
 }
 
 
 def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
     """Compile supported contract rules into a comparison policy.
 
-    Rules classified as ``INDETERMINATE`` are excluded from confirmatory
-    scoring. ``MUST_NOT_INFER`` rules govern unsupported additions and therefore
-    do not introduce source fields to compare. The projectability class and
-    governing rule IDs are retained per canonical field so later classification
-    and audit export can cite the exact contract basis without consulting
-    renderer logic.
+    ``INDETERMINATE`` rules are excluded from confirmatory scoring.
+    ``MUST_NOT_INFER`` rules are retained separately so unsupported target facts
+    can be classified as fabrication only when the contract explicitly forbids
+    ungrounded inference. The projectability class and governing rule IDs are
+    retained per canonical field so later classification and audit export can
+    cite the exact contract basis without consulting renderer logic.
     """
 
     header = contract.get("contract", {})
@@ -113,6 +148,7 @@ def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
     rules_by_type: dict[str, list[str]] = {}
     projectability_by_type: dict[str, dict[str, str]] = {}
     rules_by_field: dict[str, dict[str, set[str]]] = {}
+    must_not_infer_rule_ids: set[str] = set()
 
     rules = contract.get("rules", [])
     if not isinstance(rules, list):
@@ -122,7 +158,12 @@ def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
         if not isinstance(rule, dict):
             continue
         projectability = rule.get("projectability")
-        if projectability in {"INDETERMINATE", "MUST_NOT_INFER"}:
+        rule_id = rule.get("rule_id")
+        if projectability == "MUST_NOT_INFER":
+            if isinstance(rule_id, str):
+                must_not_infer_rule_ids.add(rule_id)
+            continue
+        if projectability == "INDETERMINATE":
             continue
         if not isinstance(projectability, str):
             continue
@@ -135,7 +176,6 @@ def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
         fact_type, fields = mapped
         fields_by_type.setdefault(fact_type, set()).update(fields)
         field_classes = projectability_by_type.setdefault(fact_type, {})
-        rule_id = rule.get("rule_id")
         for field in fields:
             prior = field_classes.get(field)
             if prior is not None and prior != projectability:
@@ -169,4 +209,5 @@ def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
         contract_id=str(header.get("id", "unknown")),
         contract_version=str(header.get("version", "unknown")),
         by_fact_type=by_fact_type,
+        must_not_infer_rule_ids=tuple(sorted(must_not_infer_rule_ids)),
     )
