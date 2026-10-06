@@ -1,0 +1,36 @@
+schema_version: "0.1.0"
+record_id: "DIFF-EXAMPLE-001"
+scenario_id: "LAB-001"
+canonical_fact_ids:
+  - "observation-example"
+artifact_type: "HL7_V251_ORU_R01"
+renderer_a:
+  renderer_id: "RENDERER-A"
+  renderer_version: "0.1.0-dev"
+  artifact_hash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  locus: "OBX-6"
+  value_summary: "mg/dL"
+  structural_validation_passed: true
+renderer_b:
+  renderer_id: "RENDERER-B"
+  renderer_version: "0.1.0-dev"
+  artifact_hash: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  locus: "OBX-6"
+  value_summary: "mg/dL"
+  structural_validation_passed: true
+applicable_contract_rules:
+  - "OBSERVATION_UNIT_001"
+classification: "SEMANTICALLY_EQUIVALENT_SERIALIZATION"
+standards_evidence:
+  - source: "projectability contract"
+    finding: "Both renderings preserve the required unit semantics."
+    reference: "OBSERVATION_UNIT_001"
+external_comparator: null
+adjudication:
+  status: "RESOLVED"
+  resolution: "No substantive semantic disagreement; retained as an audit-format example."
+  adjudicator: "EXAMPLE_ONLY"
+  contract_changed: false
+  contract_amendment_ref: null
+  regression_fixture_added: false
+  regression_fixture_ref: null
