@@ -101,7 +101,7 @@ def test_postfreeze_amendment_disposition_is_constrained(tmp_path: Path) -> None
             "affected_components": ["verifier"],
             "sealed_set_had_been_opened": True,
             "fresh_sealed_set_required": True,
-            "replacement_manifest_id": null,
+            "replacement_manifest_id": None,
             "disposition": "IGNORE_AND_CONTINUE",
         }
     ]
