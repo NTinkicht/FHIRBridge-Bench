@@ -1,9 +1,10 @@
 decision_id: DEC-LAB-001-OBS-VALUE
-verifier_version: 0.1.0-dev
+verifier_version: 0.4.0-dev
 contract:
   contract_id: F2V-LAB-ORU-R01-001
   contract_version: 0.2.0
-  rule_id: OBSERVATION_VALUE_001
+  rule_ids:
+    - OBSERVATION_VALUE_001
 source_fact_ids:
   - obs-glucose-0001
 target_fact_ids:
@@ -13,7 +14,7 @@ target_paths:
 allowed_operation: COPY
 classification: VERIFIED_EQUIVALENT
 error_subtype: null
-severity: null
+severity: S0
 primary_endpoint_eligible: true
 source_payload:
   code:
@@ -53,6 +54,9 @@ evidence:
   temporal_checks: []
   parser_warnings: []
   structural_validation_ref: STRUCT-LAB-001-ORU
+  decision_details:
+    comparison_scope: observation.value
+    grounding_status: independently_grounded
 model_claimed_provenance:
   present: false
   claim_id: null
