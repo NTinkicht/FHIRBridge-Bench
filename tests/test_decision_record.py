@@ -7,7 +7,12 @@ import yaml
 from fhirbridge.canonical import generate_lab_scenario
 from fhirbridge.faults import fabricate_observation
 from fhirbridge.schema_validation import load_yaml, validate_document
-from fhirbridge.verifier import LiftedFact, SemanticDecision, classify_graph, compile_verification_policy
+from fhirbridge.verifier import (
+    LiftedFact,
+    SemanticDecision,
+    classify_graph,
+    compile_verification_policy,
+)
 from fhirbridge.verifier.decision_record import emit_semantic_decision_record
 
 ROOT = Path(__file__).resolve().parents[1]
