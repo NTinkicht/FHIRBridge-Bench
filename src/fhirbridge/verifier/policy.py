@@ -24,12 +24,18 @@ class FactComparisonPolicy:
     fields: frozenset[str]
     rule_ids: tuple[str, ...]
     field_projectability: dict[str, str]
+    field_rule_ids: dict[str, tuple[str, ...]]
 
     def scores(self, field: str) -> bool:
         return field in self.fields
 
     def projectability(self, field: str) -> str | None:
         return self.field_projectability.get(field)
+
+    def rules_for_field(self, field: str) -> tuple[str, ...]:
+        """Return frozen contract rule IDs licensing one canonical field."""
+
+        return self.field_rule_ids.get(field, ())
 
 
 @dataclass(frozen=True)
@@ -49,6 +55,14 @@ class VerificationPolicy:
         if policy is None:
             return None
         return policy.projectability(field)
+
+    def rules_for_field(self, fact_type: str, field: str) -> tuple[str, ...]:
+        """Return contract rule IDs that place one fact field in scoring scope."""
+
+        policy = self.by_fact_type.get(fact_type)
+        if policy is None:
+            return ()
+        return policy.rules_for_field(field)
 
 
 _CANONICAL_FIELD_MAP: dict[str, tuple[str, tuple[str, ...]]] = {
@@ -88,15 +102,17 @@ def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
 
     Rules classified as ``INDETERMINATE`` are excluded from confirmatory
     scoring. ``MUST_NOT_INFER`` rules govern unsupported additions and therefore
-    do not introduce source fields to compare. The projectability class is kept
-    per canonical field so later classification can distinguish required-field
-    omission from ordinary semantic mutation without consulting renderer logic.
+    do not introduce source fields to compare. The projectability class and
+    governing rule IDs are retained per canonical field so later classification
+    and audit export can cite the exact contract basis without consulting
+    renderer logic.
     """
 
     header = contract.get("contract", {})
     fields_by_type: dict[str, set[str]] = {}
     rules_by_type: dict[str, list[str]] = {}
     projectability_by_type: dict[str, dict[str, str]] = {}
+    rules_by_field: dict[str, dict[str, set[str]]] = {}
 
     rules = contract.get("rules", [])
     if not isinstance(rules, list):
@@ -119,6 +135,7 @@ def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
         fact_type, fields = mapped
         fields_by_type.setdefault(fact_type, set()).update(fields)
         field_classes = projectability_by_type.setdefault(fact_type, {})
+        rule_id = rule.get("rule_id")
         for field in fields:
             prior = field_classes.get(field)
             if prior is not None and prior != projectability:
@@ -127,7 +144,10 @@ def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
                     f"{fact_type}.{field}: {prior} vs {projectability}"
                 )
             field_classes[field] = projectability
-        rule_id = rule.get("rule_id")
+            if isinstance(rule_id, str):
+                rules_by_field.setdefault(fact_type, {}).setdefault(field, set()).add(
+                    rule_id
+                )
         if isinstance(rule_id, str):
             rules_by_type.setdefault(fact_type, []).append(rule_id)
 
@@ -135,8 +155,12 @@ def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
         fact_type: FactComparisonPolicy(
             fact_type=fact_type,
             fields=frozenset(fields),
-            rule_ids=tuple(sorted(rules_by_type.get(fact_type, []))),
+            rule_ids=tuple(sorted(set(rules_by_type.get(fact_type, [])))),
             field_projectability=dict(projectability_by_type.get(fact_type, {})),
+            field_rule_ids={
+                field: tuple(sorted(rule_ids))
+                for field, rule_ids in rules_by_field.get(fact_type, {}).items()
+            },
         )
         for fact_type, fields in fields_by_type.items()
     }
