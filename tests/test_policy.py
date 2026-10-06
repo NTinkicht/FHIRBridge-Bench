@@ -118,3 +118,36 @@ def test_absent_required_report_issued_time_is_classified_as_omission() -> None:
     ]
     assert omissions
     assert omissions[0].evidence["projectability"] == "MUST_PRESERVE"
+
+
+def test_unfrozen_relationship_mapping_is_not_scored_by_contract_policy() -> None:
+    source = generate_lab_scenario("LAB-005", 9204)
+    target_graph = deepcopy(source)
+    report = next(
+        fact for fact in target_graph["facts"] if fact["fact_type"] == "diagnostic_report"
+    )
+    assert len(report["relations"]) >= 2
+    report["relations"] = report["relations"][1:]
+
+    lifted = _lift_graph(target_graph)
+    policy = compile_verification_policy(load_yaml(_CONTRACT_PATH))
+
+    assert not policy.scores("diagnostic_report", "relations")
+
+    scoped = classify_graph(source["facts"], lifted, policy=policy)
+    assert scoped.faithful
+    assert all(
+        not (
+            decision.classification == "CORRUPTION"
+            and decision.error_subtype == "relationship"
+        )
+        for decision in scoped.decisions
+    )
+
+    development_diagnostic = classify_graph(source["facts"], lifted)
+    assert not development_diagnostic.faithful
+    assert any(
+        decision.classification == "CORRUPTION"
+        and decision.error_subtype == "relationship"
+        for decision in development_diagnostic.decisions
+    )
