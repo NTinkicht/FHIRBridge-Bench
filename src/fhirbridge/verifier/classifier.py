@@ -14,12 +14,25 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from .equivalence import instants_equivalent
+from .equivalence import (
+    TerminologyEquivalenceProvider,
+    UnitEquivalenceProvider,
+    instants_equivalent,
+)
 from .grounding import ground_graph, score_candidate
 from .model import GroundingResult, LiftedFact
 from .policy import VerificationPolicy
 
-_VERIFIER_VERSION = "0.4.0-dev"
+_VERIFIER_VERSION = "0.5.0-dev"
+
+
+class _ProviderIndeterminate(RuntimeError):
+    """Signal that a configured equivalence provider could not decide safely."""
+
+    def __init__(self, rationale_code: str, evidence: dict[str, Any]) -> None:
+        super().__init__(rationale_code)
+        self.rationale_code = rationale_code
+        self.evidence = evidence
 
 
 @dataclass(frozen=True)
@@ -110,6 +123,109 @@ def _coded_value_key(attributes: dict[str, Any]) -> tuple[object, object] | None
     return system, code
 
 
+def _unit_code(payload: dict[str, Any]) -> str | None:
+    unit = payload.get("unit")
+    if not isinstance(unit, dict):
+        return None
+    code = unit.get("code")
+    return code if isinstance(code, str) and code else None
+
+
+def _terminology_equivalent(
+    source_key: tuple[object, object] | None,
+    target_key: tuple[object, object] | None,
+    *,
+    provider: TerminologyEquivalenceProvider | None,
+    operation_licensed: bool,
+    field: str,
+) -> tuple[bool, dict[str, Any] | None]:
+    if source_key == target_key:
+        return True, None
+    if provider is None or not operation_licensed:
+        return False, None
+
+    source_system, source_code = source_key or (None, None)
+    target_system, target_code = target_key or (None, None)
+    try:
+        result = provider.equivalent(
+            source_system if isinstance(source_system, str) else None,
+            source_code if isinstance(source_code, str) else None,
+            target_system if isinstance(target_system, str) else None,
+            target_code if isinstance(target_code, str) else None,
+        )
+    except Exception as exc:
+        raise _ProviderIndeterminate(
+            "TERMINOLOGY_PROVIDER_UNAVAILABLE",
+            {
+                "field": field,
+                "provider_error": f"{type(exc).__name__}: {exc}",
+            },
+        ) from exc
+
+    evidence = {
+        "field": field,
+        "equivalent": result.equivalent,
+        "rationale_code": result.rationale_code,
+        "details": result.details,
+    }
+    return result.equivalent, evidence
+
+
+def _quantity_equivalent(
+    source: dict[str, Any],
+    target: dict[str, Any],
+    *,
+    provider: UnitEquivalenceProvider | None,
+    operation_licensed: bool,
+) -> tuple[bool | None, dict[str, Any] | None]:
+    source_value = source.get("value")
+    target_value = target.get("value")
+    source_unit = _unit_code(source)
+    target_unit = _unit_code(target)
+
+    if source_value == target_value and source.get("unit") == target.get("unit"):
+        return True, None
+    if provider is None or not operation_licensed:
+        return None, None
+    if (
+        isinstance(source_value, bool)
+        or isinstance(target_value, bool)
+        or not isinstance(source_value, (int, float))
+        or not isinstance(target_value, (int, float))
+        or source_unit is None
+        or target_unit is None
+    ):
+        return None, None
+
+    try:
+        result = provider.equivalent(
+            float(source_value),
+            source_unit,
+            float(target_value),
+            target_unit,
+        )
+    except Exception as exc:
+        raise _ProviderIndeterminate(
+            "UNIT_PROVIDER_UNAVAILABLE",
+            {
+                "field": "quantity",
+                "provider_error": f"{type(exc).__name__}: {exc}",
+                "source_value": source_value,
+                "source_unit": source_unit,
+                "target_value": target_value,
+                "target_unit": target_unit,
+            },
+        ) from exc
+
+    evidence = {
+        "field": "quantity",
+        "equivalent": result.equivalent,
+        "rationale_code": result.rationale_code,
+        "details": result.details,
+    }
+    return result.equivalent, evidence
+
+
 def _temporal_value(payload: dict[str, Any], key: str) -> object | None:
     temporal = payload.get("temporal")
     if not isinstance(temporal, dict):
@@ -186,6 +302,8 @@ def _compare_grounded_fact(
     reference_map: dict[str, str],
     grounding: GroundingResult,
     policy: VerificationPolicy | None,
+    terminology_provider: TerminologyEquivalenceProvider | None,
+    unit_provider: UnitEquivalenceProvider | None,
 ) -> tuple[str | None, dict[str, Any]]:
     """Return the first deterministic semantic mismatch, if any.
 
@@ -201,9 +319,27 @@ def _compare_grounded_fact(
     if _scores(policy, source, "concept"):
         source_concept = _concept_key(source)
         target_concept = _concept_key(target_payload)
-        if source_concept != target_concept:
+        concept_equivalent, terminology_check = _terminology_equivalent(
+            source_concept,
+            target_concept,
+            provider=terminology_provider,
+            operation_licensed=(
+                policy is not None
+                and policy.allows_operation(
+                    str(source.get("fact_type")),
+                    "concept",
+                    "CODE_TRANSLATE",
+                )
+            ),
+            field="concept",
+        )
+        if terminology_check is not None:
+            checks.setdefault("terminology_checks", []).append(terminology_check)
+        if not concept_equivalent:
             checks["concept"] = {"source": source_concept, "target": target_concept}
             return "terminology", checks
+        if source_concept != target_concept:
+            checks.setdefault("licensed_operations", []).append("CODE_TRANSLATE")
 
     if _scores(policy, source, "identifiers"):
         source_identifiers = _identifier_set(source)
@@ -215,14 +351,54 @@ def _compare_grounded_fact(
             }
             return "identifier", checks
 
-    if _scores(policy, source, "value"):
+    quantity_checked = False
+    if _scores(policy, source, "value") and _scores(policy, source, "unit"):
+        quantity_equivalent, unit_check = _quantity_equivalent(
+            source,
+            target_payload,
+            provider=unit_provider,
+            operation_licensed=(
+                policy is not None
+                and (
+                    policy.allows_operation(
+                        str(source.get("fact_type")),
+                        "value",
+                        "UNIT_CONVERT",
+                    )
+                    or policy.allows_operation(
+                        str(source.get("fact_type")),
+                        "unit",
+                        "UNIT_CONVERT",
+                    )
+                )
+            ),
+        )
+        if unit_check is not None:
+            checks.setdefault("ucum_checks", []).append(unit_check)
+        if quantity_equivalent is True:
+            quantity_checked = True
+            if (
+                source.get("value") != target_payload.get("value")
+                or source.get("unit") != target_payload.get("unit")
+            ):
+                checks.setdefault("licensed_operations", []).append("UNIT_CONVERT")
+        elif quantity_equivalent is False:
+            checks["quantity"] = {
+                "source_value": source.get("value"),
+                "target_value": target_payload.get("value"),
+                "source_unit": source.get("unit"),
+                "target_unit": target_payload.get("unit"),
+            }
+            return "unit", checks
+
+    if not quantity_checked and _scores(policy, source, "value"):
         source_value = source.get("value")
         target_value = target_payload.get("value")
         if source_value != target_value:
             checks["value"] = {"source": source_value, "target": target_value}
             return "value", checks
 
-    if _scores(policy, source, "unit"):
+    if not quantity_checked and _scores(policy, source, "unit"):
         source_unit = source.get("unit")
         target_unit = target_payload.get("unit")
         if source_unit != target_unit:
@@ -258,9 +434,30 @@ def _compare_grounded_fact(
     if _scores(policy, source, "attributes.value_code"):
         source_value_code = _coded_value_key(source_attributes)
         target_value_code = _coded_value_key(target_attributes)
-        if source_value_code != target_value_code:
-            checks["value_code"] = {"source": source_value_code, "target": target_value_code}
+        coded_equivalent, terminology_check = _terminology_equivalent(
+            source_value_code,
+            target_value_code,
+            provider=terminology_provider,
+            operation_licensed=(
+                policy is not None
+                and policy.allows_operation(
+                    str(source.get("fact_type")),
+                    "attributes.value_code",
+                    "CODE_TRANSLATE",
+                )
+            ),
+            field="attributes.value_code",
+        )
+        if terminology_check is not None:
+            checks.setdefault("terminology_checks", []).append(terminology_check)
+        if not coded_equivalent:
+            checks["value_code"] = {
+                "source": source_value_code,
+                "target": target_value_code,
+            }
             return "terminology", checks
+        if source_value_code != target_value_code:
+            checks.setdefault("licensed_operations", []).append("CODE_TRANSLATE")
 
     attribute_subtypes = {
         "status": "status",
@@ -387,18 +584,35 @@ def _pair_decision(
     reference_map: dict[str, str],
     grounding: GroundingResult,
     policy: VerificationPolicy | None,
+    terminology_provider: TerminologyEquivalenceProvider | None,
+    unit_provider: UnitEquivalenceProvider | None,
     scope_note: str | None = None,
 ) -> SemanticDecision:
     """Build the corruption/equivalence decision for one supported fact pair."""
 
     source_id = str(source["fact_id"])
-    subtype, evidence = _compare_grounded_fact(
-        source,
-        target,
-        reference_map=reference_map,
-        grounding=grounding,
-        policy=policy,
-    )
+    try:
+        subtype, evidence = _compare_grounded_fact(
+            source,
+            target,
+            reference_map=reference_map,
+            grounding=grounding,
+            policy=policy,
+            terminology_provider=terminology_provider,
+            unit_provider=unit_provider,
+        )
+    except _ProviderIndeterminate as exc:
+        return SemanticDecision(
+            decision_id=f"{source_id}:indeterminate:provider",
+            classification="INDETERMINATE",
+            source_fact_ids=(source_id,),
+            target_fact_ids=(target.lifted_fact_id,),
+            primary_endpoint_eligible=False,
+            evidence={
+                "rationale_code": exc.rationale_code,
+                **exc.evidence,
+            },
+        )
     if scope_note is not None:
         evidence = {**evidence, "scope_note": scope_note}
 
@@ -417,13 +631,30 @@ def _pair_decision(
             },
         )
 
+    licensed_operations = evidence.get("licensed_operations", [])
+    classification = (
+        "LICENSED_NORMALIZATION"
+        if isinstance(licensed_operations, list) and licensed_operations
+        else "VERIFIED_EQUIVALENT"
+    )
     return SemanticDecision(
-        decision_id=f"{source_id}:verified",
-        classification="VERIFIED_EQUIVALENT",
+        decision_id=(
+            f"{source_id}:licensed_normalization"
+            if classification == "LICENSED_NORMALIZATION"
+            else f"{source_id}:verified"
+        ),
+        classification=classification,
         source_fact_ids=(source_id,),
         target_fact_ids=(target.lifted_fact_id,),
         severity="S0",
-        evidence={"rationale_code": "FACT_SEMANTICS_PRESERVED", **evidence},
+        evidence={
+            "rationale_code": (
+                "LICENSED_SEMANTIC_NORMALIZATION"
+                if classification == "LICENSED_NORMALIZATION"
+                else "FACT_SEMANTICS_PRESERVED"
+            ),
+            **evidence,
+        },
     )
 
 
@@ -453,6 +684,8 @@ def classify_graph(
     *,
     minimum_grounding_score: int = 10,
     policy: VerificationPolicy | None = None,
+    terminology_provider: TerminologyEquivalenceProvider | None = None,
+    unit_provider: UnitEquivalenceProvider | None = None,
 ) -> ClassificationResult:
     """Classify semantic outcomes for one canonical source and lifted target.
 
@@ -558,6 +791,8 @@ def classify_graph(
                             reference_map=reference_map,
                             grounding=result,
                             policy=policy,
+                            terminology_provider=terminology_provider,
+                            unit_provider=unit_provider,
                             scope_note="SUBJECT_ATTRIBUTION_OUTSIDE_CONTRACT_SCOPE",
                         )
                     )
@@ -615,6 +850,8 @@ def classify_graph(
                 reference_map=reference_map,
                 grounding=result,
                 policy=policy,
+                terminology_provider=terminology_provider,
+                unit_provider=unit_provider,
                 scope_note=scope_note,
             )
         )
