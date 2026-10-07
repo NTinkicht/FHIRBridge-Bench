@@ -16,6 +16,7 @@ terminology:
     local_snapshot_sha256: unresolved
     local_provider_implementation: unresolved
     local_provider_version: unresolved
+    local_provider_qualification_passed: false
     license_review: required_before_public_release
 
   hl7_terminology:
@@ -50,6 +51,7 @@ structural_validation:
       fhir_r4: unresolved
       us_core: unresolved
       hl7_terminology_r4: "7.4.0"
+    profile_validation_qualification_passed: false
     network_during_confirmatory_scoring: disabled_where_practical
 
   hl7v2:
@@ -64,6 +66,7 @@ structural_validation:
     profile_artifact: unresolved
     profile_artifact_sha256: unresolved
     support_level: candidate_profile_level_offline
+    profile_validation_qualification_passed: false
     hosted_gvt_role: audit_only
     network_during_confirmatory_scoring: disabled
     source_repository: https://github.com/CDCgov/lib-hl7v2-nist-validator
@@ -110,5 +113,8 @@ freeze_gate:
     - structural_validation.hl7v2.profile_artifact_sha256
     - structural_validation.hl7v2.support_level
   required_boolean_true_before_status_frozen:
+    - terminology.loinc.local_provider_qualification_passed
     - units.ucum.official_functional_tests_passed
     - units.ucum.project_lab_conversion_matrix_passed
+    - structural_validation.fhir.profile_validation_qualification_passed
+    - structural_validation.hl7v2.profile_validation_qualification_passed
