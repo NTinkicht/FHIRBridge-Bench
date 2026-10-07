@@ -46,11 +46,12 @@ structural_validation:
     validator_wrapper_commit: fe316e7
     core_version: "6.10.0"
     validator_artifact_sha256: unresolved
-    runtime: unresolved
+    runtime: Java_17
     packages:
-      fhir_r4: unresolved
-      us_core: unresolved
-      hl7_terminology_r4: "7.4.0"
+      fhir_r4: "hl7.fhir.r4.core#4.0.1"
+      us_core: "hl7.fhir.us.core#9.0.0"
+      hl7_terminology_r4: "hl7.terminology.r4#7.1.0"
+    package_dependency_source: US_Core_9.0.0_published_manifest
     profile_validation_qualification_passed: false
     network_during_confirmatory_scoring: disabled_where_practical
 
