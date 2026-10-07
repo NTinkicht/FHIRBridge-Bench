@@ -10,8 +10,8 @@ from .decision_record import (
 from .equivalence import (
     EquivalenceResult,
     ExactTerminologyEquivalence,
-    FrozenMappingTerminologyEquivalence,
     ExactUnitEquivalence,
+    FrozenMappingTerminologyEquivalence,
     TerminologyEquivalenceProvider,
     UnitEquivalenceProvider,
     identifiers_equivalent,
