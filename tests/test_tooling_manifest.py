@@ -35,6 +35,18 @@ def test_candidate_manifest_is_explicitly_not_freeze_ready() -> None:
         "units.ucum.official_functional_tests_passed"
         in readiness.false_boolean_paths
     )
+    assert (
+        "terminology.loinc.local_provider_qualification_passed"
+        in readiness.false_boolean_paths
+    )
+    assert (
+        "structural_validation.fhir.profile_validation_qualification_passed"
+        in readiness.false_boolean_paths
+    )
+    assert (
+        "structural_validation.hl7v2.profile_validation_qualification_passed"
+        in readiness.false_boolean_paths
+    )
 
 
 def test_candidate_versions_are_pinned_to_documented_protocol_choices() -> None:
