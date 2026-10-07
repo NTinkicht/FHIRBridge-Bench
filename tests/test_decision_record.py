@@ -237,3 +237,59 @@ def test_endpoint_decision_without_governing_rule_fails_loudly() -> None:
             source_facts=[source],
             target_facts=[],
         )
+
+
+def test_licensed_normalization_emits_operation_and_provider_evidence(
+    tmp_path: Path,
+) -> None:
+    source = generate_lab_scenario("LAB-001", 9305)
+    lifted = _lift_graph(source)
+    policy = _policy()
+    observation = next(
+        fact for fact in source["facts"] if fact["fact_type"] == "observation"
+    )
+    target_id = f"lifted::{observation['fact_id']}"
+    decision = SemanticDecision(
+        decision_id=f"{observation['fact_id']}:licensed_normalization",
+        classification="LICENSED_NORMALIZATION",
+        source_fact_ids=(observation["fact_id"],),
+        target_fact_ids=(target_id,),
+        severity="S0",
+        evidence={
+            "rationale_code": "LICENSED_SEMANTIC_NORMALIZATION",
+            "unit": {
+                "source": observation["unit"],
+                "target": {
+                    "system": "http://unitsofmeasure.org",
+                    "code": "g/L",
+                    "display": "g/L",
+                },
+            },
+            "licensed_operations": ["UNIT_CONVERT"],
+            "ucum_checks": [
+                {
+                    "equivalent": True,
+                    "rationale_code": "SAME_BASE_QUANTITY",
+                    "provider": "qualified-test-provider",
+                }
+            ],
+        },
+    )
+
+    record = emit_semantic_decision_record(
+        decision,
+        policy=policy,
+        source_facts=source["facts"],
+        target_facts=lifted,
+    )
+
+    assert record["classification"] == "LICENSED_NORMALIZATION"
+    assert record["allowed_operation"] == "UNIT_CONVERT"
+    assert record["contract"]["rule_ids"] == list(
+        policy.rules_for_field("observation", "unit")
+    )
+    assert record["evidence"]["ucum_checks"][0]["equivalent"] is True
+    assert record["evidence"]["decision_details"]["licensed_operations"] == [
+        "UNIT_CONVERT"
+    ]
+    _validate_record(tmp_path, record)
