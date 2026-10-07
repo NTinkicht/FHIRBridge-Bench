@@ -70,6 +70,87 @@ class ExactTerminologyEquivalence:
         )
 
 
+class FrozenMappingTerminologyEquivalence:
+    """Accept only exact identity or explicitly frozen source→target mappings.
+
+    The provider is deliberately directional. It does not infer equivalence from
+    displays, lexical similarity, terminology hierarchy, or reverse mappings.
+    Every non-identical accepted pair must already exist in the supplied frozen
+    mapping set.
+    """
+
+    def __init__(
+        self,
+        mappings: set[tuple[str, str, str, str]] | frozenset[tuple[str, str, str, str]],
+        *,
+        mapping_id: str,
+        mapping_version: str,
+    ) -> None:
+        if not mapping_id or not mapping_version:
+            raise ValueError("mapping_id and mapping_version must be non-empty")
+        self.mappings = frozenset(mappings)
+        self.mapping_id = mapping_id
+        self.mapping_version = mapping_version
+
+    def equivalent(
+        self,
+        source_system: str | None,
+        source_code: str | None,
+        target_system: str | None,
+        target_code: str | None,
+    ) -> EquivalenceResult:
+        exact = source_system == target_system and source_code == target_code
+        if exact:
+            return EquivalenceResult(
+                equivalent=True,
+                rationale_code="EXACT_CODE_MATCH",
+                details={
+                    "source_system": source_system,
+                    "source_code": source_code,
+                    "target_system": target_system,
+                    "target_code": target_code,
+                    "mapping_id": self.mapping_id,
+                    "mapping_version": self.mapping_version,
+                },
+            )
+
+        if None in {source_system, source_code, target_system, target_code}:
+            return EquivalenceResult(
+                equivalent=False,
+                rationale_code="CODE_MISMATCH",
+                details={
+                    "source_system": source_system,
+                    "source_code": source_code,
+                    "target_system": target_system,
+                    "target_code": target_code,
+                    "mapping_id": self.mapping_id,
+                    "mapping_version": self.mapping_version,
+                },
+            )
+
+        key = (
+            str(source_system),
+            str(source_code),
+            str(target_system),
+            str(target_code),
+        )
+        approved = key in self.mappings
+        return EquivalenceResult(
+            equivalent=approved,
+            rationale_code=(
+                "FROZEN_APPROVED_CODE_MAPPING" if approved else "CODE_MISMATCH"
+            ),
+            details={
+                "source_system": source_system,
+                "source_code": source_code,
+                "target_system": target_system,
+                "target_code": target_code,
+                "mapping_id": self.mapping_id,
+                "mapping_version": self.mapping_version,
+            },
+        )
+
+
 class ExactUnitEquivalence:
     """Baseline value+unit provider without UCUM conversion.
 
