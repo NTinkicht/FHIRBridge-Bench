@@ -79,9 +79,9 @@ def compute_profile_bundle_manifest(root: Path) -> ProfileBundleManifest:
             )
         )
         aggregate.update(name.encode("utf-8"))
-        aggregate.update(b"\\0")
+        aggregate.update(bytes([0]))
         aggregate.update(digest.encode("ascii"))
-        aggregate.update(b"\\n")
+        aggregate.update(bytes([10]))
 
     return ProfileBundleManifest(
         files=tuple(files),
