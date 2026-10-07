@@ -278,6 +278,7 @@ def test_unscored_fact_type_absence_is_indeterminate_not_omission() -> None:
     result = classify_graph(source, [], policy=policy)
 
     assert result.faithful
+    assert result.primary_endpoint_verdict == "INDETERMINATE"
     assert len(result.decisions) == 1
     decision = result.decisions[0]
     assert decision.classification == "INDETERMINATE"
@@ -337,6 +338,7 @@ def test_contract_licensed_unit_conversion_uses_provider_jointly() -> None:
         policy=policy,
     )
     assert not exact_baseline.faithful
+    assert exact_baseline.primary_endpoint_verdict == "UNFAITHFUL"
 
     provider_aware = classify_graph(
         source["facts"],
@@ -346,6 +348,7 @@ def test_contract_licensed_unit_conversion_uses_provider_jointly() -> None:
     )
 
     assert provider_aware.faithful
+    assert provider_aware.primary_endpoint_verdict == "FAITHFUL"
     decision = next(
         item
         for item in provider_aware.decisions
@@ -446,3 +449,4 @@ def test_configured_equivalence_provider_failure_is_indeterminate_not_corruption
     assert decision.primary_endpoint_eligible is False
     assert decision.evidence["rationale_code"] == "UNIT_PROVIDER_UNAVAILABLE"
     assert "RuntimeError" in decision.evidence["provider_error"]
+    assert result.primary_endpoint_verdict == "INDETERMINATE"
