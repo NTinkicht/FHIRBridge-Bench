@@ -14,6 +14,30 @@ A major semantic-fidelity error is a pre-registered severity-threshold event bel
 - semantic corruption;
 - required omission.
 
+### Indeterminate measurement outcomes
+
+The transformation-level semantic result is tri-state: `FAITHFUL`,
+`UNFAITHFUL`, or `INDETERMINATE`.
+
+- Contract dimensions declared `INDETERMINATE` before inference are outside the
+  confirmatory semantic construct and are not promoted into errors by the
+  verifier.
+- A runtime `INDETERMINATE` outcome caused by grounding ambiguity, an
+  unavailable/failed frozen equivalence provider, or another measurement
+  boundary is **never counted as faithful**.
+- The runtime indeterminate rate is reported for every arm/model.
+- Structurally valid transformations with runtime-indeterminate endpoint status
+  are routed to blinded human adjudication under the frozen rubric where
+  feasible. If adjudication remains indeterminate, those cases remain visible,
+  are excluded from the binary VUR numerator and denominator, and the exact
+  denominator loss is reported.
+- Best-case/worst-case sensitivity analyses treat unresolved transformation-level
+  indeterminates respectively as faithful and unfaithful.
+- The pilot will determine and preregister an acceptable maximum runtime
+  indeterminate rate before confirmatory inference. Exceeding that gate downgrades
+  automated population-level VUR analysis to exploratory rather than silently
+  changing the scoring policy.
+
 ## Instrument-validation gate
 
 The main LLM analysis is confirmatory only if the semantic verifier meets pre-registered acceptance thresholds on the sealed expert-validation set.
