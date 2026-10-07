@@ -3,6 +3,7 @@ import pytest
 from fhirbridge.verifier import (
     ExactTerminologyEquivalence,
     ExactUnitEquivalence,
+    FrozenMappingTerminologyEquivalence,
     identifiers_equivalent,
     instants_equivalent,
 )
@@ -66,3 +67,70 @@ def test_instant_equivalence_normalizes_timezone_offsets() -> None:
 def test_naive_datetime_is_rejected() -> None:
     with pytest.raises(ValueError, match="timezone required"):
         instants_equivalent("2026-09-20T08:15:00", "2026-09-20T04:15:00Z")
+
+
+def test_frozen_mapping_provider_accepts_only_explicit_directional_mapping() -> None:
+    provider = FrozenMappingTerminologyEquivalence(
+        {
+            (
+                "urn:local:lab",
+                "GLU",
+                "http://loinc.org",
+                "2345-7",
+            )
+        },
+        mapping_id="TEST-CONCEPTMAP",
+        mapping_version="1.0.0",
+    )
+
+    approved = provider.equivalent(
+        "urn:local:lab",
+        "GLU",
+        "http://loinc.org",
+        "2345-7",
+    )
+    reverse = provider.equivalent(
+        "http://loinc.org",
+        "2345-7",
+        "urn:local:lab",
+        "GLU",
+    )
+    unrelated = provider.equivalent(
+        "urn:local:lab",
+        "GLU",
+        "http://loinc.org",
+        "2951-2",
+    )
+
+    assert approved.equivalent is True
+    assert approved.rationale_code == "FROZEN_APPROVED_CODE_MAPPING"
+    assert approved.details["mapping_id"] == "TEST-CONCEPTMAP"
+    assert reverse.equivalent is False
+    assert unrelated.equivalent is False
+
+
+def test_frozen_mapping_provider_retains_exact_identity_without_mapping_entry() -> None:
+    provider = FrozenMappingTerminologyEquivalence(
+        set(),
+        mapping_id="EMPTY-MAP",
+        mapping_version="1.0.0",
+    )
+
+    result = provider.equivalent(
+        "http://loinc.org",
+        "2345-7",
+        "http://loinc.org",
+        "2345-7",
+    )
+
+    assert result.equivalent is True
+    assert result.rationale_code == "EXACT_CODE_MATCH"
+
+
+def test_frozen_mapping_provider_rejects_missing_mapping_identity() -> None:
+    with pytest.raises(ValueError, match="mapping_id"):
+        FrozenMappingTerminologyEquivalence(
+            set(),
+            mapping_id="",
+            mapping_version="1.0.0",
+        )
