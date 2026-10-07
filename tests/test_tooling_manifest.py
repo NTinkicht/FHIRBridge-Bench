@@ -51,6 +51,19 @@ def test_candidate_versions_are_pinned_to_documented_protocol_choices() -> None:
         == "1.0.82"
     )
     assert manifest["structural_validation"]["fhir"]["core_version"] == "6.10.0"
+    assert manifest["structural_validation"]["fhir"]["runtime"] == "Java_17"
+    assert (
+        manifest["structural_validation"]["fhir"]["packages"]["fhir_r4"]
+        == "hl7.fhir.r4.core#4.0.1"
+    )
+    assert (
+        manifest["structural_validation"]["fhir"]["packages"]["us_core"]
+        == "hl7.fhir.us.core#9.0.0"
+    )
+    assert (
+        manifest["structural_validation"]["fhir"]["packages"]["hl7_terminology_r4"]
+        == "hl7.terminology.r4#7.1.0"
+    )
     assert (
         manifest["structural_validation"]["hl7v2"]["validator"]
         == "gov.cdc:lib-hl7v2-nist-validator"
