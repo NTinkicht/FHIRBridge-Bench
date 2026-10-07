@@ -29,8 +29,8 @@ def test_candidate_manifest_is_explicitly_not_freeze_ready() -> None:
 
     assert readiness.manifest_status == "candidate"
     assert not readiness.ready
-    assert "units.ucum.implementation" in readiness.unresolved_paths
-    assert "structural_validation.hl7v2.validator" in readiness.unresolved_paths
+    assert "units.ucum.essence_sha256" in readiness.unresolved_paths
+    assert "structural_validation.hl7v2.profile_artifact" in readiness.unresolved_paths
     assert (
         "units.ucum.official_functional_tests_passed"
         in readiness.false_boolean_paths
@@ -43,13 +43,24 @@ def test_candidate_versions_are_pinned_to_documented_protocol_choices() -> None:
     assert manifest["terminology"]["loinc"]["content_version"] == "2.83"
     assert manifest["units"]["ucum"]["content_version"] == "2.2"
     assert manifest["units"]["ucum"]["essence_revision_date"] == "2024-06-17"
+    assert manifest["units"]["ucum"]["implementation"] == "org.fhir:ucum"
+    assert manifest["units"]["ucum"]["implementation_version"] == "1.0.10"
     assert manifest["terminology"]["hl7_terminology"]["version"] == "7.4.0"
     assert (
         manifest["structural_validation"]["fhir"]["validator_wrapper_version"]
         == "1.0.82"
     )
     assert manifest["structural_validation"]["fhir"]["core_version"] == "6.10.0"
+    assert (
+        manifest["structural_validation"]["hl7v2"]["validator"]
+        == "gov.cdc:lib-hl7v2-nist-validator"
+    )
+    assert manifest["structural_validation"]["hl7v2"]["validator_version"] == "1.5.0"
+    assert manifest["structural_validation"]["hl7v2"]["nist_engine_version"] == "1.7.3"
     assert manifest["network_policy"]["live_terminology_services"] == "audit_only"
+    assert (
+        manifest["network_policy"]["hosted_hl7v2_validation_services"] == "audit_only"
+    )
 
 
 def test_manifest_cannot_claim_frozen_with_unresolved_dependencies() -> None:
