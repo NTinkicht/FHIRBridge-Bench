@@ -14,6 +14,7 @@ _MATRIX_PATH = "benchmark/ucum_lab_conversion_matrix.yaml"
 class _DimensionScaleProvider:
     _UNITS = {
         "g/dL": ("mass_concentration", 10.0),
+        "g/L": ("mass_concentration", 1.0),
         "mg/dL": ("mass_concentration", 0.01),
         "mg/L": ("mass_concentration", 0.001),
         "ug/mL": ("mass_concentration", 0.001),
