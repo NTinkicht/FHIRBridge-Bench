@@ -27,6 +27,7 @@ class FactComparisonPolicy:
     rule_ids: tuple[str, ...]
     field_projectability: dict[str, str]
     field_rule_ids: dict[str, tuple[str, ...]]
+    field_allowed_operations: dict[str, frozenset[str]]
 
     def scores(self, field: str) -> bool:
         return field in self.fields
@@ -38,6 +39,11 @@ class FactComparisonPolicy:
         """Return frozen contract rule IDs licensing one canonical field."""
 
         return self.field_rule_ids.get(field, ())
+
+    def allowed_operations(self, field: str) -> frozenset[str]:
+        """Return contract operations licensed for one canonical field."""
+
+        return self.field_allowed_operations.get(field, frozenset())
 
     def required_fields(self) -> frozenset[str]:
         """Fields whose source assertions must survive in some licensed form."""
@@ -75,6 +81,15 @@ class VerificationPolicy:
         if policy is None:
             return ()
         return policy.rules_for_field(field)
+
+    def allowed_operations(self, fact_type: str, field: str) -> frozenset[str]:
+        policy = self.by_fact_type.get(fact_type)
+        if policy is None:
+            return frozenset()
+        return policy.allowed_operations(field)
+
+    def allows_operation(self, fact_type: str, field: str, operation: str) -> bool:
+        return operation in self.allowed_operations(fact_type, field)
 
     def required_fields(self, fact_type: str) -> frozenset[str]:
         """Return fields that make absence of this source fact scoreable."""
@@ -148,6 +163,7 @@ def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
     rules_by_type: dict[str, list[str]] = {}
     projectability_by_type: dict[str, dict[str, str]] = {}
     rules_by_field: dict[str, dict[str, set[str]]] = {}
+    operations_by_field: dict[str, dict[str, set[str]]] = {}
     must_not_infer_rule_ids: set[str] = set()
 
     rules = contract.get("rules", [])
@@ -176,6 +192,13 @@ def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
         fact_type, fields = mapped
         fields_by_type.setdefault(fact_type, set()).update(fields)
         field_classes = projectability_by_type.setdefault(fact_type, {})
+        operations = rule.get("allowed_operations", [])
+        if not isinstance(operations, list) or not all(
+            isinstance(operation, str) for operation in operations
+        ):
+            raise ValueError(
+                f"allowed_operations must be a list of strings for rule {rule_id!r}"
+            )
         for field in fields:
             prior = field_classes.get(field)
             if prior is not None and prior != projectability:
@@ -184,6 +207,9 @@ def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
                     f"{fact_type}.{field}: {prior} vs {projectability}"
                 )
             field_classes[field] = projectability
+            operations_by_field.setdefault(fact_type, {}).setdefault(field, set()).update(
+                operations
+            )
             if isinstance(rule_id, str):
                 rules_by_field.setdefault(fact_type, {}).setdefault(field, set()).add(
                     rule_id
@@ -200,6 +226,10 @@ def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
             field_rule_ids={
                 field: tuple(sorted(rule_ids))
                 for field, rule_ids in rules_by_field.get(fact_type, {}).items()
+            },
+            field_allowed_operations={
+                field: frozenset(operations)
+                for field, operations in operations_by_field.get(fact_type, {}).items()
             },
         )
         for fact_type, fields in fields_by_type.items()
