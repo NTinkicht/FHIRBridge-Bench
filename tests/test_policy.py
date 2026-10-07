@@ -3,9 +3,44 @@ from copy import deepcopy
 from fhirbridge.canonical import generate_lab_scenario
 from fhirbridge.faults import fabricate_observation, misattribute_result_to_patient
 from fhirbridge.schema_validation import load_yaml
-from fhirbridge.verifier import LiftedFact, classify_graph, compile_verification_policy
+from fhirbridge.verifier import (
+    EquivalenceResult,
+    FrozenMappingTerminologyEquivalence,
+    LiftedFact,
+    classify_graph,
+    compile_verification_policy,
+)
 
 _CONTRACT_PATH = "contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml"
+
+
+class _LabUnitProvider:
+    def equivalent(
+        self,
+        source_value: float,
+        source_unit: str,
+        target_value: float,
+        target_unit: str,
+    ) -> EquivalenceResult:
+        if source_unit == "mg/dL" and target_unit == "g/L":
+            equivalent = abs(source_value * 0.01 - target_value) < 1e-12
+        else:
+            equivalent = source_unit == target_unit and source_value == target_value
+        return EquivalenceResult(
+            equivalent=equivalent,
+            rationale_code="TEST_UCUM_EQUIVALENT" if equivalent else "TEST_UCUM_MISMATCH",
+            details={
+                "source_value": source_value,
+                "source_unit": source_unit,
+                "target_value": target_value,
+                "target_unit": target_unit,
+            },
+        )
+
+
+class _UnavailableUnitProvider:
+    def equivalent(self, *args, **kwargs) -> EquivalenceResult:
+        raise RuntimeError("qualified UCUM provider unavailable")
 
 
 def _lift_graph(graph: dict) -> list[LiftedFact]:
@@ -275,3 +310,139 @@ def test_may_lose_only_fact_absence_is_not_scored_as_omission() -> None:
     assert len(result.decisions) == 1
     assert result.decisions[0].classification == "INDETERMINATE"
     assert result.decisions[0].primary_endpoint_eligible is False
+
+
+def test_contract_licensed_unit_conversion_uses_provider_jointly() -> None:
+    source = generate_lab_scenario("LAB-001", 9210)
+    target_graph = deepcopy(source)
+    observation = next(
+        fact for fact in target_graph["facts"] if fact["fact_type"] == "observation"
+    )
+    source_observation = next(
+        fact for fact in source["facts"] if fact["fact_type"] == "observation"
+    )
+    assert source_observation["unit"]["code"] == "mg/dL"
+    observation["value"] = float(source_observation["value"]) * 0.01
+    observation["unit"] = {
+        "system": "http://unitsofmeasure.org",
+        "code": "g/L",
+        "display": "g/L",
+    }
+
+    policy = compile_verification_policy(load_yaml(_CONTRACT_PATH))
+
+    exact_baseline = classify_graph(
+        source["facts"],
+        _lift_graph(target_graph),
+        policy=policy,
+    )
+    assert not exact_baseline.faithful
+
+    provider_aware = classify_graph(
+        source["facts"],
+        _lift_graph(target_graph),
+        policy=policy,
+        unit_provider=_LabUnitProvider(),
+    )
+
+    assert provider_aware.faithful
+    decision = next(
+        item
+        for item in provider_aware.decisions
+        if source_observation["fact_id"] in item.source_fact_ids
+    )
+    assert decision.classification == "LICENSED_NORMALIZATION"
+    assert "UNIT_CONVERT" in decision.evidence["licensed_operations"]
+    assert decision.evidence["ucum_checks"][0]["equivalent"] is True
+
+
+def test_code_translation_requires_explicit_frozen_mapping_provider() -> None:
+    source = generate_lab_scenario("LAB-001", 9211)
+    target_graph = deepcopy(source)
+    source_observation = next(
+        fact for fact in source["facts"] if fact["fact_type"] == "observation"
+    )
+    target_observation = next(
+        fact for fact in target_graph["facts"] if fact["fact_type"] == "observation"
+    )
+    source_system = source_observation["concept"]["system"]
+    source_code = source_observation["concept"]["code"]
+    target_observation["concept"] = {
+        "system": "urn:fhirbridge:test:local-lab",
+        "code": "LOCAL-GLU",
+        "display": source_observation["concept"]["display"],
+        "local_code": "LOCAL-GLU",
+    }
+
+    policy = compile_verification_policy(load_yaml(_CONTRACT_PATH))
+    provider = FrozenMappingTerminologyEquivalence(
+        {
+            (
+                source_system,
+                source_code,
+                "urn:fhirbridge:test:local-lab",
+                "LOCAL-GLU",
+            )
+        },
+        mapping_id="TEST-LAB-MAP",
+        mapping_version="1.0.0",
+    )
+
+    exact_baseline = classify_graph(
+        source["facts"],
+        _lift_graph(target_graph),
+        policy=policy,
+    )
+    assert not exact_baseline.faithful
+
+    mapped = classify_graph(
+        source["facts"],
+        _lift_graph(target_graph),
+        policy=policy,
+        terminology_provider=provider,
+    )
+
+    assert mapped.faithful
+    decision = next(
+        item
+        for item in mapped.decisions
+        if source_observation["fact_id"] in item.source_fact_ids
+    )
+    assert decision.classification == "LICENSED_NORMALIZATION"
+    assert "CODE_TRANSLATE" in decision.evidence["licensed_operations"]
+    assert decision.evidence["terminology_checks"][0]["equivalent"] is True
+
+
+def test_configured_equivalence_provider_failure_is_indeterminate_not_corruption() -> None:
+    source = generate_lab_scenario("LAB-001", 9212)
+    target_graph = deepcopy(source)
+    source_observation = next(
+        fact for fact in source["facts"] if fact["fact_type"] == "observation"
+    )
+    target_observation = next(
+        fact for fact in target_graph["facts"] if fact["fact_type"] == "observation"
+    )
+    target_observation["value"] = float(source_observation["value"]) * 0.01
+    target_observation["unit"] = {
+        "system": "http://unitsofmeasure.org",
+        "code": "g/L",
+        "display": "g/L",
+    }
+
+    policy = compile_verification_policy(load_yaml(_CONTRACT_PATH))
+    result = classify_graph(
+        source["facts"],
+        _lift_graph(target_graph),
+        policy=policy,
+        unit_provider=_UnavailableUnitProvider(),
+    )
+
+    decision = next(
+        item
+        for item in result.decisions
+        if source_observation["fact_id"] in item.source_fact_ids
+    )
+    assert decision.classification == "INDETERMINATE"
+    assert decision.primary_endpoint_eligible is False
+    assert decision.evidence["rationale_code"] == "UNIT_PROVIDER_UNAVAILABLE"
+    assert "RuntimeError" in decision.evidence["provider_error"]
