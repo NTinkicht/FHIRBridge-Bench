@@ -10,6 +10,7 @@ from .decision_record import (
 from .equivalence import (
     EquivalenceResult,
     ExactTerminologyEquivalence,
+    FrozenMappingTerminologyEquivalence,
     ExactUnitEquivalence,
     TerminologyEquivalenceProvider,
     UnitEquivalenceProvider,
@@ -25,6 +26,7 @@ __all__ = [
     "EquivalenceResult",
     "ExactTerminologyEquivalence",
     "ExactUnitEquivalence",
+    "FrozenMappingTerminologyEquivalence",
     "FactComparisonPolicy",
     "GroundingCandidate",
     "GroundingResult",
