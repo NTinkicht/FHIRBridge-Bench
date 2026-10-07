@@ -30,8 +30,11 @@ units:
     content_version: "2.2"
     essence_revision_date: "2024-06-17"
     essence_sha256: unresolved
-    implementation: unresolved
-    implementation_version: unresolved
+    implementation: org.fhir:ucum
+    implementation_version: "1.0.10"
+    implementation_role: candidate_local_provider
+    implementation_license: BSD-3-Clause
+    functional_tests_source: https://ucum.org/docs/functional-tests
     official_functional_tests_passed: false
     project_lab_conversion_matrix_passed: false
 
@@ -52,11 +55,18 @@ structural_validation:
   hl7v2:
     target: HL7_v2.5.1_LRI_Ed5_ORU_R01
     errata: 2024DEC
-    validator: unresolved
-    validator_version: unresolved
+    validator: gov.cdc:lib-hl7v2-nist-validator
+    validator_version: "1.5.0"
+    validator_license: Apache-2.0
+    nist_engine_version: "1.7.3"
+    runtime: Java_17
+    profile_source: IGAMT-2_exported_XML_resource_bundle
     profile_artifact: unresolved
     profile_artifact_sha256: unresolved
-    support_level: unresolved
+    support_level: candidate_profile_level_offline
+    hosted_gvt_role: audit_only
+    network_during_confirmatory_scoring: disabled
+    source_repository: https://github.com/CDCgov/lib-hl7v2-nist-validator
 
 semantic_policy:
   code_equivalence:
@@ -77,6 +87,7 @@ semantic_policy:
 network_policy:
   confirmatory_primary_oracle: local_pinned_dependencies
   live_terminology_services: audit_only
+  hosted_hl7v2_validation_services: audit_only
   silent_network_fallback: forbidden
 
 freeze_gate:
