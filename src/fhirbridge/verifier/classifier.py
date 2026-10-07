@@ -74,8 +74,35 @@ class ClassificationResult:
     grounding: dict[str, GroundingResult]
 
     @property
+    def primary_endpoint_verdict(self) -> str:
+        """Return FAITHFUL, UNFAITHFUL, or INDETERMINATE for the transformation.
+
+        Semantic failures take precedence over unresolved measurement decisions.
+        Any remaining INDETERMINATE decision blocks a binary confirmatory verdict
+        instead of being silently counted as faithful.
+        """
+
+        failures = {"FABRICATION", "CORRUPTION", "OMISSION", "MISATTRIBUTION"}
+        if any(
+            decision.primary_endpoint_eligible and decision.classification in failures
+            for decision in self.decisions
+        ):
+            return "UNFAITHFUL"
+        if any(
+            decision.classification == "INDETERMINATE"
+            for decision in self.decisions
+        ):
+            return "INDETERMINATE"
+        return "FAITHFUL"
+
+    @property
     def faithful(self) -> bool:
-        """Whether all primary-endpoint-eligible decisions preserve semantics."""
+        """Legacy binary convenience for existing development tests.
+
+        Confirmatory analysis should use primary_endpoint_verdict so an
+        unresolved measurement decision cannot be mistaken for a faithful
+        transformation.
+        """
 
         failures = {"FABRICATION", "CORRUPTION", "OMISSION", "MISATTRIBUTION"}
         return not any(
