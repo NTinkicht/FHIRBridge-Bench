@@ -38,6 +38,24 @@ The following are still mandatory:
 
 Until these steps are complete, `Hl7V251OruDevelopmentValidator` remains a development sanity gate only and must not be described as LRI Edition 5 conformance validation.
 
+## FHIR structural validation path
+
+FHIRBridge-Bench will use the HL7-maintained FHIR validator locally with the exact R4 and US Core packages required by the study.
+
+Candidate package/runtime set:
+
+- FHIR release package: `hl7.fhir.r4.core#4.0.1`.
+- US Core package: `hl7.fhir.us.core#9.0.0`.
+- US Core's published terminology dependency: `hl7.terminology.r4#7.1.0`.
+- Validator wrapper candidate: `org.hl7.fhir.validator-wrapper:1.0.82` with core 6.10.0.
+- Runtime target: Java 17.
+- Confirmatory execution: local, with package caches and validator artifacts frozen before scoring.
+- Public/hosted validator services: audit/differential only.
+
+US Core 9.0.0 is the published STU 9 guide and is based on FHIR R4 4.0.1. Its published ImplementationGuide resource identifies `hl7.fhir.us.core#9.0.0` and the R4 terminology dependency `hl7.terminology.r4#7.1.0`. The semantic terminology layer may separately freeze a later HL7 Terminology release, but the structural validator must retain the package dependency used by the actual US Core 9.0.0 publication unless a documented compatibility experiment justifies an override.
+
+Before freeze, the exact validator artifact, runtime, package files/cache, command line, network policy, and validation-result mapping must be archived and hashed. A clean development sample and structural-negative controls must pass the qualification procedure before `profile_validation_qualification_passed` can be set true.
+
 ## UCUM quantity-equivalence path
 
 FHIRBridge-Bench will use a **local UCUM service backed by the frozen UCUM essence file** for transformations where the reviewed contract explicitly licenses unit conversion.
@@ -68,6 +86,11 @@ No display-string similarity, lexical similarity, embedding similarity, or hiera
 
 ## Public evidence used for this candidate decision
 
+- US Core 9.0.0 home/package identity: https://hl7.org/fhir/us/core/index.html
+- US Core 9.0.0 ImplementationGuide dependencies: https://hl7.org/fhir/us/core/STU9/ImplementationGuide-hl7.fhir.us.core.html
+- FHIR R4 downloads/package information: https://hl7.org/fhir/R4/downloads.html
+- HL7-maintained FHIR validator core repository: https://github.com/hapifhir/org.hl7.fhir.core
+- HL7 validator wrapper repository: https://github.com/hapifhir/org.hl7.fhir.validator-wrapper
 - HL7 LRI Edition 5 product brief: https://www.hl7.org/implement/standards/product_brief.cfm?product_id=279
 - NIST Healthcare Data Interoperability & Productivity Platform: https://www.nist.gov/itl/health-it-testing-infrastructure/health-it-testing-infrastructure/nist-healthcare-data
 - NIST GVT transition information: https://www.nist.gov/itl/nist-health-it-program-legacy-website/gvt
