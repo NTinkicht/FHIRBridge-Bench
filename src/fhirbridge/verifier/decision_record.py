@@ -199,6 +199,24 @@ def emit_semantic_decision_record(
         "structural_validation_ref": structural_validation_ref,
         "decision_details": deepcopy(decision.evidence),
     }
+    for evidence_key in (
+        "terminology_checks",
+        "ucum_checks",
+        "relationship_checks",
+        "temporal_checks",
+    ):
+        value = decision.evidence.get(evidence_key)
+        if isinstance(value, list):
+            evidence[evidence_key] = deepcopy(value)
+
+    licensed_operations = decision.evidence.get("licensed_operations")
+    allowed_operation = None
+    if (
+        isinstance(licensed_operations, list)
+        and len(licensed_operations) == 1
+        and isinstance(licensed_operations[0], str)
+    ):
+        allowed_operation = licensed_operations[0]
 
     record: dict[str, Any] = {
         "decision_id": decision.decision_id,
@@ -211,7 +229,7 @@ def emit_semantic_decision_record(
         "source_fact_ids": list(decision.source_fact_ids),
         "target_fact_ids": list(decision.target_fact_ids),
         "target_paths": _target_paths(decision, target_by_id),
-        "allowed_operation": None,
+        "allowed_operation": allowed_operation,
         "classification": decision.classification,
         "error_subtype": decision.error_subtype,
         "severity": decision.severity,
