@@ -40,7 +40,7 @@ Official evidence:
 - Candidate content version: **UCUM 2.2**.
 - Candidate essence revision date: **2024-06-17**.
 - The canonical development content is the UCUM `ucum-essence.xml` representation associated with those identifiers.
-- The specific local UCUM implementation used for confirmatory conversion is **not yet frozen**.
+- Candidate local implementation: **`org.fhir:ucum:1.0.10`**. It remains unqualified until the frozen UCUM 2.2 essence file passes the official functional suite plus the project laboratory conversion matrix.
 
 Official evidence:
 - https://github.com/ucum-org/ucum/blob/main/ucum-essence.xml
@@ -65,7 +65,7 @@ For the confirmatory structural-validity path, the current candidate is:
 
 The 1.0.82 release explicitly reports the update to core 6.10.0. The validator must be run locally against frozen package dependencies rather than depending on mutable network lookups during confirmatory scoring.
 
-The exact package set, package versions, command line, Java/runtime version, and checksums of validator artifacts must be captured in the frozen tooling manifest.
+Candidate package/runtime pins are `hl7.fhir.r4.core#4.0.1`, `hl7.fhir.us.core#9.0.0`, the US Core 9.0.0 published dependency `hl7.terminology.r4#7.1.0`, and Java 17. The exact validator artifact, package files/cache, command line, and checksums must still be captured in the frozen tooling manifest. The semantic terminology layer may separately freeze a later THO release, but structural validation must preserve the dependency set of the published US Core package unless a documented compatibility analysis justifies an override.
 
 Official evidence:
 - https://github.com/hapifhir/org.hl7.fhir.validator-wrapper/releases
@@ -73,19 +73,18 @@ Official evidence:
 
 ## HL7 v2 structural/profile validation
 
-The HL7 v2.5.1 LRI Edition 5 structural/profile validator is **not yet pinned**.
+The selected **candidate** confirmatory path is local NIST-profile validation through **`gov.cdc:lib-hl7v2-nist-validator:1.5.0`**, which documents bundled NIST validation libraries 1.7.3 and support for IGAMT-exported XML profile resource bundles. Java 17 is the candidate runtime.
 
-Before Protocol v1.0 freeze, the project must select and document a validator or validation path that can independently assess the chosen ORU^R01 target profile as far as available tooling permits. The selection must record:
+The exact LRI Edition 5 + 2024DEC-errata ORU^R01 profile bundle is still unresolved. Before Protocol v1.0 freeze the project must:
 
-- tool/project name;
-- exact version/commit;
-- profile/constraint artifacts used;
-- whether LRI Edition 5 + 2024DEC errata are fully, partially, or not natively supported;
-- command/configuration;
-- known blind spots;
-- local reproducibility instructions.
+- obtain/export the exact IGAMT XML resource bundle;
+- hash the bundle deterministically and archive its component hashes;
+- run reference artifacts and structural-negative controls through the local validator;
+- document ERROR/WARNING-to-binary-validity handling;
+- record known LRI/profile blind spots;
+- retain a development-only hosted GVT/Valitheus differential audit where practical.
 
-Until this is resolved, development parseability checks must **not** be described as full LRI conformance validation.
+The hosted service is audit-only because remote runtime/profile changes cannot be frozen as reliably as local artifacts. Until the local profile bundle and qualification evidence are complete, development parseability checks must **not** be described as full LRI conformance validation.
 
 ## Code-equivalence policy
 
@@ -128,6 +127,12 @@ Before `UNIT_CONVERT` is enabled for confirmatory scoring, the selected local UC
 - deterministic repeated-run checks.
 
 Every unit-equivalence decision must retain machine-readable evidence containing at least the source value/unit, target value/unit, UCUM content version, implementation/version, operation, and tolerance rule.
+
+## Frozen mapping provider
+
+The codebase includes a deterministic `FrozenMappingTerminologyEquivalence` provider for exact identity plus explicitly frozen source→target mappings. Non-identical code pairs are accepted only if the exact system/code tuple is present in the supplied versioned mapping set. Reverse mappings are not inferred, and display text, lexical similarity, hierarchy proximity, or embeddings are never used as substitutes.
+
+This provider is an implementation mechanism, not a terminology-content oracle. LOINC membership/version checks and any approved mapping artifact still require a frozen local content snapshot and qualification before confirmatory use.
 
 ## Terminology-provider separation
 
