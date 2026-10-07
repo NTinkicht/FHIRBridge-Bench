@@ -13,6 +13,7 @@ from typing import Any
 
 from .classifier import ClassificationResult, SemanticDecision
 from .classifier import classify_graph as _classify_graph_base
+from .equivalence import TerminologyEquivalenceProvider, UnitEquivalenceProvider
 from .model import LiftedFact
 from .policy import VerificationPolicy
 
@@ -110,6 +111,8 @@ def classify_graph(
     *,
     minimum_grounding_score: int = 10,
     policy: VerificationPolicy | None = None,
+    terminology_provider: TerminologyEquivalenceProvider | None = None,
+    unit_provider: UnitEquivalenceProvider | None = None,
 ) -> ClassificationResult:
     """Classify a graph and refine required-field absence under the contract."""
 
@@ -118,6 +121,8 @@ def classify_graph(
         target_facts,
         minimum_grounding_score=minimum_grounding_score,
         policy=policy,
+        terminology_provider=terminology_provider,
+        unit_provider=unit_provider,
     )
     if policy is None:
         return result
