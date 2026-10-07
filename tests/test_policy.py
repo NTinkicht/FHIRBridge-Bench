@@ -72,6 +72,16 @@ def test_contract_policy_retains_projectability_and_rule_ids_per_scored_field() 
     )
     assert policy.rules_for_field("diagnostic_report", "identifiers") == ()
 
+    assert policy.allows_operation("observation", "concept", "CODE_TRANSLATE")
+    assert policy.allows_operation("observation", "value", "UNIT_CONVERT")
+    assert policy.allows_operation("observation", "unit", "UNIT_CONVERT")
+    assert not policy.allows_operation(
+        "patient_identity",
+        "identifiers",
+        "UNIT_CONVERT",
+    )
+    assert policy.allowed_operations("diagnostic_report", "identifiers") == frozenset()
+
 
 def test_contract_policy_retains_explicit_forbidden_inference_rule() -> None:
     policy = compile_verification_policy(load_yaml(_CONTRACT_PATH))
