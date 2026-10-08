@@ -32,10 +32,6 @@ def test_candidate_manifest_is_explicitly_not_freeze_ready() -> None:
     assert "terminology.loinc.local_snapshot_sha256" in readiness.unresolved_paths
     assert "structural_validation.hl7v2.profile_artifact" in readiness.unresolved_paths
     assert (
-        "units.ucum.official_functional_tests_passed"
-        in readiness.false_boolean_paths
-    )
-    assert (
         "terminology.loinc.local_provider_qualification_passed"
         in readiness.false_boolean_paths
     )
@@ -65,6 +61,17 @@ def test_candidate_versions_are_pinned_to_documented_protocol_choices() -> None:
     )
     assert manifest["units"]["ucum"]["implementation"] == "org.fhir:ucum"
     assert manifest["units"]["ucum"]["implementation_version"] == "1.0.10"
+    assert (
+        manifest["units"]["ucum"]["implementation_commit"]
+        == "db9d22ade3f0f4a667b45817b85a9ac4534e4224"
+    )
+    assert manifest["units"]["ucum"]["official_functional_tests_passed"] is True
+    assert manifest["units"]["ucum"]["official_functional_tests_count"] == 573
+    assert manifest["units"]["ucum"]["project_lab_conversion_matrix_passed"] is True
+    assert (
+        manifest["units"]["ucum"]["qualification_workflow_run_id"]
+        == 37780787093
+    )
     assert (
         manifest["units"]["ucum"]["functional_tests_git_blob_sha"]
         == "76a7fb03cb1009639786955a53c1a6426383cb8d"
