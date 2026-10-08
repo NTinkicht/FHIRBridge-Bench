@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
+from xml.etree import ElementTree
 
 _REQUIRED_FILES = ("PROFILE.xml",)
 _OPTIONAL_FILES = (
@@ -87,3 +88,79 @@ def compute_profile_bundle_manifest(root: Path) -> ProfileBundleManifest:
         files=tuple(files),
         aggregate_sha256=aggregate.hexdigest(),
     )
+
+
+@dataclass(frozen=True)
+class Hl7ProfileIdentity:
+    hl7_version: str | None
+    message_type: str | None
+    event_type: str | None
+    message_structure: str | None
+
+
+def inspect_profile_identity(root: Path) -> Hl7ProfileIdentity:
+    """Extract only standard/message identity from PROFILE.xml.
+
+    This deliberately does not infer LRI edition or errata from free text. Those
+    identities must come from the independently acquired profile bundle record.
+    The XML inspection is a guard against accidentally freezing a profile for a
+    different HL7 version or message structure.
+    """
+
+    profile_path = root / "PROFILE.xml"
+    if not profile_path.is_file():
+        raise ValueError("profile bundle is missing required file(s): PROFILE.xml")
+
+    try:
+        document = ElementTree.parse(profile_path)
+    except ElementTree.ParseError as exc:
+        raise ValueError(f"PROFILE.xml is not well-formed XML: {exc}") from exc
+
+    values: dict[str, str] = {}
+    aliases = {
+        "HL7Version": "hl7_version",
+        "MsgType": "message_type",
+        "EventType": "event_type",
+        "MsgStructID": "message_structure",
+    }
+    for element in document.iter():
+        for attribute, field_name in aliases.items():
+            value = element.attrib.get(attribute)
+            if value and field_name not in values:
+                values[field_name] = value
+
+    return Hl7ProfileIdentity(
+        hl7_version=values.get("hl7_version"),
+        message_type=values.get("message_type"),
+        event_type=values.get("event_type"),
+        message_structure=values.get("message_structure"),
+    )
+
+
+def assert_oru_r01_v251_profile(root: Path) -> Hl7ProfileIdentity:
+    """Reject a profile bundle that is not clearly HL7 v2.5.1 ORU^R01."""
+
+    identity = inspect_profile_identity(root)
+    expected = {
+        "hl7_version": "2.5.1",
+        "message_type": "ORU",
+        "event_type": "R01",
+        "message_structure": "ORU_R01",
+    }
+    observed = {
+        "hl7_version": identity.hl7_version,
+        "message_type": identity.message_type,
+        "event_type": identity.event_type,
+        "message_structure": identity.message_structure,
+    }
+    mismatches = {
+        field: {"expected": expected[field], "observed": observed[field]}
+        for field in expected
+        if observed[field] != expected[field]
+    }
+    if mismatches:
+        raise ValueError(
+            "profile is not the required HL7 v2.5.1 ORU^R01 identity: "
+            f"{mismatches}"
+        )
+    return identity
