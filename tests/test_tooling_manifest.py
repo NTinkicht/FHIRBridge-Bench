@@ -91,6 +91,11 @@ def test_candidate_versions_are_pinned_to_documented_protocol_choices() -> None:
         == "6819cfee60dddc5b93baf6252cb51078facf5021ad56ccabf0a4404309111e80"
     )
     assert manifest["structural_validation"]["fhir"]["core_version"] == "6.10.0"
+    assert manifest["structural_validation"]["fhir"]["validator_cli_version"] == "6.10.0"
+    assert (
+        manifest["structural_validation"]["fhir"]["validator_cli_artifact_sha256"]
+        == "fc663ae55dd31bbfde19788dddfb49cacbeebc3c64498fa7b7779df90000434b"
+    )
     assert manifest["structural_validation"]["fhir"]["runtime"] == "Java_17"
     assert (
         manifest["structural_validation"]["fhir"]["packages"]["fhir_r4"]
