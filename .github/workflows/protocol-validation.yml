@@ -141,6 +141,24 @@ jobs:
             fi
           done
 
+      - name: Freeze resolved FHIR package cache manifest
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/fhir/results
+          if [ -d "$HOME/.fhir/packages" ]; then
+            (
+              cd "$HOME/.fhir/packages"
+              find . -type f -print0                 | sort -z                 | xargs -0 sha256sum
+            ) > qualification/fhir/results/package-cache.sha256
+            sha256sum qualification/fhir/results/package-cache.sha256               > qualification/fhir/results/package-cache-manifest.digest
+            (
+              cd "$HOME/.fhir/packages"
+              find . -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort
+            ) > qualification/fhir/results/package-directories.txt
+          fi
+
       - name: Archive FHIR qualification evidence
         if: always()
         uses: actions/upload-artifact@v4
