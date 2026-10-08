@@ -7,6 +7,7 @@ reviewer labels.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Any
 
@@ -131,4 +132,173 @@ def paired_review_summary(
         rule_ids=rule_ids,
         agreement=agreement,
         disagreements=disagreements,
+    )
+
+
+def expected_review_rule_ids(
+    contract: dict[str, Any],
+    *,
+    relationship_candidates: dict[str, Any] | None = None,
+) -> tuple[str, ...]:
+    """Return the complete rule set that independent reviewers must address."""
+
+    rules = contract.get("rules")
+    if not isinstance(rules, list):
+        raise ValueError("contract.rules must be a list")
+
+    expected: set[str] = set()
+    for rule in rules:
+        if not isinstance(rule, dict):
+            raise ValueError("every contract rule must be a mapping")
+        if rule.get("expert_review_required") is not True:
+            continue
+        rule_id = rule.get("rule_id")
+        if not isinstance(rule_id, str) or not rule_id:
+            raise ValueError("expert-reviewed contract rule requires rule_id")
+        if rule_id in expected:
+            raise ValueError(f"duplicate expected review rule: {rule_id}")
+        expected.add(rule_id)
+
+    if relationship_candidates is not None:
+        parent = relationship_candidates.get("candidate_set", {}).get(
+            "parent_contract", {}
+        )
+        contract_header = contract.get("contract", {})
+        if (
+            parent.get("id") != contract_header.get("id")
+            or parent.get("version") != contract_header.get("version")
+        ):
+            raise ValueError(
+                "relationship candidates must reference the reviewed contract "
+                "ID and version"
+            )
+        candidates = relationship_candidates.get("candidates")
+        if not isinstance(candidates, list):
+            raise ValueError("relationship candidate set must contain candidates")
+        for candidate in candidates:
+            if not isinstance(candidate, dict):
+                raise ValueError("relationship candidate must be a mapping")
+            rule_id = candidate.get("candidate_rule_id")
+            if not isinstance(rule_id, str) or not rule_id:
+                raise ValueError("relationship candidate requires candidate_rule_id")
+            if rule_id in expected:
+                raise ValueError(f"duplicate expected review rule: {rule_id}")
+            expected.add(rule_id)
+
+    if not expected:
+        raise ValueError("review instrument contains no expert-review rules")
+    return tuple(sorted(expected))
+
+
+def validate_review_coverage(
+    response: dict[str, Any],
+    *,
+    expected_rule_ids: Iterable[str],
+) -> None:
+    """Reject paired-but-incomplete reviews before agreement is calculated."""
+
+    expected = set(expected_rule_ids)
+    observed = set(decisions_by_rule(response))
+    if observed != expected:
+        missing = sorted(expected - observed)
+        unexpected = sorted(observed - expected)
+        raise ValueError(
+            "review response does not cover the complete frozen review set; "
+            f"missing={missing}, unexpected={unexpected}"
+        )
+
+
+def validate_review_operations(
+    response: dict[str, Any],
+    contract: dict[str, Any],
+    *,
+    relationship_candidates: dict[str, Any] | None = None,
+) -> None:
+    """Require an explicit accept/reject decision for every proposed operation."""
+
+    proposed_operations: dict[str, set[str]] = {}
+    for rule in contract.get("rules", []):
+        if not isinstance(rule, dict) or rule.get("expert_review_required") is not True:
+            continue
+        rule_id = rule.get("rule_id")
+        if not isinstance(rule_id, str):
+            continue
+        operations = rule.get("allowed_operations", [])
+        if not isinstance(operations, list) or not all(
+            isinstance(operation, str) for operation in operations
+        ):
+            raise ValueError(f"rule {rule_id} has invalid allowed_operations")
+        proposed_operations[rule_id] = set(operations)
+
+    if relationship_candidates is not None:
+        for candidate in relationship_candidates.get("candidates", []):
+            if not isinstance(candidate, dict):
+                continue
+            rule_id = candidate.get("candidate_rule_id")
+            if isinstance(rule_id, str):
+                proposed_operations[rule_id] = set(
+                    candidate.get("proposed_allowed_operations", [])
+                )
+
+    reviews = response.get("rule_reviews")
+    if not isinstance(reviews, list):
+        raise ValueError("rule_reviews must be a list")
+
+    for review in reviews:
+        if not isinstance(review, dict):
+            raise ValueError("each rule review must be a mapping")
+        rule_id = review.get("rule_id")
+        if not isinstance(rule_id, str) or rule_id not in proposed_operations:
+            continue
+        accepted = review.get("accepted_operations")
+        rejected = review.get("rejected_operations")
+        if not isinstance(accepted, list) or not isinstance(rejected, list):
+            raise ValueError(
+                f"rule {rule_id} must explicitly list accepted and rejected operations"
+            )
+        accepted_set = set(accepted)
+        rejected_set = set(rejected)
+        overlap = accepted_set & rejected_set
+        if overlap:
+            raise ValueError(
+                f"rule {rule_id} accepts and rejects the same operations: "
+                f"{sorted(overlap)}"
+            )
+        proposed = proposed_operations[rule_id]
+        if accepted_set | rejected_set != proposed:
+            missing = sorted(proposed - (accepted_set | rejected_set))
+            extra = sorted((accepted_set | rejected_set) - proposed)
+            raise ValueError(
+                f"rule {rule_id} operation review must partition the proposed "
+                f"operations; missing={missing}, unexpected={extra}"
+            )
+
+
+def validate_complete_review_response(
+    response: dict[str, Any],
+    contract: dict[str, Any],
+    *,
+    relationship_candidates: dict[str, Any] | None = None,
+) -> None:
+    """Validate scientific review completeness beyond JSON-schema shape."""
+
+    contract_key = _contract_key(response)
+    header = contract.get("contract")
+    if not isinstance(header, dict):
+        raise ValueError("contract must contain contract metadata")
+    expected_contract_key = (header.get("id"), header.get("version"))
+    if contract_key != expected_contract_key:
+        raise ValueError(
+            "review response references a different contract ID or version"
+        )
+
+    expected = expected_review_rule_ids(
+        contract,
+        relationship_candidates=relationship_candidates,
+    )
+    validate_review_coverage(response, expected_rule_ids=expected)
+    validate_review_operations(
+        response,
+        contract,
+        relationship_candidates=relationship_candidates,
     )
