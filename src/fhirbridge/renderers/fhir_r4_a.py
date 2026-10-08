@@ -381,7 +381,9 @@ class FhirR4LabRendererA:
                 continue
             entries.append(
                 {
-                    "fullUrl": f"urn:uuid:{resource_id}",
+                    "fullUrl": (
+                        f"https://fhirbridge.example/fhir/{resource_type}/{resource_id}"
+                    ),
                     "resource": resource,
                 }
             )
