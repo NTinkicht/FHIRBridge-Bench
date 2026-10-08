@@ -195,23 +195,33 @@ def test_out_of_slice_segment_is_warning_not_a_silent_semantic_error() -> None:
     )
 
 
-@pytest.mark.parametrize(
-    ("segment_name", "expected_code"),
-    (("PID", "MULTIPLE_PID"), ("OBR", "MULTIPLE_OBR")),
-)
-def test_duplicate_core_group_is_parseable_but_outside_scored_development_slice(
-    segment_name: str,
-    expected_code: str,
-) -> None:
+def test_duplicate_pid_remains_outside_scored_development_slice() -> None:
     _, _, artifact = _render("LAB-001", 9604)
-    variant = _duplicate_first_segment(artifact, segment_name)
+    variant = _duplicate_first_segment(artifact, "PID")
 
     structural = fhirbridge.structural.Hl7V251OruDevelopmentValidator().validate(variant)
 
     assert not structural.valid
-    assert expected_code in _structural_codes(structural)
-    with pytest.raises(ValueError, match="exactly one PID and one OBR"):
+    assert "MULTIPLE_PID" in _structural_codes(structural)
+    with pytest.raises(ValueError, match="exactly one PID and at least one OBR"):
         fhirbridge.lifters.Hl7V251OruLifter().lift(
             variant,
-            artifact_id=f"duplicate-{segment_name.lower()}",
+            artifact_id="duplicate-pid",
         )
+
+
+def test_duplicate_obr_is_parseable_but_invalid_when_first_group_has_no_obx() -> None:
+    _, _, artifact = _render("LAB-001", 9605)
+    variant = _duplicate_first_segment(artifact, "OBR")
+
+    structural = fhirbridge.structural.Hl7V251OruDevelopmentValidator().validate(variant)
+
+    assert not structural.valid
+    assert "OBR_GROUP_WITHOUT_OBX" in _structural_codes(structural)
+
+    lifted = fhirbridge.lifters.Hl7V251OruLifter().lift(
+        variant,
+        artifact_id="duplicate-obr",
+    )
+    assert lifted.metadata["report_count"] == 2
+    assert lifted.metadata["observation_count"] == 1
