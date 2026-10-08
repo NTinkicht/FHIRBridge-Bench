@@ -29,7 +29,7 @@ def test_candidate_manifest_is_explicitly_not_freeze_ready() -> None:
 
     assert readiness.manifest_status == "candidate"
     assert not readiness.ready
-    assert "units.ucum.essence_sha256" in readiness.unresolved_paths
+    assert "terminology.loinc.local_snapshot_sha256" in readiness.unresolved_paths
     assert "structural_validation.hl7v2.profile_artifact" in readiness.unresolved_paths
     assert (
         "units.ucum.official_functional_tests_passed"
@@ -55,6 +55,14 @@ def test_candidate_versions_are_pinned_to_documented_protocol_choices() -> None:
     assert manifest["terminology"]["loinc"]["content_version"] == "2.83"
     assert manifest["units"]["ucum"]["content_version"] == "2.2"
     assert manifest["units"]["ucum"]["essence_revision_date"] == "2024-06-17"
+    assert (
+        manifest["units"]["ucum"]["essence_sha256"]
+        == "dfccea1b5dc284245ebae97edd1dc03c45864da4e87df55bc9851797b4fd0b61"
+    )
+    assert (
+        manifest["units"]["ucum"]["essence_git_blob_sha"]
+        == "ec61d23ce68da34bf10726daef7b33d70bbc1b4f"
+    )
     assert manifest["units"]["ucum"]["implementation"] == "org.fhir:ucum"
     assert manifest["units"]["ucum"]["implementation_version"] == "1.0.10"
     assert manifest["terminology"]["hl7_terminology"]["version"] == "7.4.0"
