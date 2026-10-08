@@ -141,6 +141,9 @@ jobs:
             fi
           done
 
+      - name: Summarize FHIR qualification outcomes
+        run: python qualification/fhir/summarize_validation.py qualification/fhir/results
+
       - name: Freeze resolved FHIR package cache manifest
         if: always()
         shell: bash
