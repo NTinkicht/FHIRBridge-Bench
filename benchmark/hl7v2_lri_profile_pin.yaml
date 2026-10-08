@@ -1,0 +1,87 @@
+profile_pin:
+  schema_version: 0.1.0
+  status: candidate
+  purpose: >-
+    Provenance and freeze record for the exact HL7 v2.5.1 LRI Edition 5
+    ORU^R01 profile bundle used by FHIRBridge-Bench. This file deliberately
+    remains unresolved until the exact IGAMT-exported bundle is acquired and
+    independently checked.
+
+target:
+  standard: HL7_v2
+  hl7_version: "2.5.1"
+  message_type: ORU
+  event_type: R01
+  message_structure: ORU_R01
+  implementation_guide: Laboratory_Results_Interface
+  implementation_guide_edition: "5"
+  errata: 2024DEC
+
+acquisition:
+  source_kind: IGAMT_2_exported_XML_resource_bundle
+  source_url_or_record: unresolved
+  igamt_export_identifier: unresolved
+  acquired_at: unresolved
+  acquired_by_role_id: unresolved
+  redistribution_status: unresolved
+
+bundle:
+  local_directory: unresolved
+  aggregate_sha256: unresolved
+  profile_xml_sha256: unresolved
+  component_manifest_path: unresolved
+
+identity_verification:
+  profile_xml_hl7_version: unresolved
+  profile_xml_message_type: unresolved
+  profile_xml_event_type: unresolved
+  profile_xml_message_structure: unresolved
+  profile_identity_guard_passed: false
+  edition_5_evidence_checked: false
+  errata_2024dec_evidence_checked: false
+  independent_profile_provenance_reviewed: false
+
+qualification:
+  validator: gov.cdc:lib-hl7v2-nist-validator
+  validator_version: "1.5.0"
+  nist_engine_version: "1.7.3"
+  runtime: Java_17
+  local_reference_messages_passed: false
+  structural_negative_controls_passed: false
+  hosted_differential_role: audit_only
+  hosted_differential_completed: false
+  warning_error_policy_frozen: false
+  qualification_report_sha256: unresolved
+
+freeze_gate:
+  unresolved_token: unresolved
+  required_exact_values:
+    target.hl7_version: "2.5.1"
+    target.message_type: ORU
+    target.event_type: R01
+    target.message_structure: ORU_R01
+    target.implementation_guide_edition: "5"
+    target.errata: 2024DEC
+  required_resolved_paths:
+    - acquisition.source_url_or_record
+    - acquisition.igamt_export_identifier
+    - acquisition.acquired_at
+    - acquisition.acquired_by_role_id
+    - acquisition.redistribution_status
+    - bundle.local_directory
+    - bundle.aggregate_sha256
+    - bundle.profile_xml_sha256
+    - bundle.component_manifest_path
+    - identity_verification.profile_xml_hl7_version
+    - identity_verification.profile_xml_message_type
+    - identity_verification.profile_xml_event_type
+    - identity_verification.profile_xml_message_structure
+    - qualification.qualification_report_sha256
+  required_true_paths:
+    - identity_verification.profile_identity_guard_passed
+    - identity_verification.edition_5_evidence_checked
+    - identity_verification.errata_2024dec_evidence_checked
+    - identity_verification.independent_profile_provenance_reviewed
+    - qualification.local_reference_messages_passed
+    - qualification.structural_negative_controls_passed
+    - qualification.warning_error_policy_frozen
