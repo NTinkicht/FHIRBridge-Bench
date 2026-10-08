@@ -35,14 +35,19 @@ units:
     essence_source: https://github.com/ucum-org/ucum/blob/main/ucum-essence.xml
     implementation: org.fhir:ucum
     implementation_version: "1.0.10"
+    implementation_commit: db9d22ade3f0f4a667b45817b85a9ac4534e4224
     implementation_role: candidate_local_provider
     implementation_license: BSD-3-Clause
     functional_tests_source: https://github.com/FHIR/Ucum-java/blob/master/src/test/resources/UcumFunctionalTests.xml
     functional_tests_git_blob_sha: 76a7fb03cb1009639786955a53c1a6426383cb8d
     functional_tests_sha256: 3b3feb9d8ecfe8958da69b1afcd25572e3f8d80a36bfcbcda4834a10a0eeef0d
     functional_tests_history_date: "2014-08-18"
-    official_functional_tests_passed: false
-    project_lab_conversion_matrix_passed: false
+    official_functional_tests_passed: true
+    official_functional_tests_count: 573
+    project_lab_conversion_matrix_passed: true
+    project_lab_conversion_matrix_id: FHIRBRIDGE-UCUM-LAB-001
+    qualification_workflow_run_id: 37780787093
+    qualification_commit: 4c5daf1287fa0a6fe532f80138799e1ba2b35dea
 
 structural_validation:
   fhir:
