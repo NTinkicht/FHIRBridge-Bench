@@ -132,3 +132,12 @@ def test_fhir_reference_slice_has_no_indeterminate_decisions() -> None:
             decision.classification != "INDETERMINATE"
             for decision in result.decisions
         )
+
+
+def test_bundle_full_urls_are_valid_absolute_urls() -> None:
+    _, rendered, _, _ = _round_trip("LAB-001", 9007)
+
+    full_urls = [entry["fullUrl"] for entry in rendered.artifact["entry"]]
+    assert full_urls
+    assert all(url.startswith("https://fhirbridge.example/fhir/") for url in full_urls)
+    assert all(not url.startswith("urn:uuid:fb-") for url in full_urls)
