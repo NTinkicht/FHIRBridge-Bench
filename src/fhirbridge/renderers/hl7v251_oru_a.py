@@ -15,7 +15,7 @@ from typing import Any
 from .base import RenderManifest, RenderResult, RenderWarning
 
 _RENDERER_ID = "hl7v251-lri-oru-renderer-a"
-_RENDERER_VERSION = "0.1.0-dev"
+_RENDERER_VERSION = "0.2.0-dev"
 
 
 def _segment(name: str, fields: dict[int, str]) -> str:
@@ -188,6 +188,31 @@ class Hl7V251OruRendererA:
     def renderer_version(self) -> str:
         return _RENDERER_VERSION
 
+    def _render_obx(self, observation: dict[str, Any], *, set_id: int) -> str:
+        attributes = observation.get("attributes", {})
+        temporal = observation.get("temporal", {})
+        value_type, value = _obx_value(observation)
+        interpretation = attributes.get("interpretation")
+        interpretation_code = (
+            _escape(interpretation.get("code"))
+            if isinstance(interpretation, dict)
+            else ""
+        )
+        return _segment(
+            "OBX",
+            {
+                1: str(set_id),
+                2: value_type,
+                3: _ce(observation.get("concept")),
+                5: value,
+                6: _unit_ce(observation.get("unit")),
+                7: _reference_range(attributes),
+                8: interpretation_code,
+                11: _status_code(attributes.get("status")),
+                14: _hl7_ts(temporal.get("effective_start")),
+            },
+        )
+
     def render(
         self,
         graph: dict[str, Any],
@@ -197,15 +222,17 @@ class Hl7V251OruRendererA:
         contract_header = contract.get("contract", {})
         warnings: list[RenderWarning] = []
         patient = _first_fact(graph, "patient_identity")
-        report = _first_fact(graph, "diagnostic_report")
+        reports = _facts(graph, "diagnostic_report")
         observations = _facts(graph, "observation")
-        specimen = _first_fact(graph, "specimen")
-        if patient is None or report is None:
-            raise ValueError("HL7 v2 lab renderer requires patient_identity and diagnostic_report")
+        specimens = _facts(graph, "specimen")
+        if patient is None or not reports:
+            raise ValueError(
+                "HL7 v2 lab renderer requires patient_identity and diagnostic_report"
+            )
 
         graph_id = str(graph.get("graph_id", "unknown"))
         control_id = _message_control_id(graph_id)
-        report_temporal = report.get("temporal", {})
+        report_temporal = reports[0].get("temporal", {})
         message_time = _hl7_ts(
             report_temporal.get("recorded_at") or report_temporal.get("effective_start")
         )
@@ -237,93 +264,170 @@ class Hl7V251OruRendererA:
             },
         )
 
-        report_attributes = report.get("attributes", {})
-        obr = _segment(
-            "OBR",
-            {
-                1: "1",
-                4: _ce(report.get("concept")),
-                7: _hl7_ts(report_temporal.get("effective_start")),
-                22: _hl7_ts(report_temporal.get("recorded_at")),
-                25: _status_code(report_attributes.get("status")),
-            },
-        )
+        segments = [msh, pid]
+        observations_by_id = {
+            str(fact.get("fact_id")): fact
+            for fact in observations
+            if fact.get("fact_id") is not None
+        }
+        specimens_by_id = {
+            str(fact.get("fact_id")): fact
+            for fact in specimens
+            if fact.get("fact_id") is not None
+        }
+        rendered_observation_ids: set[str] = set()
+        rendered_specimen_ids: set[str] = set()
 
-        segments = [msh, pid, obr]
-        if specimen is not None:
-            specimen_identifiers = specimen.get("identifiers", [])
-            specimen_attributes = specimen.get("attributes", {})
-            specimen_temporal = specimen.get("temporal", {})
-            specimen_identifier = next(
-                (
-                    _identifier_ei(identifier)
-                    for identifier in specimen_identifiers
-                    if isinstance(identifier, dict)
-                ),
-                "",
-            )
+        for report_set_id, report in enumerate(reports, start=1):
+            report_id = str(report.get("fact_id"))
+            report_attributes = report.get("attributes", {})
+            report_temporal = report.get("temporal", {})
             segments.append(
                 _segment(
-                    "SPM",
+                    "OBR",
                     {
-                        1: "1",
-                        2: specimen_identifier,
-                        4: "^".join(
-                            [
-                                _escape(specimen_attributes.get("type_label")),
-                                _escape(specimen_attributes.get("type_label")),
-                                "FBR-SPEC",
-                            ]
-                        ),
-                        7: "^".join(
-                            [
-                                _escape(specimen_attributes.get("collection_method_label")),
-                                _escape(specimen_attributes.get("collection_method_label")),
-                                "FBR-METHOD",
-                            ]
-                        ),
-                        17: _hl7_ts(specimen_temporal.get("effective_start")),
+                        1: str(report_set_id),
+                        4: _ce(report.get("concept")),
+                        7: _hl7_ts(report_temporal.get("effective_start")),
+                        22: _hl7_ts(report_temporal.get("recorded_at")),
+                        25: _status_code(report_attributes.get("status")),
                     },
                 )
             )
 
-        allowed_observation_ids = set(_relation_targets(report, "has_result"))
-        for set_id, observation in enumerate(observations, start=1):
-            observation_id = observation.get("fact_id")
-            if allowed_observation_ids and observation_id not in allowed_observation_ids:
+            allowed_observation_ids = _relation_targets(report, "has_result")
+            if not allowed_observation_ids:
+                allowed_observation_ids = [
+                    str(observation.get("fact_id"))
+                    for observation in observations
+                    if report_id
+                    in _relation_targets(observation, "belongs_to_report")
+                ]
+            report_observations = [
+                observations_by_id[observation_id]
+                for observation_id in allowed_observation_ids
+                if observation_id in observations_by_id
+            ]
+
+            report_specimen_ids = _relation_targets(report, "has_specimen")
+            for observation in report_observations:
+                for specimen_id in _relation_targets(observation, "specimen"):
+                    if specimen_id not in report_specimen_ids:
+                        report_specimen_ids.append(specimen_id)
+
+            obx_set_id = 1
+            for spm_set_id, specimen_id in enumerate(report_specimen_ids, start=1):
+                specimen = specimens_by_id.get(specimen_id)
+                if specimen is None:
+                    warnings.append(
+                        RenderWarning(
+                            code="REPORT_SPECIMEN_NOT_FOUND",
+                            message=(
+                                "Report referenced a specimen that was absent from "
+                                "the canonical graph."
+                            ),
+                            fact_ids=(report_id, specimen_id),
+                        )
+                    )
+                    continue
+
+                specimen_identifiers = specimen.get("identifiers", [])
+                specimen_attributes = specimen.get("attributes", {})
+                specimen_temporal = specimen.get("temporal", {})
+                specimen_identifier = next(
+                    (
+                        _identifier_ei(identifier)
+                        for identifier in specimen_identifiers
+                        if isinstance(identifier, dict)
+                    ),
+                    "",
+                )
+                segments.append(
+                    _segment(
+                        "SPM",
+                        {
+                            1: str(spm_set_id),
+                            2: specimen_identifier,
+                            4: "^".join(
+                                [
+                                    _escape(specimen_attributes.get("type_label")),
+                                    _escape(specimen_attributes.get("type_label")),
+                                    "FBR-SPEC",
+                                ]
+                            ),
+                            7: "^".join(
+                                [
+                                    _escape(
+                                        specimen_attributes.get(
+                                            "collection_method_label"
+                                        )
+                                    ),
+                                    _escape(
+                                        specimen_attributes.get(
+                                            "collection_method_label"
+                                        )
+                                    ),
+                                    "FBR-METHOD",
+                                ]
+                            ),
+                            17: _hl7_ts(
+                                specimen_temporal.get("effective_start")
+                            ),
+                        },
+                    )
+                )
+                rendered_specimen_ids.add(specimen_id)
+
+                for observation in report_observations:
+                    observation_id = str(observation.get("fact_id"))
+                    if observation_id in rendered_observation_ids:
+                        continue
+                    if specimen_id not in _relation_targets(
+                        observation,
+                        "specimen",
+                    ):
+                        continue
+                    segments.append(
+                        self._render_obx(observation, set_id=obx_set_id)
+                    )
+                    rendered_observation_ids.add(observation_id)
+                    obx_set_id += 1
+
+            for observation in report_observations:
+                observation_id = str(observation.get("fact_id"))
+                if observation_id in rendered_observation_ids:
+                    continue
+                segments.append(self._render_obx(observation, set_id=obx_set_id))
+                rendered_observation_ids.add(observation_id)
+                obx_set_id += 1
+
+        for observation in observations:
+            observation_id = str(observation.get("fact_id"))
+            if observation_id not in rendered_observation_ids:
                 warnings.append(
                     RenderWarning(
                         code="OBSERVATION_NOT_LINKED_TO_REPORT",
-                        message="Observation was skipped because it was not linked to the report.",
-                        fact_ids=(str(observation_id),),
+                        message=(
+                            "Observation was skipped because it was not linked to "
+                            "a rendered report."
+                        ),
+                        fact_ids=(observation_id,),
                     )
                 )
-                continue
-            attributes = observation.get("attributes", {})
-            temporal = observation.get("temporal", {})
-            value_type, value = _obx_value(observation)
-            interpretation = attributes.get("interpretation")
-            interpretation_code = (
-                _escape(interpretation.get("code"))
-                if isinstance(interpretation, dict)
-                else ""
-            )
-            segments.append(
-                _segment(
-                    "OBX",
-                    {
-                        1: str(set_id),
-                        2: value_type,
-                        3: _ce(observation.get("concept")),
-                        5: value,
-                        6: _unit_ce(observation.get("unit")),
-                        7: _reference_range(attributes),
-                        8: interpretation_code,
-                        11: _status_code(attributes.get("status")),
-                        14: _hl7_ts(temporal.get("effective_start")),
-                    },
+
+        for specimen in specimens:
+            specimen_id = str(specimen.get("fact_id"))
+            if specimen_id not in rendered_specimen_ids:
+                warnings.append(
+                    RenderWarning(
+                        code="SPECIMEN_NOT_LINKED_TO_REPORT",
+                        message=(
+                            "Specimen was skipped because it was not linked to a "
+                            "rendered report or observation."
+                        ),
+                        fact_ids=(specimen_id,),
+                    )
                 )
-            )
 
         manifest = RenderManifest(
             graph_id=graph_id,
@@ -336,7 +440,15 @@ class Hl7V251OruRendererA:
             warnings=tuple(warnings),
             metadata={
                 "segment_count": len(segments),
-                "observation_count": sum(1 for segment in segments if segment.startswith("OBX|")),
+                "observation_count": sum(
+                    1 for segment in segments if segment.startswith("OBX|")
+                ),
+                "report_count": sum(
+                    1 for segment in segments if segment.startswith("OBR|")
+                ),
+                "specimen_count": sum(
+                    1 for segment in segments if segment.startswith("SPM|")
+                ),
                 "clean_room_role": "renderer_a_development",
                 "structural_validation_status": "not_run_by_renderer",
             },
