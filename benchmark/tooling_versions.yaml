@@ -67,7 +67,21 @@ structural_validation:
       us_core: "hl7.fhir.us.core#9.0.0"
       hl7_terminology_r4: "hl7.terminology.r4#7.1.0"
     package_dependency_source: US_Core_9.0.0_published_manifest
-    profile_validation_qualification_passed: false
+    profile_validation_qualification_passed: true
+    profile_validation_qualification_scope: structural_and_profile_constraints_with_tx_disabled
+    qualification_fixture_count: 4
+    qualification_zero_error_fixture_count: 4
+    qualification_warning_counts:
+      LAB-001-9401: 9
+      LAB-004-9402: 10
+      LAB-006-9403: 11
+      LAB-011-9404: 14
+    qualification_workflow_run_id: 37782284261
+    qualification_commit: 6ec47ccce3282e382df64bb1e7a8e4e3cdd776ab
+    qualification_artifact_id: 11553410099
+    qualification_artifact_sha256: e874a9cf28599a79e260ac20d8ef2b4bd778b966c7e44559f3134e288d6e8ca0
+    qualification_warning_policy: warnings_retained_nonblocking
+    package_cache_manifest_sha256: unresolved
     network_during_confirmatory_scoring: disabled_where_practical
 
   hl7v2:
@@ -124,6 +138,7 @@ freeze_gate:
     - structural_validation.fhir.runtime
     - structural_validation.fhir.packages.fhir_r4
     - structural_validation.fhir.packages.us_core
+    - structural_validation.fhir.package_cache_manifest_sha256
     - structural_validation.hl7v2.validator
     - structural_validation.hl7v2.validator_version
     - structural_validation.hl7v2.profile_artifact
