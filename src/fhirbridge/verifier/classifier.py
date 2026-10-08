@@ -515,6 +515,24 @@ def _compare_grounded_fact(
         target_relations = set(target.relationships)
         missing_relations = required_relations - target_relations
         if missing_relations:
+            misattributed_relations: list[dict[str, str]] = []
+            for relation_type, expected_target in sorted(missing_relations):
+                actual_targets = sorted(
+                    actual_target
+                    for actual_type, actual_target in target_relations
+                    if actual_type == relation_type and actual_target != expected_target
+                )
+                for actual_target in actual_targets:
+                    misattributed_relations.append(
+                        {
+                            "relation_type": relation_type,
+                            "expected_target": expected_target,
+                            "actual_target": actual_target,
+                        }
+                    )
+            if misattributed_relations:
+                checks["misattributed_relations"] = misattributed_relations
+                return "attribution", checks
             checks["missing_relations"] = sorted(missing_relations)
             return "relationship", checks
 
@@ -644,6 +662,19 @@ def _pair_decision(
         evidence = {**evidence, "scope_note": scope_note}
 
     if subtype is not None:
+        if subtype == "attribution":
+            return SemanticDecision(
+                decision_id=f"{source_id}:misattribution:relationship",
+                classification="MISATTRIBUTION",
+                source_fact_ids=(source_id,),
+                target_fact_ids=(target.lifted_fact_id,),
+                error_subtype="attribution",
+                severity="S3",
+                evidence={
+                    "rationale_code": "WRONG_RELATIONSHIP_ATTRIBUTION",
+                    **evidence,
+                },
+            )
         severity = "S3" if subtype in {"value", "unit", "identifier"} else "S2"
         return SemanticDecision(
             decision_id=f"{source_id}:corruption:{subtype}",
