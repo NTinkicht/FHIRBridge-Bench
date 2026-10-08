@@ -31,12 +31,9 @@ def test_candidate_manifest_is_explicitly_not_freeze_ready() -> None:
     assert not readiness.ready
     assert "terminology.loinc.local_snapshot_sha256" in readiness.unresolved_paths
     assert "structural_validation.hl7v2.profile_artifact" in readiness.unresolved_paths
+    assert "structural_validation.fhir.package_cache_manifest_sha256" in readiness.unresolved_paths
     assert (
         "terminology.loinc.local_provider_qualification_passed"
-        in readiness.false_boolean_paths
-    )
-    assert (
-        "structural_validation.fhir.profile_validation_qualification_passed"
         in readiness.false_boolean_paths
     )
     assert (
@@ -97,6 +94,23 @@ def test_candidate_versions_are_pinned_to_documented_protocol_choices() -> None:
         == "fc663ae55dd31bbfde19788dddfb49cacbeebc3c64498fa7b7779df90000434b"
     )
     assert manifest["structural_validation"]["fhir"]["runtime"] == "Java_17"
+    assert (
+        manifest["structural_validation"]["fhir"]["profile_validation_qualification_passed"]
+        is True
+    )
+    assert manifest["structural_validation"]["fhir"]["qualification_fixture_count"] == 4
+    assert (
+        manifest["structural_validation"]["fhir"]["qualification_zero_error_fixture_count"]
+        == 4
+    )
+    assert (
+        manifest["structural_validation"]["fhir"]["qualification_workflow_run_id"]
+        == 37782284261
+    )
+    assert (
+        manifest["structural_validation"]["fhir"]["qualification_artifact_sha256"]
+        == "e874a9cf28599a79e260ac20d8ef2b4bd778b966c7e44559f3134e288d6e8ca0"
+    )
     assert (
         manifest["structural_validation"]["fhir"]["packages"]["fhir_r4"]
         == "hl7.fhir.r4.core#4.0.1"
