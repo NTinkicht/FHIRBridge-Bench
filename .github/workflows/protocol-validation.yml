@@ -38,3 +38,57 @@ jobs:
           canonical/examples/LAB-001-example.yaml
           canonical/schema/clinical_fact_graph.schema.yaml
           --schema-dir canonical/schema
+
+
+  ucum-qualification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout FHIRBridge-Bench
+        uses: actions/checkout@v4
+
+      - name: Checkout pinned Ucum-java
+        uses: actions/checkout@v4
+        with:
+          repository: FHIR/Ucum-java
+          ref: db9d22ade3f0f4a667b45817b85a9ac4534e4224
+          path: vendor/Ucum-java
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: |
+            vendor/Ucum-java/pom.xml
+            qualification/ucum/pom.xml
+
+      - name: Verify pinned UCUM artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C vendor/Ucum-java rev-parse HEAD)" = "db9d22ade3f0f4a667b45817b85a9ac4534e4224"
+          echo "dfccea1b5dc284245ebae97edd1dc03c45864da4e87df55bc9851797b4fd0b61  vendor/Ucum-java/src/main/resources/ucum-essence.xml" | sha256sum -c -
+          echo "3b3feb9d8ecfe8958da69b1afcd25572e3f8d80a36bfcbcda4834a10a0eeef0d  vendor/Ucum-java/src/test/resources/UcumFunctionalTests.xml" | sha256sum -c -
+
+      - name: Run official UCUM functional tests
+        working-directory: vendor/Ucum-java
+        run: mvn -B -Dtest=UcumFunctionalTests test
+
+      - name: Run FHIRBridge laboratory UCUM matrix
+        working-directory: qualification/ucum
+        run: >
+          mvn -B test
+          -DucumMatrix="${{ github.workspace }}/benchmark/ucum_lab_conversion_matrix.yaml"
+          -DucumEssence="${{ github.workspace }}/vendor/Ucum-java/src/main/resources/ucum-essence.xml"
+
+      - name: Archive UCUM qualification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ucum-qualification-evidence-${{ github.run_id }}
+          path: |
+            vendor/Ucum-java/target/surefire-reports/**
+            qualification/ucum/target/surefire-reports/**
+          if-no-files-found: warn
+          retention-days: 90
