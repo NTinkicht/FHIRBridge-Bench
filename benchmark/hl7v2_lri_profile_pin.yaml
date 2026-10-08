@@ -17,6 +17,21 @@ target:
   implementation_guide_edition: "5"
   errata: 2024DEC
 
+authoritative_evidence:
+  hl7_product_brief:
+    url: https://www.hl7.org/implement/standards/product_brief.cfm?product_id=279
+    edition_5_status_date: "2024-05-16"
+    current_state: Active
+    realm: US
+  hl7_errata_publication:
+    url: https://standups.hl7.org/2024/12/06/errata-publication-of-hl7-version-2-5-1-implementation-guide-laboratory-results-interface-lri-edition-5-us-realm/
+    publication_date: "2024-12-06"
+    errata_label: 2024DEC
+  evidence_role: >-
+    Confirms the human-readable target edition and errata. It does not prove
+    that any acquired IGAMT XML bundle corresponds to that publication; bundle
+    provenance and independent review remain mandatory.
+
 acquisition:
   source_kind: IGAMT_2_exported_XML_resource_bundle
   source_url_or_record: unresolved
