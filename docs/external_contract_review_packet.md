@@ -51,6 +51,10 @@ Review against the following versioned artifacts on the `protocol-v1` branch:
 3. `docs/contract_review_protocol.md` — independence, agreement, adjudication, and freeze procedure.
 4. `docs/projectability_contract.md` — construct-level projectability definitions.
 5. `canonical/schema/` — canonical fact definitions where a rule's source semantics require clarification.
+6. `contracts/review/relationship_candidates_v0.1.yaml` — explicitly
+   non-scored relationship/grouping candidates surfaced by the multi-OBR/SPM
+   development slice. Review these for possible Contract v1.0 promotion; do not
+   assume they are correct because a renderer can implement them.
 
 The official HL7 v2→FHIR mappings are evidence of semantic correspondence only. They must **not** be treated as proof that the reverse mapping is unique, lossless, or automatically valid for this target profile.
 
@@ -168,6 +172,35 @@ At minimum, independently review the current candidate rules for:
 8. Are temporal precision and timezone normalization rules sufficiently constrained?
 9. Are code equivalence and UCUM conversion rules conservative enough to prevent broader/narrower concept substitutions from being counted as equivalent?
 10. Which rules, if any, should remain `INDETERMINATE` for the primary endpoint even after adjudication?
+11. Are the three relationship/grouping candidates in
+    `relationship_candidates_v0.1.yaml` stable enough under LRI Edition 5 to
+    enter Contract v1.0? For any promoted candidate, provide the exact grouping
+    semantics or equivalence class that should be scored.
+
+## Relationship/grouping candidates requiring explicit review
+
+The grouped ORU development slice now makes three attribution questions testable,
+but they remain outside the current v0.2 primary endpoint:
+
+- `REPORT_RESULT_MEMBERSHIP_001`: whether a source
+  `DiagnosticReport.result` relationship must be preserved as OBX membership in
+  the corresponding OBR/ORDER_OBSERVATION group;
+- `REPORT_SPECIMEN_MEMBERSHIP_001`: whether a source report-to-specimen
+  relationship must be preserved as SPM membership in the corresponding report
+  group;
+- `OBSERVATION_SPECIMEN_MEMBERSHIP_001`: whether an Observation's source
+  specimen association can be scored from the SPM context containing its OBX.
+
+For each candidate, decide independently whether the relationship should become
+`MUST_PRESERVE`, `MAY_TRANSFORM`, `MAY_LOSE`, remain
+`INDETERMINATE`, or be excluded from this study. If you believe it is
+scoreable, specify the legal LRI structural locus/equivalence class and any
+alternate representation that must not be treated as an error.
+
+These candidates were added before confirmatory model inference because seeded
+misattribution qualification exposed the need to distinguish wrong grouping from
+simple field corruption. Development fault detectability is not evidence that the
+candidate rule is standards-correct.
 
 ## Known unresolved items
 
