@@ -14,7 +14,7 @@ from fhirbridge.verifier.model import LiftedFact
 from .base import LiftResult, LiftWarning
 
 _LIFTER_ID = "hl7v251-lri-oru-lifter"
-_LIFTER_VERSION = "0.1.0-dev"
+_LIFTER_VERSION = "0.2.0-dev"
 
 
 def _unescape(value: str) -> str:
@@ -226,15 +226,17 @@ def _report_fact(
     path: str,
     *,
     patient_id: str,
+    report_id: str,
     observation_ids: list[str],
-    specimen_id: str | None,
+    specimen_ids: list[str],
 ) -> LiftedFact:
-    lifted_id = "v2::report::1"
+    lifted_id = report_id
     relationships = [
         ("has_result", observation_id) for observation_id in observation_ids
     ]
-    if specimen_id is not None:
-        relationships.append(("has_specimen", specimen_id))
+    relationships.extend(
+        ("has_specimen", specimen_id) for specimen_id in specimen_ids
+    )
     effective = _ts_to_iso(_field(obr, 7))
     issued = _ts_to_iso(_field(obr, 22))
     payload = {
@@ -277,9 +279,8 @@ def _observation_fact(
     patient_id: str,
     report_id: str,
     specimen_id: str | None,
+    lifted_id: str,
 ) -> LiftedFact:
-    set_id = _field(obx, 1) or "unknown"
-    lifted_id = f"v2::obx::{set_id}"
     value_type = _field(obx, 2)
     raw_value = _field(obx, 5)
     attributes: dict[str, Any] = {"status": _status(_field(obx, 11))}
@@ -355,9 +356,8 @@ def _specimen_fact(
     *,
     patient_id: str,
     observation_ids: list[str],
+    lifted_id: str,
 ) -> LiftedFact:
-    set_id = _field(spm, 1) or "1"
-    lifted_id = f"v2::spm::{set_id}"
     identifier = _identifier_from_ei(_field(spm, 2))
     relationships = [
         ("specimen_for_observation", observation_id)
@@ -429,59 +429,130 @@ class Hl7V251OruLifter:
         warnings: list[LiftWarning] = []
         pid_items = _segment_index(segments, "PID")
         obr_items = _segment_index(segments, "OBR")
-        obx_items = _segment_index(segments, "OBX")
-        spm_items = _segment_index(segments, "SPM")
-        if len(pid_items) != 1 or len(obr_items) != 1:
+        if len(pid_items) != 1 or not obr_items:
             raise ValueError(
-                "development ORU slice requires exactly one PID and one OBR"
-            )
-        if len(spm_items) > 1:
-            warnings.append(
-                LiftWarning(
-                    code="MULTIPLE_SPECIMENS_OUTSIDE_DEV_SLICE",
-                    message="Only the first SPM is lifted by the development slice.",
-                    target_paths=tuple(f"SPM[{index}]" for index, _ in spm_items),
-                )
+                "development ORU slice requires exactly one PID and at least one OBR"
             )
 
         patient = _patient_fact(pid_items[0][1], f"PID[{pid_items[0][0]}]")
-        observation_ids = [
-            f"v2::obx::{_field(segment, 1) or position + 1}"
-            for position, (_, segment) in enumerate(obx_items)
-        ]
-        specimen_id = None
-        if spm_items:
-            specimen_id = f"v2::spm::{_field(spm_items[0][1], 1) or '1'}"
-        report_id = "v2::report::1"
+        facts: list[LiftedFact] = [patient]
+        all_observations: list[LiftedFact] = []
+        all_specimens: list[LiftedFact] = []
 
-        report = _report_fact(
-            obr_items[0][1],
-            f"OBR[{obr_items[0][0]}]",
-            patient_id=patient.lifted_fact_id,
-            observation_ids=observation_ids,
-            specimen_id=specimen_id,
-        )
-        observations = [
-            _observation_fact(
-                segment,
-                f"OBX[{segment_index}]",
+        obr_positions = [index for index, _ in obr_items]
+        for group_number, (obr_index, obr) in enumerate(obr_items, start=1):
+            next_obr_index = (
+                obr_positions[group_number]
+                if group_number < len(obr_positions)
+                else len(segments)
+            )
+            report_id = f"v2::report::{group_number}"
+            group_segments = [
+                (index, segments[index])
+                for index in range(obr_index + 1, next_obr_index)
+            ]
+
+            specimen_entries: list[tuple[int, list[str], str]] = []
+            observation_entries: list[
+                tuple[int, list[str], str, str | None]
+            ] = []
+            current_specimen_id: str | None = None
+            used_observation_ids: set[str] = set()
+            used_specimen_ids: set[str] = set()
+            spm_counter = 0
+            obx_counter = 0
+
+            for segment_index, segment in group_segments:
+                if segment[0] == "SPM":
+                    spm_counter += 1
+                    token = _field(segment, 1) or str(spm_counter)
+                    specimen_id = (
+                        f"v2::spm::{token}"
+                        if len(obr_items) == 1
+                        else f"{report_id}::spm::{token}"
+                    )
+                    if specimen_id in used_specimen_ids:
+                        specimen_id = f"{specimen_id}::{spm_counter}"
+                    used_specimen_ids.add(specimen_id)
+                    current_specimen_id = specimen_id
+                    specimen_entries.append(
+                        (segment_index, segment, specimen_id)
+                    )
+                elif segment[0] == "OBX":
+                    obx_counter += 1
+                    token = _field(segment, 1) or str(obx_counter)
+                    observation_id = (
+                        f"v2::obx::{token}"
+                        if len(obr_items) == 1
+                        else f"{report_id}::obx::{token}"
+                    )
+                    if observation_id in used_observation_ids:
+                        observation_id = f"{observation_id}::{obx_counter}"
+                    used_observation_ids.add(observation_id)
+                    observation_entries.append(
+                        (
+                            segment_index,
+                            segment,
+                            observation_id,
+                            current_specimen_id,
+                        )
+                    )
+
+            observation_ids = [
+                observation_id
+                for _, _, observation_id, _ in observation_entries
+            ]
+            specimen_ids = [
+                specimen_id
+                for _, _, specimen_id in specimen_entries
+            ]
+            report = _report_fact(
+                obr,
+                f"OBR[{obr_index}]",
                 patient_id=patient.lifted_fact_id,
                 report_id=report_id,
-                specimen_id=specimen_id,
+                observation_ids=observation_ids,
+                specimen_ids=specimen_ids,
             )
-            for segment_index, segment in obx_items
-        ]
-        facts: list[LiftedFact] = [patient, report]
-        if spm_items:
-            facts.append(
-                _specimen_fact(
-                    spm_items[0][1],
-                    f"SPM[{spm_items[0][0]}]",
+            facts.append(report)
+
+            group_observations = [
+                _observation_fact(
+                    segment,
+                    f"OBX[{segment_index}]",
                     patient_id=patient.lifted_fact_id,
-                    observation_ids=observation_ids,
+                    report_id=report_id,
+                    specimen_id=specimen_id,
+                    lifted_id=observation_id,
                 )
-            )
-        facts.extend(observations)
+                for (
+                    segment_index,
+                    segment,
+                    observation_id,
+                    specimen_id,
+                ) in observation_entries
+            ]
+            all_observations.extend(group_observations)
+
+            for segment_index, segment, specimen_id in specimen_entries:
+                linked_observation_ids = [
+                    observation_id
+                    for _, _, observation_id, linked_specimen_id
+                    in observation_entries
+                    if linked_specimen_id == specimen_id
+                ]
+                all_specimens.append(
+                    _specimen_fact(
+                        segment,
+                        f"SPM[{segment_index}]",
+                        patient_id=patient.lifted_fact_id,
+                        observation_ids=linked_observation_ids,
+                        lifted_id=specimen_id,
+                    )
+                )
+
+        facts.extend(all_specimens)
+        facts.extend(all_observations)
 
         known = {"MSH", "PID", "OBR", "OBX", "SPM"}
         for index, segment in enumerate(segments):
@@ -505,7 +576,9 @@ class Hl7V251OruLifter:
             metadata={
                 "message_type": message_type,
                 "version": version,
-                "observation_count": len(observations),
+                "observation_count": len(all_observations),
+                "report_count": len(obr_items),
+                "specimen_count": len(all_specimens),
                 "semantic_verdict_emitted": False,
             },
         )
