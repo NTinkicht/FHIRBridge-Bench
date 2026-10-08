@@ -63,7 +63,7 @@ FHIRBridge-Bench will use a **local UCUM service backed by the frozen UCUM essen
 Candidate stack:
 
 - UCUM specification/content: version 2.2.
-- `ucum-essence.xml`: frozen local artifact; exact SHA-256 still unresolved.
+- `ucum-essence.xml`: UCUM 2.2 / revision date 2024-06-17, pinned by Git blob `ec61d23ce68da34bf10726daef7b33d70bbc1b4f` and SHA-256 `dfccea1b5dc284245ebae97edd1dc03c45864da4e87df55bc9851797b4fd0b61`.
 - Implementation: `org.fhir:ucum:1.0.10`.
 - Confirmatory role: local quantity validation and conversion only when the contract explicitly permits `UNIT_CONVERT`.
 - Exact unit identity remains valid without invoking conversion.
@@ -74,8 +74,8 @@ The FHIR Ucum-java library exposes validation, comparability, and conversion ser
 
 The provider is not frozen merely because a Maven coordinate has been selected. Before confirmatory use:
 
-1. freeze and hash the exact UCUM 2.2 essence file;
-2. run the official UCUM functional test file and archive results;
+1. verify the locally acquired UCUM 2.2 essence file against the frozen SHA-256 above;
+2. run the official UCUM functional test file and archive its exact source/date/hash plus results;
 3. run a project-specific laboratory conversion matrix covering every conversion pair licensed by the frozen projectability contract;
 4. verify joint value+unit conversion, not unit-string equivalence alone;
 5. establish numeric precision/tolerance policy before the sealed set is opened;
