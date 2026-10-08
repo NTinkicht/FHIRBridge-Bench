@@ -12,7 +12,7 @@ import re
 from .base import StructuralFinding, StructuralValidationResult
 
 _VALIDATOR_ID = "hl7v251-oru-development-structural-gate"
-_VALIDATOR_VERSION = "0.1.0-dev"
+_VALIDATOR_VERSION = "0.2.0-dev"
 _PROFILE = "HL7_v2.5.1_ORU_R01_development_slice_not_LRI_certification"
 _TS = re.compile(r"^\d{8}(?:\d{6}(?:[+-]\d{4})?)?$")
 
@@ -91,13 +91,36 @@ class Hl7V251OruDevelopmentValidator:
                     "Development slice currently supports exactly one PID.",
                 )
             )
-        if named.count("OBR") > 1:
-            findings.append(
-                _finding(
-                    "MULTIPLE_OBR",
-                    "Development slice currently supports exactly one OBR.",
+        obr_indexes = [
+            index for index, segment in enumerate(segments) if segment[0] == "OBR"
+        ]
+        if obr_indexes:
+            first_obr = obr_indexes[0]
+            for index, segment in enumerate(segments[:first_obr]):
+                if segment[0] in {"SPM", "OBX"}:
+                    findings.append(
+                        _finding(
+                            "RESULT_SEGMENT_BEFORE_OBR",
+                            f"{segment[0]} must belong to an OBR group.",
+                            f"segment[{index}]",
+                        )
+                    )
+            for group_number, start in enumerate(obr_indexes, start=1):
+                end = (
+                    obr_indexes[group_number]
+                    if group_number < len(obr_indexes)
+                    else len(segments)
                 )
-            )
+                if not any(
+                    segment[0] == "OBX" for segment in segments[start + 1 : end]
+                ):
+                    findings.append(
+                        _finding(
+                            "OBR_GROUP_WITHOUT_OBX",
+                            "Each development OBR group requires at least one OBX.",
+                            f"OBR[{start}]",
+                        )
+                    )
 
         for index, segment in enumerate(segments):
             name = segment[0]
