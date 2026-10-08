@@ -30,7 +30,9 @@ units:
   ucum:
     content_version: "2.2"
     essence_revision_date: "2024-06-17"
-    essence_sha256: unresolved
+    essence_sha256: dfccea1b5dc284245ebae97edd1dc03c45864da4e87df55bc9851797b4fd0b61
+    essence_git_blob_sha: ec61d23ce68da34bf10726daef7b33d70bbc1b4f
+    essence_source: https://github.com/ucum-org/ucum/blob/main/ucum-essence.xml
     implementation: org.fhir:ucum
     implementation_version: "1.0.10"
     implementation_role: candidate_local_provider
