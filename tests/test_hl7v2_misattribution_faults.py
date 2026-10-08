@@ -104,6 +104,12 @@ def test_f007_moves_intact_observation_to_wrong_report_group() -> None:
 
 def test_f014_swaps_valid_specimen_ids_between_result_contexts() -> None:
     graph = _merge_graphs("LAB-006", 9711, "LAB-006", 9712)
+    specimens = [fact for fact in graph["facts"] if fact["fact_type"] == "specimen"]
+    assert len(specimens) == 2
+    # Isolate attribution as the only changed semantic construct. If collection
+    # times differ, the swapped identifier can legitimately surface first as a
+    # temporal corruption under deterministic mismatch precedence.
+    specimens[1]["temporal"] = deepcopy(specimens[0]["temporal"])
     _, artifact = _render(graph)
 
     mutation = swap_specimen_identifiers(artifact)
