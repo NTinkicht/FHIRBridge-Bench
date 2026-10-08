@@ -65,6 +65,15 @@ def test_candidate_versions_are_pinned_to_documented_protocol_choices() -> None:
     )
     assert manifest["units"]["ucum"]["implementation"] == "org.fhir:ucum"
     assert manifest["units"]["ucum"]["implementation_version"] == "1.0.10"
+    assert (
+        manifest["units"]["ucum"]["functional_tests_git_blob_sha"]
+        == "76a7fb03cb1009639786955a53c1a6426383cb8d"
+    )
+    assert (
+        manifest["units"]["ucum"]["functional_tests_sha256"]
+        == "3b3feb9d8ecfe8958da69b1afcd25572e3f8d80a36bfcbcda4834a10a0eeef0d"
+    )
+    assert manifest["units"]["ucum"]["functional_tests_history_date"] == "2014-08-18"
     assert manifest["terminology"]["hl7_terminology"]["version"] == "7.4.0"
     assert (
         manifest["structural_validation"]["fhir"]["validator_wrapper_version"]
