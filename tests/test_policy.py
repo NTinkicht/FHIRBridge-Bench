@@ -212,8 +212,10 @@ def test_unfrozen_relationship_mapping_is_not_scored_by_contract_policy() -> Non
     development_diagnostic = classify_graph(source["facts"], lifted)
     assert not development_diagnostic.faithful
     assert any(
-        decision.classification == "CORRUPTION"
-        and decision.error_subtype == "relationship"
+        decision.classification == "MISATTRIBUTION"
+        and decision.error_subtype == "attribution"
+        and decision.evidence.get("rationale_code")
+        == "WRONG_RELATIONSHIP_ATTRIBUTION"
         for decision in development_diagnostic.decisions
     )
 
