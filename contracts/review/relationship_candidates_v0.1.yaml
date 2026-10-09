@@ -93,6 +93,39 @@ candidates:
       - Is SPM context sufficient to establish Observation-to-Specimen attribution?
       - Are there legal alternate representations that require an equivalence class?
 
+
+  - candidate_rule_id: OBSERVATION_SUBJECT_ATTRIBUTION_001
+    canonical_relation: observation.subject_ref
+    source_semantics:
+      fhir_paths:
+        - Observation.subject
+      relation: Observation_to_Patient
+    target_semantics:
+      candidate_locus:
+        - ORU_R01.PATIENT_RESULT.PATIENT.PID
+        - patient_context_containing_ORDER_OBSERVATION_OBX
+      interpretation: >-
+        An Observation explicitly attributed to the source patient must remain
+        within the corresponding patient-result context in the target. Moving an
+        otherwise correct result into another patient's context is a semantic
+        misattribution even when the OBX clinical payload is unchanged.
+    current_projectability: INDETERMINATE
+    candidate_failure_class_if_scored: MISATTRIBUTION
+    candidate_severity: S3
+    reasons_review_required:
+      - Patient attribution is carried partly by ORU message/group context rather than one OBX field.
+      - The current v0.2 contract scores patient identifiers and result content but not subject_ref itself.
+      - The exact LRI Edition 5 profile and legal grouping alternatives must be checked before automatic scoring.
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-message-oru-r01-to-bundle.html
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-pid-to-patient.html
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obx-to-observation.html
+    external_review_questions:
+      - Is Observation-to-patient attribution mandatory and stable in the selected LRI Edition 5 slice?
+      - What exact PID/PATIENT_RESULT grouping evidence is sufficient to establish the patient context of an OBX?
+      - Are there legal alternate representations where patient attribution is conveyed outside the immediate PATIENT_RESULT group?
+      - If promoted, should wrong-patient placement be an S3 MISATTRIBUTION primary-endpoint failure?
+
 freeze_rule:
   - No candidate becomes endpoint-eligible because Renderer A, Renderer B, or an LLM uses the same grouping.
   - Promotion requires independent external review against the exact LRI Edition 5 plus 2024DEC target.
