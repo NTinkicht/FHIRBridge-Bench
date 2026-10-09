@@ -31,7 +31,6 @@ def test_candidate_manifest_is_explicitly_not_freeze_ready() -> None:
     assert not readiness.ready
     assert "terminology.loinc.local_snapshot_sha256" in readiness.unresolved_paths
     assert "structural_validation.hl7v2.profile_artifact" in readiness.unresolved_paths
-    assert "structural_validation.fhir.package_cache_manifest_sha256" in readiness.unresolved_paths
     assert (
         "terminology.loinc.local_provider_qualification_passed"
         in readiness.false_boolean_paths
@@ -110,6 +109,18 @@ def test_candidate_versions_are_pinned_to_documented_protocol_choices() -> None:
     assert (
         manifest["structural_validation"]["fhir"]["qualification_artifact_sha256"]
         == "e874a9cf28599a79e260ac20d8ef2b4bd778b966c7e44559f3134e288d6e8ca0"
+    )
+    assert (
+        manifest["structural_validation"]["fhir"]["package_cache_manifest_sha256"]
+        == "aea8f39ef73056de5f0eec423080c5a9edc55acf1b034e1aa67d4ae2f307827c"
+    )
+    assert (
+        manifest["structural_validation"]["fhir"]["package_cache_manifest_source_run_id"]
+        == 37941158582
+    )
+    assert (
+        manifest["structural_validation"]["fhir"]["package_cache_directory_count"]
+        == 22
     )
     assert (
         manifest["structural_validation"]["fhir"]["packages"]["fhir_r4"]
