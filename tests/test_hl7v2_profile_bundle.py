@@ -91,6 +91,30 @@ def test_profile_identity_extracts_v251_oru_r01_attributes(tmp_path: Path) -> No
     assert_oru_r01_v251_profile(tmp_path)
 
 
+def test_profile_identity_supports_nist_conformance_profile_message_attributes(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "PROFILE.xml").write_text(
+        (
+            '<ConformanceProfile HL7Version="2.5.1">'
+            '<Messages>'
+            '<Message Type="ACK" Event="R01" StructID="ACK"/>'
+            '<Message Description="Laboratory Results Interface" '
+            'Type="ORU" Event="R01" StructID="ORU_R01"/>'
+            '</Messages>'
+            '</ConformanceProfile>'
+        ),
+        encoding="utf-8",
+    )
+
+    identity = inspect_profile_identity(tmp_path)
+
+    assert identity.hl7_version == "2.5.1"
+    assert identity.message_type == "ORU"
+    assert identity.event_type == "R01"
+    assert identity.message_structure == "ORU_R01"
+    assert_oru_r01_v251_profile(tmp_path)
+
 def test_profile_identity_rejects_wrong_message_or_version(tmp_path: Path) -> None:
     (tmp_path / "PROFILE.xml").write_text(
         (
