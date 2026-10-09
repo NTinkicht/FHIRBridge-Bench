@@ -28,7 +28,10 @@ terminology:
     version: "7.4.0"
     r4_package: hl7.terminology.r4
     status_date: "2026-09-22"
-    package_sha256: unresolved
+    package_sha256: 1dc558c204f5ee1f2b96ab9a8cd83d0811475b08a4e06a7c2bcea55d1ab116ed
+    qualification_workflow_run_id: 37953147893
+    qualification_job_id: 113896835935
+    qualification_passed: true
 
 units:
   ucum:
