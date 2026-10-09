@@ -27,10 +27,18 @@ authoritative_evidence:
     url: https://standups.hl7.org/2024/12/06/errata-publication-of-hl7-version-2-5-1-implementation-guide-laboratory-results-interface-lri-edition-5-us-realm/
     publication_date: "2024-12-06"
     errata_label: 2024DEC
+  local_publication_package:
+    filename: V251_IG_LRI_E5_2024MAY_Errata2024DEC.zip
+    sha256: f26188eabed5b00045b111bd2c4ef29cbfdcbdfad38a4b61fd1547a9259835b2
+    implementation_guide_pdf_sha256: 375f02fd5453b06ff1c51841e703c943c3132134fca53a122f5ccfed743461b7
+    errata_letter_pdf_sha256: 32eeb375ecb78dd77acb01ed388e30c554688e55a8a4d58df05dd0e7a791700f
+    contains_machine_readable_profile_xml: false
+    evidence_record: benchmark/lri_order_context_evidence.yaml
   evidence_role: >-
-    Confirms the human-readable target edition and errata. It does not prove
-    that any acquired IGAMT XML bundle corresponds to that publication; bundle
-    provenance and independent review remain mandatory.
+    Confirms the human-readable target edition, errata, and published base
+    ORC/OBR requirements. It does not prove that any acquired IGAMT XML bundle
+    corresponds to that publication; machine-profile provenance and independent
+    review remain mandatory.
 
 acquisition:
   source_kind: IGAMT_2_exported_XML_resource_bundle

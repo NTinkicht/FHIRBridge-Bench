@@ -1,8 +1,8 @@
 evidence_record:
   id: FHIRBRIDGE-LRI-ORDER-CONTEXT-001
-  version: 0.1.0
+  version: 0.2.0
   status: prefreeze_evidence
-  decision_status: unresolved_until_exact_edition5_profile
+  decision_status: order_context_resolved_from_authoritative_edition5_publication
   scientific_role: structural_design_evidence_only
 
 authoritative_publication:
@@ -11,13 +11,54 @@ authoritative_publication:
   publication_date: "2024-05-16"
   errata_publication_date: "2024-12-06"
   product_url: https://www.hl7.org/implement/standards/product_brief.cfm?product_id=279
+  locally_acquired_publication_package:
+    filename: V251_IG_LRI_E5_2024MAY_Errata2024DEC.zip
+    package_sha256: f26188eabed5b00045b111bd2c4ef29cbfdcbdfad38a4b61fd1547a9259835b2
+    package_entry_count: 2
+    implementation_guide_pdf:
+      filename: V251_IG_LRI_E5_2024MAY_Errata2024DEC.pdf
+      sha256: 375f02fd5453b06ff1c51841e703c943c3132134fca53a122f5ccfed743461b7
+      printed_title: >-
+        HL7 Version 2.5.1 Implementation Guide: Laboratory Results Interface
+        (LRI), Edition 5 - US Realm, May 2024 - Errata December 2024
+    errata_letter_pdf:
+      filename: 2024 12 06 - CSDO Errata Letter for LRI.pdf
+      sha256: 32eeb375ecb78dd77acb01ed388e30c554688e55a8a4d58df05dd0e7a791700f
+    contains_machine_readable_profile_xml: false
   establishes:
     - edition5_is_active_stu
     - 2024dec_errata_exists
+    - order_observation_group_usage_R_cardinality_1_to_many
+    - ORC_usage_R_cardinality_1_to_1
+    - OBR_usage_R_cardinality_1_to_1
+    - ORC_2_placer_order_number_usage_RE_cardinality_0_to_1
+    - ORC_3_filler_order_number_usage_R_cardinality_1_to_1
+    - OBR_2_placer_order_number_usage_RE_cardinality_0_to_1
+    - OBR_3_filler_order_number_usage_R_cardinality_1_to_1
+    - ORC_12_ordering_provider_usage_R_cardinality_1_to_1
+    - ORC_2_and_OBR_2_must_match_when_present
+    - ORC_3_and_OBR_3_must_match
   does_not_establish:
-    - exact_orc_cardinality_for_selected_component
-    - exact_order_identifier_requirements
+    - machine_readable_igamt_bundle_identity
+    - exact_nist_validator_profile_artifact
+    - profile_xml_hash
     - projectability_truth
+
+edition5_profile_architecture:
+  minimum_required_profile_components:
+    - LRI_Common_Component_V3
+    - one_of_LRI_GU_Component_R1_or_LRI_NG_Component_R1
+    - one_of_LAB_FRU_Component_or_LAB_FRN_Component
+  pre_coordinated_general_profiles:
+    - LRI_GU_FRU_Profile_V3
+    - LRI_GU_FRN_Profile_V3
+    - LRI_NG_FRU_Profile_V3
+    - LRI_NG_FRN_Profile_V3
+  selected_confirmatory_combination: unresolved_pending_profile_choice
+  note: >-
+    General-laboratory scope does not remove the base ORC/OBR requirements.
+    A specific GU/NG and FRU/FRN combination must still be frozen before
+    confirmatory profile validation.
 
 legacy_nist_comparator:
   repository: usnistgov/hit-core-hl7v2
@@ -25,13 +66,6 @@ legacy_nist_comparator:
   profile_path: hit-core-hl7v2-service/src/test/resources/profiles/1_1_2_Profile.xml
   constraints_path: hit-core-hl7v2-service/src/test/resources/constraints/1_1_2_Constraints.xml
   profile_generation: LRI_R2_2016
-  observed_order_observation_structure:
-    ORC:
-      usage: R
-      cardinality: "1..1"
-    OBR:
-      usage: R
-      cardinality: "1..1"
   role: historical_differential_only
   warning: >-
     This is not Edition 5 and must never be substituted for the exact
@@ -48,20 +82,37 @@ secondary_implementation_evidence:
     therefore cannot define the FHIRBridge confirmatory target.
 
 freeze_decision:
-  exact_edition5_profile_bundle_required: true
-  must_determine_before_hl7_profile_qualification:
-    - selected_lri_component
-    - ORC_usage_and_cardinality
-    - OBR_usage_and_cardinality
-    - placer_order_identifier_requirement
-    - filler_order_identifier_requirement
-    - whether_order_context_can_be_present_without_invented_business_identifiers
+  exact_edition5_profile_bundle_required_for_machine_validation: true
+  resolved_from_authoritative_publication:
+    ORC_usage: R
+    ORC_cardinality: "1..1"
+    OBR_usage: R
+    OBR_cardinality: "1..1"
+    placer_order_identifier_usage: RE
+    placer_order_identifier_cardinality: "0..1"
+    filler_order_identifier_usage: R
+    filler_order_identifier_cardinality: "1..1"
+    ordering_provider_usage: R
+    ordering_provider_cardinality: "1..1"
+  still_required_before_hl7_profile_qualification:
+    - select_exact_general_lri_profile_component_combination
+    - acquire_exact_machine_readable_profile_bundle
+    - verify_profile_bundle_lineage_to_edition5_2024dec
+    - qualify_reference_and_negative_messages_against_profile
   prohibited_shortcuts:
+    - infer_machine_profile_from_human_readable_pdf
     - infer_edition5_from_legacy_r2
     - infer_edition5_from_michigan_local_profile
     - invent_order_identifiers_to_make_validator_green
     - map_diagnostic_report_identifier_to_order_identifier_without_review
-  safe_if_order_context_required: >-
-    Add an explicit canonical order fact plus corresponding FHIR ServiceRequest
-    and HL7 v2 ORC/OBR projection. Keep new order-identifier semantic scoring
-    outside the primary endpoint until independently reviewed and frozen.
+  required_design_change: >-
+    The current ORU renderer cannot be structurally conformant to Edition 5
+    while omitting ORC. Add explicit source-grounded order context before
+    profile qualification. At minimum, the benchmark source must provide a
+    filler order identifier and ordering provider that can be projected to the
+    required ORC/OBR fields without inventing facts.
+  safe_source_grounded_path: >-
+    Add an explicit canonical order fact plus corresponding FHIR
+    ServiceRequest/requester context and HL7 v2 ORC/OBR projection. Keep new
+    order-identifier semantic scoring outside the primary endpoint until the
+    mapping is independently reviewed and frozen.
