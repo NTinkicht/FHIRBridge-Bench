@@ -111,18 +111,25 @@ class ClassificationResult:
         )
 
 
-def _identifier_set(payload: dict[str, Any]) -> set[tuple[object, object, object]]:
+def _identifier_set(payload: dict[str, Any]) -> set[tuple[object, object]]:
+    """Return identifier namespace/value semantics used by the fidelity contract.
+
+    Canonical identifier.type is descriptive metadata for the current laboratory
+    slice. It is not a preservation dimension in the projectability contract and
+    therefore must not turn an otherwise preserved business identifier into a
+    corruption merely because the target omits or standardizes the type label.
+    """
+
     identifiers = payload.get("identifiers", [])
     if not isinstance(identifiers, list):
         return set()
-    result: set[tuple[object, object, object]] = set()
+    result: set[tuple[object, object]] = set()
     for identifier in identifiers:
         if isinstance(identifier, dict) and identifier.get("value") is not None:
             result.add(
                 (
                     identifier.get("system"),
                     identifier.get("value"),
-                    identifier.get("type"),
                 )
             )
     return result
