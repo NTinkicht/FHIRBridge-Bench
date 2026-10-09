@@ -1,0 +1,51 @@
+{
+  "duplicate_identical_loinc_csv_members": [
+    "AccessoryFiles/PanelsAndForms/Loinc.csv"
+  ],
+  "loinc_csv_member": "LoincTable/Loinc.csv",
+  "loinc_csv_sha256": "5de1463f0fe65d6c97867153b43151a07ce3f8c8a86de681f98e110008032aba",
+  "official_filename": "Loinc_2.83.zip",
+  "official_md5": "057ddf203164705d5a4c3604257060a4",
+  "qualification": {
+    "all_passed": true,
+    "passed_required": 4,
+    "results": [
+      {
+        "code": "24323-8",
+        "name_match": true,
+        "observed_long_common_name": "Comprehensive metabolic 2000 panel - Serum or Plasma",
+        "observed_status": "ACTIVE",
+        "present": true,
+        "status_match": true
+      },
+      {
+        "code": "2345-7",
+        "name_match": true,
+        "observed_long_common_name": "Glucose [Mass/volume] in Serum or Plasma",
+        "observed_status": "ACTIVE",
+        "present": true,
+        "status_match": true
+      },
+      {
+        "code": "2951-2",
+        "name_match": true,
+        "observed_long_common_name": "Sodium [Moles/volume] in Serum or Plasma",
+        "observed_status": "ACTIVE",
+        "present": true,
+        "status_match": true
+      },
+      {
+        "code": "2823-3",
+        "name_match": true,
+        "observed_long_common_name": "Potassium [Moles/volume] in Serum or Plasma",
+        "observed_status": "ACTIVE",
+        "present": true,
+        "status_match": true
+      }
+    ],
+    "total_required": 4,
+    "version": "2.83"
+  },
+  "version": "2.83",
+  "zip_sha256": "077a0718e87d8309ffe3a673f75b836a8e783dc36a646413ef97c71c12eab27e"
+}

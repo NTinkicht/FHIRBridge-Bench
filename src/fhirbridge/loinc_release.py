@@ -12,6 +12,8 @@ import yaml
 
 from .loinc_snapshot import qualification_to_dict, qualify_loinc_snapshot
 
+_CANONICAL_LOINC_CSV = "LoincTable/Loinc.csv"
+
 
 def _digest(path: Path, algorithm: str) -> str:
     hasher = md5() if algorithm == "md5" else sha256()
@@ -30,11 +32,45 @@ def _requirements_metadata(path: Path) -> dict[str, Any]:
     return snapshot
 
 
+def _select_loinc_csv(
+    archive: ZipFile,
+) -> tuple[str, bytes, tuple[str, ...]]:
+    candidates = sorted(
+        name
+        for name in archive.namelist()
+        if name == "Loinc.csv" or name.endswith("/Loinc.csv")
+    )
+    if not candidates:
+        raise ValueError("LOINC release does not contain Loinc.csv")
+
+    member = (
+        _CANONICAL_LOINC_CSV
+        if _CANONICAL_LOINC_CSV in candidates
+        else candidates[0]
+    )
+    csv_bytes = archive.read(member)
+    canonical_sha256 = sha256(csv_bytes).hexdigest()
+
+    duplicates: list[str] = []
+    for candidate in candidates:
+        if candidate == member:
+            continue
+        candidate_bytes = archive.read(candidate)
+        if sha256(candidate_bytes).hexdigest() != canonical_sha256:
+            raise ValueError(
+                "LOINC release contains multiple non-identical Loinc.csv files: "
+                + ", ".join(candidates)
+            )
+        duplicates.append(candidate)
+
+    return member, csv_bytes, tuple(duplicates)
+
+
 def qualify_loinc_release_zip(
     zip_path: Path,
     requirements_path: Path,
 ) -> dict[str, Any]:
-    """Verify official checksum, locate Loinc.csv, and qualify required codes."""
+    """Verify official checksum, select Loinc.csv, and qualify required codes."""
 
     if not zip_path.is_file():
         raise ValueError(f"LOINC release archive is not a file: {zip_path}")
@@ -62,18 +98,7 @@ def qualify_loinc_release_zip(
 
     try:
         with ZipFile(zip_path) as archive:
-            candidates = [
-                name
-                for name in archive.namelist()
-                if name == "Loinc.csv" or name.endswith("/Loinc.csv")
-            ]
-            if len(candidates) != 1:
-                raise ValueError(
-                    "LOINC release must contain exactly one Loinc.csv; "
-                    f"found {len(candidates)}"
-                )
-            member = candidates[0]
-            csv_bytes = archive.read(member)
+            member, csv_bytes, duplicates = _select_loinc_csv(archive)
     except BadZipFile as exc:
         raise ValueError("LOINC release is not a valid ZIP archive") from exc
 
@@ -89,6 +114,7 @@ def qualify_loinc_release_zip(
         "official_md5": observed_md5,
         "zip_sha256": zip_sha256,
         "loinc_csv_member": member,
+        "duplicate_identical_loinc_csv_members": list(duplicates),
         "loinc_csv_sha256": csv_sha256,
         "qualification": qualification_to_dict(report),
     }
