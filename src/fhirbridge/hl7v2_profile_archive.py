@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from hashlib import sha256
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from tempfile import TemporaryDirectory
-from pathlib import Path
 from zipfile import BadZipFile, ZipFile
 
 from .hl7v2_profile_bundle import (
