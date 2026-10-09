@@ -54,3 +54,16 @@ def test_multi_fault_batch_cycles_all_three_composed_templates() -> None:
     }
 
     assert multi_fault_ids == {"MF001", "MF002", "MF003"}
+
+
+def test_mf003_batch_cases_use_panel_topology() -> None:
+    batch = build_development_fault_batch(_contract())
+
+    mf003_cases = [
+        case
+        for case in batch.cases
+        if case.semantic_class == "MULTI_FAULT" and case.fault_id == "MF003"
+    ]
+
+    assert mf003_cases
+    assert all(case.scenario_id == "LAB-005" for case in mf003_cases)
