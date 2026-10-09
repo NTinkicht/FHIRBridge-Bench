@@ -1,0 +1,60 @@
+policy:
+  id: FHIRBRIDGE-FHIR-WARNINGS-001
+  version: 0.1.0
+  status: candidate
+  scope: FHIR_R4_US_CORE_9_0_0_structural_qualification
+  purpose: >-
+    Fail closed on previously unseen FHIR validator warnings while retaining
+    explicitly reviewed non-blocking warning classes. A warning class is not
+    equivalent to semantic correctness and cannot override verifier findings.
+
+categories:
+  - category_id: DOMAIN_RESOURCE_NARRATIVE_BEST_PRACTICE
+    regex: "Constraint failed: dom-6:"
+    disposition: accepted_nonblocking
+    rationale: >-
+      Narrative text is a base-FHIR best-practice recommendation. The benchmark
+      evaluates structured laboratory facts and does not use generated narrative
+      as semantic ground truth.
+
+  - category_id: OBSERVATION_PERFORMER_BEST_PRACTICE
+    regex: "all observations should have a performer"
+    disposition: accepted_nonblocking
+    rationale: >-
+      US Core recommends performer information, but performer is outside the
+      first frozen laboratory semantic slice pending projectability review.
+
+  - category_id: OFFLINE_UCUM_TERMINOLOGY_CHECK
+    regex: "Unable to validate code '.+' in system 'http://unitsofmeasure.org' because the validator is running without terminology services"
+    disposition: accepted_separate_oracle
+    rationale: >-
+      Confirmatory structural validation intentionally disables live terminology.
+      UCUM quantity equivalence is handled by the separately pinned and qualified
+      local UCUM provider.
+
+  - category_id: SYNTHETIC_CODE_SYSTEM_UNAVAILABLE
+    regex: "A definition for CodeSystem 'urn:fhirbridge:synthetic:"
+    disposition: accepted_synthetic_variant
+    rationale: >-
+      Held-out/local-code benchmark variants deliberately exercise code systems
+      not published to external terminology services.
+
+  - category_id: LOCAL_LAB_CODE_EXTENSIBLE_VALUESET
+    regex: "None of the codings provided are in the value set 'US Core Laboratory Test Codes'"
+    disposition: accepted_synthetic_variant
+    rationale: >-
+      US Core laboratory code binding is extensible. This warning is expected
+      only in the explicit local-code scenario and is retained as evidence.
+
+  - category_id: CODED_RESULT_SNOMED_BEST_PRACTICE
+    regex: "us-core-4: 'SHOULD use SNOMED CT for coded Results'"
+    disposition: accepted_synthetic_variant
+    rationale: >-
+      The coded-result scenario intentionally uses a synthetic local result code
+      to test mapping-aware behavior. The SHOULD-level warning remains visible.
+
+freeze_rules:
+  unknown_warning_count_must_equal: 0
+  accepted_categories_must_be_versioned: true
+  warning_text_must_be_archived: true
+  no_warning_may_be_promoted_to_semantic_equivalence: true
