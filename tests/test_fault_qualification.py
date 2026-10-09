@@ -2,6 +2,7 @@ import pytest
 
 from fhirbridge.fault_qualification import (
     FaultQualificationCase,
+    qualification_report_to_dict,
     qualify_seeded_faults,
 )
 
@@ -163,3 +164,33 @@ def test_empty_or_duplicate_case_sets_are_rejected() -> None:
     )
     with pytest.raises(ValueError, match="unique"):
         qualify_seeded_faults([duplicate, duplicate])
+
+
+def test_qualification_report_serialization_preserves_intervals_and_case_ids() -> None:
+    report = qualify_seeded_faults(
+        [
+            FaultQualificationCase(
+                case_id="serial-a",
+                expected_classifications=("FABRICATION",),
+                expected_severity="S2",
+                observed_classifications=("FABRICATION",),
+                observed_severities=("S2",),
+            ),
+            FaultQualificationCase(
+                case_id="serial-b",
+                expected_classifications=("OMISSION",),
+                expected_severity="S3",
+                observed_classifications=("INDETERMINATE",),
+                observed_severities=(),
+            ),
+        ]
+    )
+
+    payload = qualification_report_to_dict(report)
+
+    assert payload["total_cases"] == 2
+    assert payload["by_class"]["FABRICATION"]["estimate"] == 1.0
+    assert payload["by_class"]["OMISSION"]["estimate"] == 0.0
+    assert payload["unresolved_case_ids"] == ["serial-b"]
+    assert 0 <= payload["all_expected_classes_detected"]["lower"] <= 0.5
+    assert payload["all_expected_classes_detected"]["upper"] <= 1
