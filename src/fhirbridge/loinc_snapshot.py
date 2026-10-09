@@ -9,6 +9,8 @@ from typing import Any
 
 import yaml
 
+_PROVIDER_VERSION = "0.1.0"
+
 
 @dataclass(frozen=True)
 class LoincRequiredCode:
