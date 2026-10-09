@@ -160,8 +160,8 @@ def inspect_profile_identity(root: Path) -> Hl7ProfileIdentity:
     except ElementTree.ParseError as exc:
         raise ValueError(f"PROFILE.xml is not well-formed XML: {exc}") from exc
 
-    root = document.getroot()
-    hl7_version = root.attrib.get("HL7Version")
+    root_element = document.getroot()
+    hl7_version = root_element.attrib.get("HL7Version")
     if hl7_version is None:
         hl7_version = next(
             (
