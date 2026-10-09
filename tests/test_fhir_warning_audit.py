@@ -3,8 +3,8 @@ from pathlib import Path
 import pytest
 
 from fhirbridge.fhir_warning_audit import (
-    audit_warning_logs,
     audit_to_dict,
+    audit_warning_logs,
     load_warning_policy,
 )
 
@@ -21,12 +21,24 @@ def test_warning_policy_is_unique_and_loadable() -> None:
 
 
 def test_warning_audit_classifies_known_warning_classes(tmp_path: Path) -> None:
+    performer_warning = (
+        "Warning @ Observation: Best Practice Recommendation: In general, "
+        "all observations should have a performer"
+    )
+    ucum_warning = (
+        "Warning @ Observation.value: Unable to validate code 'mg/dL' in system "
+        "'http://unitsofmeasure.org' because the validator is running without "
+        "terminology services"
+    )
     (tmp_path / "LAB-001.log").write_text(
         "\n".join(
             [
-                "Warning @ Bundle.entry[0].resource: Constraint failed: dom-6: narrative",
-                "Warning @ Observation: Best Practice Recommendation: In general, all observations should have a performer",
-                "Warning @ Observation.value: Unable to validate code 'mg/dL' in system 'http://unitsofmeasure.org' because the validator is running without terminology services",
+                (
+                    "Warning @ Bundle.entry[0].resource: "
+                    "Constraint failed: dom-6: narrative"
+                ),
+                performer_warning,
+                ucum_warning,
             ]
         )
         + "\n",
