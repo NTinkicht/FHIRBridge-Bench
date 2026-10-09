@@ -1,0 +1,41 @@
+snapshot:
+  terminology: LOINC
+  version: "2.83"
+  release_date: "2026-08-19"
+  official_download_filename: Loinc_2.83.zip
+  official_download_url: https://loinc.org/downloads/
+  official_download_requires_login: true
+  official_md5: 057ddf203164705d5a4c3604257060a4
+  local_zip_sha256: unresolved
+  local_loinc_csv_sha256: unresolved
+  redistribution_policy: do_not_commit_licensed_release_files
+  qualification_status: awaiting_local_official_download
+
+required_codes:
+  - code: "24323-8"
+    expected_status: ACTIVE
+    expected_long_common_name: Comprehensive metabolic 2000 panel - Serum or Plasma
+    benchmark_role: diagnostic_report_code
+
+  - code: "2345-7"
+    expected_status: ACTIVE
+    expected_long_common_name: Glucose [Mass/volume] in Serum or Plasma
+    benchmark_role: observation_code
+
+  - code: "2951-2"
+    expected_status: ACTIVE
+    expected_long_common_name: Sodium [Moles/volume] in Serum or Plasma
+    benchmark_role: observation_code
+
+  - code: "2823-3"
+    expected_status: ACTIVE
+    expected_long_common_name: Potassium [Moles/volume] in Serum or Plasma
+    benchmark_role: observation_code
+
+qualification_rules:
+  - all_required_codes_present
+  - all_required_codes_active
+  - long_common_names_match_frozen_expected_values
+  - exact_release_zip_and_csv_sha256_recorded
+  - source_release_remains_local_if_license_disallows_redistribution
+  - live_loinc_fhir_service_is_audit_only
