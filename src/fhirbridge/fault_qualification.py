@@ -202,3 +202,40 @@ def qualify_seeded_faults(
         unresolved_case_ids=unresolved,
         extra_error_case_ids=extras,
     )
+
+
+
+def qualification_report_to_dict(
+    report: FaultQualificationReport,
+) -> dict[str, object]:
+    """Return a stable JSON-serializable seeded-fault qualification report."""
+
+    def rate_to_dict(rate: RateEstimate) -> dict[str, object]:
+        return {
+            "successes": rate.successes,
+            "total": rate.total,
+            "estimate": rate.estimate,
+            "lower": rate.lower,
+            "upper": rate.upper,
+        }
+
+    return {
+        "total_cases": report.total_cases,
+        "exact_class_resolution": rate_to_dict(report.exact_class_resolution),
+        "all_expected_classes_detected": rate_to_dict(
+            report.all_expected_classes_detected
+        ),
+        "severity_at_least_expected": rate_to_dict(
+            report.severity_at_least_expected
+        ),
+        "by_class": {
+            key: rate_to_dict(value)
+            for key, value in sorted(report.by_class.items())
+        },
+        "by_expected_severity": {
+            key: rate_to_dict(value)
+            for key, value in sorted(report.by_expected_severity.items())
+        },
+        "unresolved_case_ids": list(report.unresolved_case_ids),
+        "extra_error_case_ids": list(report.extra_error_case_ids),
+    }
