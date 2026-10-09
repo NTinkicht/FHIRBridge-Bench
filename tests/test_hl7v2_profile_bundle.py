@@ -200,6 +200,4 @@ def test_profile_guard_rejects_oru_when_wrapper_would_select_another_message(
     )
 
     with pytest.raises(ValueError, match="first declared message profile"):
-        from fhirbridge.hl7v2_profile_bundle import assert_single_oru_r01_profile
-
         assert_single_oru_r01_profile(tmp_path)
