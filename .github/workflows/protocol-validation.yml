@@ -180,6 +180,13 @@ jobs:
       - name: Checkout FHIRBridge-Bench
         uses: actions/checkout@v4
 
+      - name: Checkout pinned CDC NIST validator bundle
+        uses: actions/checkout@v4
+        with:
+          repository: CDCgov/lib-hl7v2-nist-validator
+          ref: eeac90c5f88dca3018992005232acdf3da644d88
+          path: vendor/lib-hl7v2-nist-validator
+
       - name: Set up Java 17
         uses: actions/setup-java@v5
         with:
@@ -187,6 +194,15 @@ jobs:
           java-version: "17"
           cache: maven
           cache-dependency-path: qualification/hl7v2/pom.xml
+
+      - name: Verify pinned CDC validator bundle revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C vendor/lib-hl7v2-nist-validator rev-parse HEAD)" = "eeac90c5f88dca3018992005232acdf3da644d88"
+          test -f vendor/lib-hl7v2-nist-validator/lib/gov/nist/hl7-v2-parser/1.7.3/hl7-v2-parser-1.7.3.jar
+          test -f vendor/lib-hl7v2-nist-validator/lib/gov/nist/hl7-v2-profile/1.7.3/hl7-v2-profile-1.7.3.jar
+          test -f vendor/lib-hl7v2-nist-validator/lib/gov/nist/hl7-v2-validation/1.7.3/hl7-v2-validation-1.7.3.jar
 
       - name: Compile pinned NIST HL7 v2 qualification harness
         run: mvn -B -f qualification/hl7v2/pom.xml package -DskipTests
