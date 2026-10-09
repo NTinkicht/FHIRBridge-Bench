@@ -157,6 +157,7 @@ def test_expected_review_set_includes_contract_and_relationship_candidates() -> 
     assert "PATIENT_IDENTIFIER_001" in expected
     assert "FREE_TEXT_INFERENCE_001" in expected
     assert "REPORT_RESULT_MEMBERSHIP_001" in expected
+    assert "OBSERVATION_SUBJECT_ATTRIBUTION_001" in expected
     assert "REPORT_SPECIMEN_MEMBERSHIP_001" in expected
     assert "OBSERVATION_SPECIMEN_MEMBERSHIP_001" in expected
 
