@@ -101,7 +101,18 @@ The target-artifact suite currently covers:
 - **F016**: unauthorized derived assertion as an unsupported OBX;
 - **F018**: structural negative control by invalidating MSH-12.
 
-Still pending are representation-aware implementations for F007 and F014, explicit declared-loss testing for F017, and the multi-fault templates.
+Implemented multi-fault templates are:
+
+- **MF001**: value + unit joint corruption;
+- **MF002**: patient swap with otherwise valid result semantics;
+- **MF003**: required-result omission + unsupported fabricated replacement.
+
+Still pending are representation-aware implementations for F007 and F014 and
+explicit declared-loss testing for F017. F006 and MF002 remain **contract-blocked
+development diagnostics** while subject attribution is outside the externally
+reviewed projectability contract. Under the contract-scoped verifier they must
+surface as `INDETERMINATE`, not as faithful transformations and not as
+confirmatory MISATTRIBUTION detections.
 
 ## 7. Qualification workflow
 
@@ -118,6 +129,33 @@ For semantic faults expected to remain structurally valid:
 9. persist evidence and run-manifest metadata.
 
 For structural negative controls, semantic scoring stops when the structural gate fails unless an explicitly separate diagnostic analysis has been preregistered.
+
+## 7.1 Contract-blocked qualification stimuli
+
+A seeded fault may target a taxonomy class that the current frozen/candidate
+projectability contract does not yet authorize for confirmatory scoring. Such a
+case is **contract-blocked**, not an ordinary detector miss.
+
+The reporting rule is fixed before confirmatory qualification:
+
+1. retain every contract-blocked stimulus in the all-stimuli diagnostic report;
+2. require the contract-scoped verifier to fail closed to `INDETERMINATE` when
+   the unsupported dimension is the only defect;
+3. exclude those predeclared contract-blocked cases from class-sensitivity and
+   exact-resolution denominators;
+4. report the blocked case count, IDs, expected taxonomy class, and blocking
+   contract reason separately;
+5. never promote the blocked class into the confirmatory denominator merely
+   because the verifier could detect it in no-policy/development mode.
+
+For the current v0.2 contract, patient/subject attribution is not a reviewed
+scored dimension. Therefore F006 and the MISATTRIBUTION component of MF002 are
+reported as contract-blocked until external contract review explicitly resolves
+that scope.
+
+This separation prevents two opposite errors: counting an unlicensed semantic
+dimension as if it were validated ground truth, or counting an intentionally
+unscored dimension as evidence that the verifier lacks sensitivity.
 
 ## 8. Required run-manifest fields
 
@@ -149,6 +187,10 @@ The verifier may know the frozen contract but must not inspect a mutation's expe
 Confirmatory seeded faults should include a subset authored or reviewed by a person who has not inspected the verifier implementation details. The sealed expert-validation set remains independent of this seeded suite.
 
 ## 10. Pilot and confirmatory planning targets
+
+The deterministic development batch currently contains 314 stimuli: 50
+FABRICATION, 50 OMISSION, 50 MISATTRIBUTION, 64 CORRUPTION, and 100
+multi-fault cases. Counts are construction targets, not validation claims.
 
 Current planning targets, subject to statistical justification before freeze, are:
 
