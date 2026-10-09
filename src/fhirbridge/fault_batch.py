@@ -252,10 +252,19 @@ def build_development_fault_batch(
     )
     for multi_index in range(100):
         operator_name, operator = multi_operators[multi_index % len(multi_operators)]
+        # MF003 requires at least two source observations so one required result
+        # can be omitted while a different surviving observation seeds the
+        # unsupported replacement. LAB-005 supplies that topology without
+        # changing the mutation operator merely to satisfy batch generation.
+        scenario_id = (
+            "LAB-005"
+            if operator_name == "omission_plus_fabricated_replacement"
+            else "LAB-001"
+        )
         cases.append(
             _multi_case(
                 case_index=multi_index + 1,
-                scenario_id="LAB-001",
+                scenario_id=scenario_id,
                 seed=seed,
                 operator_name=operator_name,
                 operator=operator,
