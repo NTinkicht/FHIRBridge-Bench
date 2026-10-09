@@ -52,6 +52,18 @@ jobs:
           retention-days: 90
 
 
+      - name: Report tooling freeze readiness
+        run: python qualification/freeze/report_readiness.py
+
+      - name: Archive tooling freeze-readiness report
+        uses: actions/upload-artifact@v4
+        with:
+          name: tooling-freeze-readiness-${{ github.run_id }}
+          path: qualification/freeze/results/tooling-freeze-readiness.json
+          if-no-files-found: error
+          retention-days: 90
+
+
   ucum-qualification:
     runs-on: ubuntu-latest
     steps:
