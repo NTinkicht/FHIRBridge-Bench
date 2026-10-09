@@ -234,13 +234,19 @@ def test_unreviewed_subject_misattribution_is_diagnostic_not_confirmatory() -> N
 
     scoped = classify_graph(source["facts"], lifted, policy=policy)
     assert scoped.faithful
+    assert scoped.primary_endpoint_verdict == "INDETERMINATE"
     assert all(decision.classification != "MISATTRIBUTION" for decision in scoped.decisions)
     observation_decision = next(
         decision
         for decision in scoped.decisions
         if observation_id in decision.source_fact_ids
     )
+    assert observation_decision.classification == "INDETERMINATE"
+    assert observation_decision.primary_endpoint_eligible is False
     assert observation_decision.evidence.get("scope_note") == (
+        "SUBJECT_ATTRIBUTION_OUTSIDE_CONTRACT_SCOPE"
+    )
+    assert observation_decision.evidence.get("rationale_code") == (
         "SUBJECT_ATTRIBUTION_OUTSIDE_CONTRACT_SCOPE"
     )
 
