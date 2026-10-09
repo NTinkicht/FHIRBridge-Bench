@@ -59,8 +59,15 @@ identity_verification:
 qualification:
   validator: gov.cdc:lib-hl7v2-nist-validator
   validator_version: "1.5.0"
+  validator_repository_commit: eeac90c5f88dca3018992005232acdf3da644d88
   nist_engine_version: "1.7.3"
   runtime: Java_17
+  harness_compilation_passed: true
+  legacy_differential_execution_passed: true
+  legacy_differential_workflow_run_id: 37950773310
+  legacy_differential_profile_generation: LRI_R2_2016
+  legacy_differential_status: STRUCTURE_ERRORS
+  legacy_differential_error_total: 14
   local_reference_messages_passed: false
   structural_negative_controls_passed: false
   hosted_differential_role: audit_only
