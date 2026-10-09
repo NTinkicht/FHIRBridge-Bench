@@ -91,6 +91,50 @@ def compute_profile_bundle_manifest(root: Path) -> ProfileBundleManifest:
 
 
 @dataclass(frozen=True)
+class Hl7ProfileMessage:
+    identifier: str | None
+    description: str | None
+    message_type: str | None
+    event_type: str | None
+    message_structure: str | None
+
+
+def inspect_profile_messages(root: Path) -> tuple[Hl7ProfileMessage, ...]:
+    """Return declared message profiles in document order.
+
+    IGAMT/NIST exports have used more than one attribute naming convention.
+    This parser recognizes both the historical Message Type/Event/StructID form
+    and MsgType/EventType/MsgStructID forms without using free-text labels as
+    message identity.
+    """
+
+    profile_path = root / "PROFILE.xml"
+    if not profile_path.is_file():
+        raise ValueError("profile bundle is missing required file(s): PROFILE.xml")
+    try:
+        document = ElementTree.parse(profile_path)
+    except ElementTree.ParseError as exc:
+        raise ValueError(f"PROFILE.xml is not well-formed XML: {exc}") from exc
+
+    messages: list[Hl7ProfileMessage] = []
+    for element in document.iter():
+        message_type = element.attrib.get("MsgType") or element.attrib.get("Type")
+        event_type = element.attrib.get("EventType") or element.attrib.get("Event")
+        structure = element.attrib.get("MsgStructID") or element.attrib.get("StructID")
+        if not (message_type or event_type or structure):
+            continue
+        messages.append(
+            Hl7ProfileMessage(
+                identifier=element.attrib.get("ID"),
+                description=element.attrib.get("Description"),
+                message_type=message_type,
+                event_type=event_type,
+                message_structure=structure,
+            )
+        )
+    return tuple(messages)
+
+@dataclass(frozen=True)
 class Hl7ProfileIdentity:
     hl7_version: str | None
     message_type: str | None
@@ -128,28 +172,28 @@ def inspect_profile_identity(root: Path) -> Hl7ProfileIdentity:
             None,
         )
 
-    message_candidates: list[tuple[str | None, str | None, str | None]] = []
-    for element in document.iter():
-        message_type = element.attrib.get("MsgType") or element.attrib.get("Type")
-        event_type = element.attrib.get("EventType") or element.attrib.get("Event")
-        structure = element.attrib.get("MsgStructID") or element.attrib.get("StructID")
-        if message_type or event_type or structure:
-            message_candidates.append((message_type, event_type, structure))
-
-    preferred = next(
+    messages = inspect_profile_messages(root)
+    preferred_message = next(
         (
-            candidate
-            for candidate in message_candidates
-            if candidate == ("ORU", "R01", "ORU_R01")
+            message
+            for message in messages
+            if (
+                message.message_type,
+                message.event_type,
+                message.message_structure,
+            )
+            == ("ORU", "R01", "ORU_R01")
         ),
-        message_candidates[0] if message_candidates else (None, None, None),
+        messages[0] if messages else None,
     )
 
     return Hl7ProfileIdentity(
         hl7_version=hl7_version,
-        message_type=preferred[0],
-        event_type=preferred[1],
-        message_structure=preferred[2],
+        message_type=(preferred_message.message_type if preferred_message else None),
+        event_type=(preferred_message.event_type if preferred_message else None),
+        message_structure=(
+            preferred_message.message_structure if preferred_message else None
+        ),
     )
 
 
@@ -180,3 +224,34 @@ def assert_oru_r01_v251_profile(root: Path) -> Hl7ProfileIdentity:
             f"{mismatches}"
         )
     return identity
+
+
+def assert_single_oru_r01_profile(root: Path) -> Hl7ProfileMessage:
+    """Require exactly one ORU^R01 profile for deterministic local validation.
+
+    The CDC wrapper validates against the first message profile exposed by the
+    underlying NIST profile. A confirmatory bundle with multiple ORU^R01
+    variants would therefore make profile selection implicit. FHIRBridge-Bench
+    refuses that ambiguity: the acquired bundle must be a single selected
+    ORU^R01 profile export, or a documented selector-capable validation path
+    must replace this wrapper before freeze.
+    """
+
+    assert_oru_r01_v251_profile(root)
+    matches = [
+        message
+        for message in inspect_profile_messages(root)
+        if (
+            message.message_type,
+            message.event_type,
+            message.message_structure,
+        )
+        == ("ORU", "R01", "ORU_R01")
+    ]
+    if len(matches) != 1:
+        identifiers = [message.identifier for message in matches]
+        raise ValueError(
+            "confirmatory profile must contain exactly one ORU^R01 message; "
+            f"found {len(matches)} with identifiers {identifiers}"
+        )
+    return matches[0]
