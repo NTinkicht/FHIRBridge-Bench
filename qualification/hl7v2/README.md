@@ -22,3 +22,12 @@ The command:
 After provenance review, the same frozen bundle is used with `gov.cdc:lib-hl7v2-nist-validator:1.5.0`. Reference messages and structural-negative controls must both be evaluated before `profile_validation_qualification_passed` can be set true.
 
 The profile XML itself should only be committed when redistribution is explicitly permitted. Otherwise commit hashes, source/acquisition metadata, and qualification reports only.
+
+
+If HL7/IGAMT provides the resource bundle as a ZIP, inspect it directly without manually extracting it:
+
+```bash
+python qualification/hl7v2/inspect_profile_archive.py /absolute/path/to/igamt-export.zip
+```
+
+The ZIP inspector is intentionally conservative: it requires exactly one `PROFILE.xml`, copies only known scientific companion files from the same archive directory into a temporary workspace, rejects ambiguous multi-ORU exports, and records the archive SHA-256 in addition to the deterministic bundle hash. Unknown files and archive paths are never extracted.
