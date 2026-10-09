@@ -5,8 +5,10 @@ import pytest
 
 from fhirbridge.hl7v2_profile_bundle import (
     assert_oru_r01_v251_profile,
+    assert_single_oru_r01_profile,
     compute_profile_bundle_manifest,
     inspect_profile_identity,
+    inspect_profile_messages,
 )
 
 
@@ -114,6 +116,51 @@ def test_profile_identity_supports_nist_conformance_profile_message_attributes(
     assert identity.event_type == "R01"
     assert identity.message_structure == "ORU_R01"
     assert_oru_r01_v251_profile(tmp_path)
+
+def test_single_oru_guard_rejects_ambiguous_multi_variant_profile(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "PROFILE.xml").write_text(
+        (
+            '<ConformanceProfile HL7Version="2.5.1">'
+            '<Messages>'
+            '<Message ID="ORU_R01:LRI_GU" Type="ORU" Event="R01" '
+            'StructID="ORU_R01"/>'
+            '<Message ID="ORU_R01:LRI_NG" Type="ORU" Event="R01" '
+            'StructID="ORU_R01"/>'
+            '</Messages>'
+            '</ConformanceProfile>'
+        ),
+        encoding="utf-8",
+    )
+
+    messages = inspect_profile_messages(tmp_path)
+    assert [message.identifier for message in messages] == [
+        "ORU_R01:LRI_GU",
+        "ORU_R01:LRI_NG",
+    ]
+    with pytest.raises(ValueError, match="exactly one ORU\\^R01"):
+        assert_single_oru_r01_profile(tmp_path)
+
+
+def test_single_oru_guard_accepts_one_selected_profile(tmp_path: Path) -> None:
+    (tmp_path / "PROFILE.xml").write_text(
+        (
+            '<ConformanceProfile HL7Version="2.5.1">'
+            '<Messages>'
+            '<Message ID="ORU_R01:LRI_SELECTED" '
+            'Description="Laboratory Results Interface" Type="ORU" '
+            'Event="R01" StructID="ORU_R01"/>'
+            '</Messages>'
+            '</ConformanceProfile>'
+        ),
+        encoding="utf-8",
+    )
+
+    selected = assert_single_oru_r01_profile(tmp_path)
+
+    assert selected.identifier == "ORU_R01:LRI_SELECTED"
+    assert selected.description == "Laboratory Results Interface"
 
 def test_profile_identity_rejects_wrong_message_or_version(tmp_path: Path) -> None:
     (tmp_path / "PROFILE.xml").write_text(
