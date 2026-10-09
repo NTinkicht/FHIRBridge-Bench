@@ -281,6 +281,46 @@ def build_development_fault_batch(
     )
 
 
+def regenerate_fault_batch_case(
+    case: FaultBatchCase,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Rebuild one source/mutant pair from its deterministic batch metadata.
+
+    This helper belongs to the stimulus-construction layer. It does not import
+    verifier logic and therefore can be shared by canonical-only and
+    serialization-aware qualification runners without exposing expected labels
+    to the verifier.
+    """
+
+    source = generate_lab_scenario(case.scenario_id, case.seed)
+    operator_name = case.manifest["mutation_operator"]
+
+    single_operators: dict[str, Callable[[dict[str, Any]], MutatedGraph]] = {
+        "fabricate_observation": fabricate_observation,
+        "omit_required_observation": omit_required_observation,
+        "misattribute_result_to_patient": misattribute_result_to_patient,
+        "corrupt_numeric_value": corrupt_numeric_value,
+        "corrupt_unit_without_conversion": corrupt_unit_without_conversion,
+        "corrupt_observation_code": corrupt_observation_code,
+        "corrupt_patient_identifier": corrupt_patient_identifier,
+        "shift_observation_time": shift_observation_time,
+        "corrupt_result_status": corrupt_result_status,
+        "corrupt_interpretation": corrupt_interpretation,
+        "corrupt_reference_range": corrupt_reference_range,
+    }
+    multi_operators: dict[str, Callable[[dict[str, Any]], MultiMutatedGraph]] = {
+        "value_plus_unit_joint_corruption": value_plus_unit_joint_corruption,
+        "patient_swap_plus_valid_result": patient_swap_plus_valid_result,
+        "omission_plus_fabricated_replacement": omission_plus_fabricated_replacement,
+    }
+
+    if operator_name in single_operators:
+        return source, single_operators[operator_name](source).graph
+    if operator_name in multi_operators:
+        return source, multi_operators[operator_name](source).graph
+    raise ValueError(f"unsupported fault-batch operator: {operator_name}")
+
+
 def class_counts(batch: FaultBatch) -> dict[str, int]:
     counts: dict[str, int] = {}
     for case in batch.cases:
