@@ -6,6 +6,7 @@ import yaml
 from fhirbridge.tooling_manifest import (
     assert_confirmatory_frozen,
     assess_freeze_readiness,
+    freeze_readiness_to_dict,
 )
 
 _MANIFEST_PATH = "benchmark/tooling_versions.yaml"
@@ -207,3 +208,16 @@ def test_missing_freeze_gate_path_is_rejected() -> None:
 
     with pytest.raises(ValueError, match="manifest path not found"):
         assess_freeze_readiness(manifest)
+
+
+
+def test_freeze_readiness_export_counts_current_candidate_blockers() -> None:
+    readiness = assess_freeze_readiness(_manifest())
+    exported = freeze_readiness_to_dict(readiness)
+
+    assert exported["ready"] is False
+    assert exported["manifest_status"] == "candidate"
+    assert exported["blocker_count"] == (
+        len(exported["unresolved_paths"]) + len(exported["false_boolean_paths"])
+    )
+    assert "structural_validation.hl7v2.profile_artifact" in exported["unresolved_paths"]
