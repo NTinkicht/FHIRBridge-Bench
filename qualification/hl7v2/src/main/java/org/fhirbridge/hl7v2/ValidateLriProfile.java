@@ -37,6 +37,13 @@ public final class ValidateLriProfile {
             if (!resolved.startsWith(root)) {
                 throw new InvalidFileException("Profile path escaped bundle root");
             }
+            if (!Files.isRegularFile(resolved)
+                    && normalized.equals("VALUSETBINDINGS.xml")) {
+                Path canonical = root.resolve("VALUESETBINDINGS.xml").normalize();
+                if (canonical.startsWith(root) && Files.isRegularFile(canonical)) {
+                    return canonical;
+                }
+            }
             return resolved;
         }
 
@@ -91,10 +98,15 @@ public final class ValidateLriProfile {
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 2) {
+        if (args.length < 2 || args.length > 3) {
             System.err.println(
-                "Usage: ValidateLriProfile PROFILE_DIRECTORY MESSAGE_ER7"
+                "Usage: ValidateLriProfile PROFILE_DIRECTORY MESSAGE_ER7 [--report-only]"
             );
+            System.exit(2);
+        }
+        boolean reportOnly = args.length == 3 && "--report-only".equals(args[2]);
+        if (args.length == 3 && !reportOnly) {
+            System.err.println("Unsupported third argument: " + args[2]);
             System.exit(2);
         }
 
@@ -130,7 +142,7 @@ public final class ValidateLriProfile {
             warningTotal
         );
 
-        if (errorTotal != 0) {
+        if (errorTotal != 0 && !reportOnly) {
             System.exit(1);
         }
     }
