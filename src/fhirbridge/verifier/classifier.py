@@ -668,6 +668,19 @@ def _pair_decision(
     if scope_note is not None:
         evidence = {**evidence, "scope_note": scope_note}
 
+    if subtype is None and scope_note is not None:
+        return SemanticDecision(
+            decision_id=f"{source_id}:indeterminate:scope",
+            classification="INDETERMINATE",
+            source_fact_ids=(source_id,),
+            target_fact_ids=(target.lifted_fact_id,),
+            primary_endpoint_eligible=False,
+            evidence={
+                "rationale_code": scope_note,
+                **evidence,
+            },
+        )
+
     if subtype is not None:
         if subtype == "attribution":
             return SemanticDecision(
