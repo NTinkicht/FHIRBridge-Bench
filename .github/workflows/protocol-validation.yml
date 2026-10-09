@@ -74,6 +74,17 @@ jobs:
           retention-days: 90
 
 
+      - name: Build external contract review assignment
+        run: python contracts/review/build_assignment.py
+
+      - name: Archive external contract review assignment
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-review-assignment-${{ github.run_id }}
+          path: contracts/review/generated/contract-review-assignment-v0.2.json
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Build clean-room Renderer B challenge package
         run: python renderer_validation/build_renderer_b_challenge.py
 
