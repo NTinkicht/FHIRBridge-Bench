@@ -6,10 +6,11 @@ constructs reproducible stimuli and manifests only; scoring is a separate step.
 
 from __future__ import annotations
 
+import json
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from hashlib import sha256
-import json
-from typing import Any, Callable
+from typing import Any
 
 from .canonical import generate_lab_scenario
 from .fault_manifest import manifest_for_multi_fault, manifest_for_seeded_fault
