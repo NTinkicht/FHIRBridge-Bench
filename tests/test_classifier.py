@@ -137,6 +137,25 @@ def test_coded_result_value_code_is_compared_independently_of_display() -> None:
     )
 
 
+def test_identifier_type_label_alone_is_not_a_fidelity_dimension() -> None:
+    source = generate_lab_scenario("LAB-001", 8106)
+    target_graph = deepcopy(source)
+    for fact in target_graph["facts"]:
+        for identifier in fact.get("identifiers", []):
+            identifier["type"] = None
+
+    result = classify_graph(
+        source["facts"],
+        _target_with_representation_local_refs(target_graph),
+    )
+
+    assert result.faithful
+    assert not any(
+        decision.classification == "CORRUPTION"
+        and decision.error_subtype == "identifier"
+        for decision in result.decisions
+    )
+
 def test_seeded_identifier_fault_is_classified_as_corruption() -> None:
     source = generate_lab_scenario("LAB-001", 8106)
     mutated = corrupt_patient_identifier(source)
