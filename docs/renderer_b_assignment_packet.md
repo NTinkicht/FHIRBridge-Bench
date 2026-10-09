@@ -36,6 +36,25 @@ The implementer may use only the materials explicitly listed below during the cl
 
 If the contract is ambiguous, do not infer Renderer A behavior. Record the ambiguity in a renderer disagreement note or propose that the rule remain `INDETERMINATE`.
 
+## Clean-room development challenge package
+
+Before implementation begins, generate the shared development input package with:
+
+```bash
+python renderer_validation/build_renderer_b_challenge.py
+```
+
+The package contains one deterministic canonical development graph for each
+`LAB-001` through `LAB-012`, plus a manifest with graph hashes. It
+explicitly contains **no Renderer A output, no target gold serialization, no
+verifier decisions, and no fault labels**. The package is therefore safe to
+share with the independent implementer without exposing the reference
+implementation.
+
+`LAB-012` remains included as an ambiguity/unsupported-behavior challenge and
+is marked non-primary / `INDETERMINATE`; it must not be forced into a
+serialization merely to maximize scenario coverage.
+
 ## Required outputs
 
 Renderer B should implement two independently authored projections for the currently frozen development slice:
