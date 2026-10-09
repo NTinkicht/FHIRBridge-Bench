@@ -187,6 +187,22 @@ jobs:
           ref: eeac90c5f88dca3018992005232acdf3da644d88
           path: vendor/lib-hl7v2-nist-validator
 
+      - name: Checkout pinned historical NIST LRI comparator
+        uses: actions/checkout@v4
+        with:
+          repository: usnistgov/hit-core-hl7v2
+          ref: 3ee9df7d3345944f4a70cccf9be504e499a24c1b
+          path: vendor/nist-legacy-lri
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install FHIRBridge-Bench for development fixture rendering
+        run: python -m pip install -e .
+
       - name: Set up Java 17
         uses: actions/setup-java@v5
         with:
@@ -206,3 +222,34 @@ jobs:
 
       - name: Compile pinned NIST HL7 v2 qualification harness
         run: mvn -B -f qualification/hl7v2/pom.xml package -DskipTests
+
+      - name: Prepare pinned historical LRI differential bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/hl7v2/dev-profile
+          cp vendor/nist-legacy-lri/hit-core-hl7v2-service/src/test/resources/profiles/1_1_2_Profile.xml             qualification/hl7v2/dev-profile/PROFILE.xml
+          cp vendor/nist-legacy-lri/hit-core-hl7v2-service/src/test/resources/constraints/1_1_2_Constraints.xml             qualification/hl7v2/dev-profile/CONSTRAINTS.xml
+          cp vendor/nist-legacy-lri/hit-core-hl7v2-service/src/test/resources/tables/new_ValueSetLibrary.xml             qualification/hl7v2/dev-profile/VALUESETS.xml
+
+      - name: Render current development ORU fixture
+        run: python qualification/hl7v2/render_fixture.py
+
+      - name: Exercise NIST validator harness against legacy differential profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -q -f qualification/hl7v2/pom.xml exec:java             -Dexec.mainClass=org.fhirbridge.hl7v2.ValidateLriProfile             -Dexec.args="qualification/hl7v2/dev-profile qualification/hl7v2/dev-message.er7 --report-only"             | tee qualification/hl7v2/legacy-differential-report.log
+          grep -q '"error_total":' qualification/hl7v2/legacy-differential-report.log
+          grep -q '"status":"STRUCTURE_ERRORS"' qualification/hl7v2/legacy-differential-report.log
+
+      - name: Archive legacy differential harness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hl7v2-legacy-differential-${{ github.run_id }}
+          path: |
+            qualification/hl7v2/dev-message.er7
+            qualification/hl7v2/legacy-differential-report.log
+          if-no-files-found: warn
+          retention-days: 90
