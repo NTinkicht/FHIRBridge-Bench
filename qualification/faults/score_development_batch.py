@@ -125,7 +125,9 @@ def score_development_batch() -> dict[str, Any]:
     batch = build_development_fault_batch(contract)
 
     qualification_cases: list[FaultQualificationCase] = []
+    scorable_cases: list[FaultQualificationCase] = []
     per_case: list[dict[str, Any]] = []
+    contract_blocked_case_ids: list[str] = []
 
     for case in batch.cases:
         source, mutant = _regenerate_mutant(case)
@@ -152,6 +154,25 @@ def score_development_batch() -> dict[str, Any]:
             observed_severities=observed_severities,
         )
         qualification_cases.append(qualification_case)
+        contract_blocked = (
+            "MISATTRIBUTION" in expected
+            and not qualification_case.detects_all_expected_classes
+            and any(
+                decision.classification == "INDETERMINATE"
+                and (
+                    decision.evidence.get("rationale_code")
+                    == "SUBJECT_ATTRIBUTION_OUTSIDE_CONTRACT_SCOPE"
+                    or decision.evidence.get("scope_note")
+                    == "SUBJECT_ATTRIBUTION_OUTSIDE_CONTRACT_SCOPE"
+                )
+                for decision in result.decisions
+            )
+        )
+        if contract_blocked:
+            contract_blocked_case_ids.append(case.case_id)
+        else:
+            scorable_cases.append(qualification_case)
+
         per_case.append(
             {
                 "case_id": case.case_id,
@@ -168,15 +189,29 @@ def score_development_batch() -> dict[str, Any]:
                     qualification_case.detects_all_expected_classes
                 ),
                 "exact_class_resolution": qualification_case.exact_class_resolution,
+                "contract_blocked": contract_blocked,
+                "contract_block_reason": (
+                    "SUBJECT_ATTRIBUTION_OUTSIDE_CONTRACT_SCOPE"
+                    if contract_blocked
+                    else None
+                ),
             }
         )
 
-    report = qualify_seeded_faults(qualification_cases)
+    all_stimuli_report = qualify_seeded_faults(qualification_cases)
+    if not scorable_cases:
+        raise ValueError("development batch contains no contract-scorable fault cases")
+    scorable_report = qualify_seeded_faults(scorable_cases)
     return {
         "purpose": "pre_freeze_development_seeded_fault_scoring",
         "batch_sha256": batch.batch_sha256,
         "case_count": len(batch.cases),
-        "report": qualification_report_to_dict(report),
+        "scorable_case_count": len(scorable_cases),
+        "contract_blocked_case_count": len(contract_blocked_case_ids),
+        "contract_blocked_case_ids": contract_blocked_case_ids,
+        "contract_block_reason": "SUBJECT_ATTRIBUTION_OUTSIDE_CONTRACT_SCOPE",
+        "all_stimuli_report": qualification_report_to_dict(all_stimuli_report),
+        "scorable_report": qualification_report_to_dict(scorable_report),
         "cases": per_case,
     }
 
@@ -192,13 +227,18 @@ def main() -> int:
     )
     summary = {
         "case_count": payload["case_count"],
+        "scorable_case_count": payload["scorable_case_count"],
+        "contract_blocked_case_count": payload["contract_blocked_case_count"],
         "batch_sha256": payload["batch_sha256"],
-        "all_expected_classes_detected": payload["report"][
+        "scorable_all_expected_classes_detected": payload["scorable_report"][
             "all_expected_classes_detected"
         ],
-        "exact_class_resolution": payload["report"]["exact_class_resolution"],
-        "unresolved_case_count": len(payload["report"]["unresolved_case_ids"]),
-        "extra_error_case_count": len(payload["report"]["extra_error_case_ids"]),
+        "scorable_exact_class_resolution": payload["scorable_report"][
+            "exact_class_resolution"
+        ],
+        "all_stimuli_unresolved_case_count": len(
+            payload["all_stimuli_report"]["unresolved_case_ids"]
+        ),
         "output": str(output),
     }
     print(json.dumps(summary, indent=2, sort_keys=True))
