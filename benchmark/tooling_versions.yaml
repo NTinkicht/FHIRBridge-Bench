@@ -13,9 +13,13 @@ terminology:
     confirmatory_mode: local_snapshot
     live_fhir_service_role: audit_only
     live_fhir_service_maturity: beta
+    official_download_filename: Loinc_2.83.zip
+    official_download_requires_login: true
+    official_md5: 057ddf203164705d5a4c3604257060a4
+    snapshot_requirements: benchmark/loinc_2_83_snapshot_requirements.yaml
     local_snapshot_sha256: unresolved
-    local_provider_implementation: unresolved
-    local_provider_version: unresolved
+    local_provider_implementation: fhirbridge.loinc_snapshot
+    local_provider_version: "0.1.0"
     local_provider_qualification_passed: false
     license_review: required_before_public_release
 
