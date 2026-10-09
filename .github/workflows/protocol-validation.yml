@@ -40,6 +40,18 @@ jobs:
           --schema-dir canonical/schema
 
 
+      - name: Build deterministic seeded-fault development batch
+        run: python qualification/faults/build_development_batch.py
+
+      - name: Archive seeded-fault development batch
+        uses: actions/upload-artifact@v4
+        with:
+          name: development-fault-batch-${{ github.run_id }}
+          path: qualification/faults/results/development-fault-batch.json
+          if-no-files-found: error
+          retention-days: 90
+
+
   ucum-qualification:
     runs-on: ubuntu-latest
     steps:
