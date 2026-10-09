@@ -128,6 +128,19 @@ Before `UNIT_CONVERT` is enabled for confirmatory scoring, the selected local UC
 
 Every unit-equivalence decision must retain machine-readable evidence containing at least the source value/unit, target value/unit, UCUM content version, implementation/version, operation, and tolerance rule.
 
+## Local LOINC 2.83 content qualification
+
+The confirmatory terminology layer uses a **local, user-acquired official LOINC 2.83 release** rather than a mutable live lookup as its primary content snapshot.
+
+- Official release: LOINC 2.83, published 2026-08-19.
+- Expected archive name: `Loinc_2.83.zip`.
+- Vendor-published MD5: `057ddf203164705d5a4c3604257060a4`.
+- The archive requires a free LOINC account and remains subject to the LOINC license.
+- The repository therefore stores only release metadata, hashes, and qualification results; it does not redistribute the ZIP/CSV.
+- `qualification/loinc/qualify_release.py` verifies the vendor checksum, computes SHA-256 for the archive and embedded `Loinc.csv`, and checks the frozen benchmark subset.
+- The initial required subset is `24323-8`, `2345-7`, `2951-2`, and `2823-3`; all must be present, ACTIVE, and match the frozen long common names before `local_provider_qualification_passed` can become true.
+- The live LOINC FHIR Terminology Service remains audit-only and requires authenticated network access.
+
 ## Frozen mapping provider
 
 The codebase includes a deterministic `FrozenMappingTerminologyEquivalence` provider for exact identity plus explicitly frozen source→target mappings. Non-identical code pairs are accepted only if the exact system/code tuple is present in the supplied versioned mapping set. Reverse mappings are not inferred, and display text, lexical similarity, hierarchy proximity, or embeddings are never used as substitutes.
