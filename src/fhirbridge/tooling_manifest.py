@@ -94,3 +94,18 @@ def assert_confirmatory_frozen(document: dict[str, Any]) -> None:
         )
     if not readiness.ready:
         raise ValueError("tooling manifest freeze gate is incomplete")
+
+
+
+def freeze_readiness_to_dict(readiness: FreezeReadiness) -> dict[str, object]:
+    """Return a stable machine-readable freeze-readiness record."""
+
+    return {
+        "ready": readiness.ready,
+        "manifest_status": readiness.manifest_status,
+        "unresolved_paths": list(readiness.unresolved_paths),
+        "false_boolean_paths": list(readiness.false_boolean_paths),
+        "blocker_count": (
+            len(readiness.unresolved_paths) + len(readiness.false_boolean_paths)
+        ),
+    }
