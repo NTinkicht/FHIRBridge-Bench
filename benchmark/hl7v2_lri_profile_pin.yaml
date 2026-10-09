@@ -16,6 +16,9 @@ target:
   implementation_guide: Laboratory_Results_Interface
   implementation_guide_edition: "5"
   errata: 2024DEC
+  selected_precoordinated_profile: LRI_NG_FRU_Profile_V3
+  selected_precoordinated_profile_oid: 2.16.840.1.113883.9.195.3.25
+  profile_selection_record: benchmark/lri_profile_selection.yaml
 
 authoritative_evidence:
   hl7_product_brief:
