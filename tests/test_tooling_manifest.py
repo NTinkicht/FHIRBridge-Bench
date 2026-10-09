@@ -139,6 +139,20 @@ def test_candidate_versions_are_pinned_to_documented_protocol_choices() -> None:
         == "gov.cdc:lib-hl7v2-nist-validator"
     )
     assert manifest["structural_validation"]["hl7v2"]["validator_version"] == "1.5.0"
+    assert (
+        manifest["structural_validation"]["hl7v2"]["validator_repository_commit"]
+        == "eeac90c5f88dca3018992005232acdf3da644d88"
+    )
+    assert manifest["structural_validation"]["hl7v2"]["harness_compilation_passed"] is True
+    assert (
+        manifest["structural_validation"]["hl7v2"]["legacy_differential_execution_passed"]
+        is True
+    )
+    assert manifest["structural_validation"]["hl7v2"]["legacy_differential_error_total"] == 14
+    assert (
+        manifest["structural_validation"]["hl7v2"]["legacy_differential_workflow_run_id"]
+        == 37950773310
+    )
     assert manifest["structural_validation"]["hl7v2"]["nist_engine_version"] == "1.7.3"
     assert manifest["network_policy"]["live_terminology_services"] == "audit_only"
     assert (
