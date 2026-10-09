@@ -1,0 +1,67 @@
+evidence_record:
+  id: FHIRBRIDGE-LRI-ORDER-CONTEXT-001
+  version: 0.1.0
+  status: prefreeze_evidence
+  decision_status: unresolved_until_exact_edition5_profile
+  scientific_role: structural_design_evidence_only
+
+authoritative_publication:
+  publisher: HL7_International
+  product: HL7_V2_5_1_LRI_Edition_5_US_Realm
+  publication_date: "2024-05-16"
+  errata_publication_date: "2024-12-06"
+  product_url: https://www.hl7.org/implement/standards/product_brief.cfm?product_id=279
+  establishes:
+    - edition5_is_active_stu
+    - 2024dec_errata_exists
+  does_not_establish:
+    - exact_orc_cardinality_for_selected_component
+    - exact_order_identifier_requirements
+    - projectability_truth
+
+legacy_nist_comparator:
+  repository: usnistgov/hit-core-hl7v2
+  repository_commit: 3ee9df7d3345944f4a70cccf9be504e499a24c1b
+  profile_path: hit-core-hl7v2-service/src/test/resources/profiles/1_1_2_Profile.xml
+  constraints_path: hit-core-hl7v2-service/src/test/resources/constraints/1_1_2_Constraints.xml
+  profile_generation: LRI_R2_2016
+  observed_order_observation_structure:
+    ORC:
+      usage: R
+      cardinality: "1..1"
+    OBR:
+      usage: R
+      cardinality: "1..1"
+  role: historical_differential_only
+  warning: >-
+    This is not Edition 5 and must never be substituted for the exact
+    Edition 5 + 2024DEC profile used for confirmatory scoring.
+
+secondary_implementation_evidence:
+  source: Michigan_DHHS_Bureau_of_Laboratories
+  document: HL7_V2_5_1_Implementation_Guide_Lab_Results
+  source_url: https://www.michigan.gov/mdhhs/-/media/Project/Websites/mdhhs/Folder1/Folder9/StarLIMS_Result_IG.pdf
+  relationship_to_standard: local_implementation_adapted_from_lri_edition5
+  role: corroborating_secondary_only
+  warning: >-
+    Local implementation guides may add, remove, or strengthen constraints and
+    therefore cannot define the FHIRBridge confirmatory target.
+
+freeze_decision:
+  exact_edition5_profile_bundle_required: true
+  must_determine_before_hl7_profile_qualification:
+    - selected_lri_component
+    - ORC_usage_and_cardinality
+    - OBR_usage_and_cardinality
+    - placer_order_identifier_requirement
+    - filler_order_identifier_requirement
+    - whether_order_context_can_be_present_without_invented_business_identifiers
+  prohibited_shortcuts:
+    - infer_edition5_from_legacy_r2
+    - infer_edition5_from_michigan_local_profile
+    - invent_order_identifiers_to_make_validator_green
+    - map_diagnostic_report_identifier_to_order_identifier_without_review
+  safe_if_order_context_required: >-
+    Add an explicit canonical order fact plus corresponding FHIR ServiceRequest
+    and HL7 v2 ORC/OBR projection. Keep new order-identifier semantic scoring
+    outside the primary endpoint until independently reviewed and frozen.
