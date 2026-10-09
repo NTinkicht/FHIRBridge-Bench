@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from qualification.fhir.summarize_validation import (
+from fhirbridge.fhir_qualification import (
     summarize_directory,
     summarize_log,
 )
