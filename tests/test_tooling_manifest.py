@@ -30,15 +30,12 @@ def test_candidate_manifest_is_explicitly_not_freeze_ready() -> None:
 
     assert readiness.manifest_status == "candidate"
     assert not readiness.ready
-    assert "terminology.loinc.local_snapshot_sha256" in readiness.unresolved_paths
-    assert "structural_validation.hl7v2.profile_artifact" in readiness.unresolved_paths
-    assert (
-        "terminology.loinc.local_provider_qualification_passed"
-        in readiness.false_boolean_paths
+    assert readiness.unresolved_paths == (
+        "structural_validation.hl7v2.profile_artifact",
+        "structural_validation.hl7v2.profile_artifact_sha256",
     )
-    assert (
-        "structural_validation.hl7v2.profile_validation_qualification_passed"
-        in readiness.false_boolean_paths
+    assert readiness.false_boolean_paths == (
+        "structural_validation.hl7v2.profile_validation_qualification_passed",
     )
 
 
@@ -46,6 +43,18 @@ def test_candidate_versions_are_pinned_to_documented_protocol_choices() -> None:
     manifest = _manifest()
 
     assert manifest["terminology"]["loinc"]["content_version"] == "2.83"
+    assert (
+        manifest["terminology"]["loinc"]["local_snapshot_sha256"]
+        == "5de1463f0fe65d6c97867153b43151a07ce3f8c8a86de681f98e110008032aba"
+    )
+    assert (
+        manifest["terminology"]["loinc"]["release_zip_sha256"]
+        == "077a0718e87d8309ffe3a673f75b836a8e783dc36a646413ef97c71c12eab27e"
+    )
+    assert (
+        manifest["terminology"]["loinc"]["local_provider_qualification_passed"]
+        is True
+    )
     assert manifest["units"]["ucum"]["content_version"] == "2.2"
     assert manifest["units"]["ucum"]["essence_revision_date"] == "2024-06-17"
     assert (
@@ -229,4 +238,5 @@ def test_freeze_readiness_export_counts_current_candidate_blockers() -> None:
     assert exported["blocker_count"] == (
         len(exported["unresolved_paths"]) + len(exported["false_boolean_paths"])
     )
+    assert exported["blocker_count"] == 3
     assert "structural_validation.hl7v2.profile_artifact" in exported["unresolved_paths"]
