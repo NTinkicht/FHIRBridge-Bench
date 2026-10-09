@@ -133,7 +133,7 @@ semantic_policy:
 
   unit_equivalence:
     exact_unit_with_value_tolerance: allowed
-    ucum_conversion: candidate_until_provider_qualified
+    ucum_conversion: qualified_local_provider
     joint_value_unit_equivalence_required: true
 
 network_policy:
