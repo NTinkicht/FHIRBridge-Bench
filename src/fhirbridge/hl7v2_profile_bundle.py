@@ -254,4 +254,17 @@ def assert_single_oru_r01_profile(root: Path) -> Hl7ProfileMessage:
             "confirmatory profile must contain exactly one ORU^R01 message; "
             f"found {len(matches)} with identifiers {identifiers}"
         )
-    return matches[0]
+
+    selected = matches[0]
+    messages = inspect_profile_messages(root)
+    if not messages or messages[0] != selected:
+        first_identifier = messages[0].identifier if messages else None
+        raise ValueError(
+            "CDC ProfileManager validates the first declared message profile, "
+            "but the selected ORU^R01 profile is not first. "
+            f"first message identifier={first_identifier!r}, "
+            f"ORU identifier={selected.identifier!r}. "
+            "Acquire a single-message ORU export or use a selector-capable "
+            "validation harness before confirmatory freeze."
+        )
+    return selected
