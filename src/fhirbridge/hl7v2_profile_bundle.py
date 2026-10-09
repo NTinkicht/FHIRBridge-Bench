@@ -116,24 +116,40 @@ def inspect_profile_identity(root: Path) -> Hl7ProfileIdentity:
     except ElementTree.ParseError as exc:
         raise ValueError(f"PROFILE.xml is not well-formed XML: {exc}") from exc
 
-    values: dict[str, str] = {}
-    aliases = {
-        "HL7Version": "hl7_version",
-        "MsgType": "message_type",
-        "EventType": "event_type",
-        "MsgStructID": "message_structure",
-    }
+    root = document.getroot()
+    hl7_version = root.attrib.get("HL7Version")
+    if hl7_version is None:
+        hl7_version = next(
+            (
+                element.attrib["HL7Version"]
+                for element in document.iter()
+                if element.attrib.get("HL7Version")
+            ),
+            None,
+        )
+
+    message_candidates: list[tuple[str | None, str | None, str | None]] = []
     for element in document.iter():
-        for attribute, field_name in aliases.items():
-            value = element.attrib.get(attribute)
-            if value and field_name not in values:
-                values[field_name] = value
+        message_type = element.attrib.get("MsgType") or element.attrib.get("Type")
+        event_type = element.attrib.get("EventType") or element.attrib.get("Event")
+        structure = element.attrib.get("MsgStructID") or element.attrib.get("StructID")
+        if message_type or event_type or structure:
+            message_candidates.append((message_type, event_type, structure))
+
+    preferred = next(
+        (
+            candidate
+            for candidate in message_candidates
+            if candidate == ("ORU", "R01", "ORU_R01")
+        ),
+        message_candidates[0] if message_candidates else (None, None, None),
+    )
 
     return Hl7ProfileIdentity(
-        hl7_version=values.get("hl7_version"),
-        message_type=values.get("message_type"),
-        event_type=values.get("event_type"),
-        message_structure=values.get("message_structure"),
+        hl7_version=hl7_version,
+        message_type=preferred[0],
+        event_type=preferred[1],
+        message_structure=preferred[2],
     )
 
 
