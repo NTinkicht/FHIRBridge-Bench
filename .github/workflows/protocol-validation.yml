@@ -51,6 +51,17 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      - name: Score deterministic seeded-fault development batch
+        run: python qualification/faults/score_development_batch.py
+
+      - name: Archive seeded-fault development qualification
+        uses: actions/upload-artifact@v4
+        with:
+          name: development-fault-qualification-${{ github.run_id }}
+          path: qualification/faults/results/development-fault-qualification.json
+          if-no-files-found: error
+          retention-days: 90
+
 
       - name: Report tooling freeze readiness
         run: python qualification/freeze/report_readiness.py
