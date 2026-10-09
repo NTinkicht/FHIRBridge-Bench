@@ -81,7 +81,9 @@ structural_validation:
     qualification_artifact_id: 11553410099
     qualification_artifact_sha256: e874a9cf28599a79e260ac20d8ef2b4bd778b966c7e44559f3134e288d6e8ca0
     qualification_warning_policy: warnings_retained_nonblocking
-    package_cache_manifest_sha256: unresolved
+    package_cache_manifest_sha256: aea8f39ef73056de5f0eec423080c5a9edc55acf1b034e1aa67d4ae2f307827c
+    package_cache_manifest_source_run_id: 37941158582
+    package_cache_directory_count: 22
     network_during_confirmatory_scoring: disabled_where_practical
 
   hl7v2:
