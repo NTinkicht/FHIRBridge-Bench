@@ -53,6 +53,10 @@ The primary HL7 v2 target is:
 
 The initial message family is **ORU^R01**, used for unsolicited observation/laboratory-result reporting.
 
+For the first confirmatory general-laboratory slice, the selected pre-coordinated profile candidate is **LRI_NG_FRU_Profile_V3** (OID `2.16.840.1.113883.9.195.3.25`). It combines the mandatory Common component with the non-globally-unique identifier component and the unique filler-order-number component. This avoids inventing ISO OID semantics for the benchmark's synthetic identifiers while allowing one explicit source-grounded filler order identifier to identify each order without introducing the additional composite identity semantics of FRN.
+
+This profile selection is a study-design choice and remains pending exact machine-readable Edition 5 + 2024DEC bundle acquisition and local qualification. It does not relax the requirement for ORC, OBR, filler order number, or ordering provider.
+
 The target is therefore not generic “valid HL7 v2”. Every FHIR → v2 output in the primary experiment must be evaluated against the named LRI profile and the subset of that profile frozen in the projectability contract.
 
 ### Initial message structure in scope

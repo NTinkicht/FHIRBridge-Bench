@@ -1,0 +1,92 @@
+profile_selection:
+  id: FHIRBRIDGE-LRI-PROFILE-SELECTION-001
+  version: 0.1.0
+  status: selected_candidate_pending_machine_bundle
+  selected_profile_name: LRI_NG_FRU_Profile_V3
+  selected_profile_oid: 2.16.840.1.113883.9.195.3.25
+  message: ORU^R01
+  hl7_version: "2.5.1"
+  implementation_guide_edition: "5"
+  errata: 2024DEC
+
+components:
+  - name: LRI_Common_Component_V3
+    oid: 2.16.840.1.113883.9.195.3.22
+    role: required_common
+  - name: LRI_NG_Component_R1
+    oid: 2.16.840.1.113883.9.13
+    role: selected_identifier_component
+  - name: LAB_FRU_Component
+    oid: 2.16.840.1.113883.9.83
+    role: selected_filler_order_component
+
+rationale:
+  identifier_component: >-
+    The first confirmatory benchmark uses synthetic identifier namespaces and
+    does not require ISO OID assigning authorities for every LRI identifier
+    field. Selecting the NG component avoids manufacturing OID semantics that
+    are not present in the source facts.
+  filler_order_component: >-
+    The benchmark can author one explicit source-grounded filler order
+    identifier that is unique per laboratory order. FRU therefore avoids the
+    additional composite identity semantics of FRN, where filler order number
+    and universal service identifier must jointly identify the order.
+  scientific_scope: >-
+    This is a bounded study-design choice for the initial general laboratory
+    slice, not a claim that NG/FRU is preferable for production interfaces.
+  alternative_profiles_not_selected:
+    LRI_GU_FRU_Profile_V3: >-
+      Requires ISO OID-based globally unique identification semantics for the
+      listed identifier fields, which the current benchmark does not need.
+    LRI_GU_FRN_Profile_V3: >-
+      Adds both OID-based global identity and composite filler-order semantics
+      that are outside the minimal first-slice construct.
+    LRI_NG_FRN_Profile_V3: >-
+      Avoids OID assumptions but requires filler order number plus universal
+      service identifier to form order identity, adding a construct not needed
+      for the first slice.
+
+message_requirements:
+  msh_21:
+    usage: R
+    cardinality: "1..*"
+    preferred_declaration:
+      - 2.16.840.1.113883.9.195.3.25
+    note: >-
+      The pre-coordinated profile OID represents the Common + NG + FRU
+      combination. Compatible optional components may be added only if the
+      benchmark scope explicitly requires them.
+  order_context:
+    ORC:
+      usage: R
+      cardinality: "1..1"
+    OBR:
+      usage: R
+      cardinality: "1..1"
+    filler_order_number:
+      ORC_3: "R [1..1]"
+      OBR_3: "R [1..1]"
+      equality_constraint: ORC_3_equals_OBR_3
+    placer_order_number:
+      ORC_2: "RE [0..1]"
+      OBR_2: "RE [0..1]"
+      equality_constraint_when_present: ORC_2_equals_OBR_2
+    ordering_provider:
+      ORC_12: "R [1..1]"
+      OBR_16: required_by_conformance_relationship_with_ORC_12
+
+benchmark_source_requirements:
+  - explicit_order_fact
+  - unique_source_grounded_filler_order_identifier
+  - source_grounded_ordering_provider
+  - FHIR_ServiceRequest_projection
+  - DiagnosticReport_basedOn_order_reference
+  - no_DiagnosticReport_identifier_repurposing_as_order_identifier
+
+freeze_requirements:
+  - acquire_machine_readable_LRI_NG_FRU_Profile_V3_bundle
+  - verify_bundle_lineage_to_Edition5_2024DEC
+  - record_exact_profile_and_companion_artifact_hashes
+  - pass_local_NIST_reference_message_qualification
+  - pass_structural_negative_controls
+  - independently_review_new_order_projectability_rules_before_scoring

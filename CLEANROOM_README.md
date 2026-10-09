@@ -25,7 +25,7 @@ The supplied study inputs are:
 - `canonical/schema/clinical_fact.schema.yaml`
 - `canonical/schema/clinical_fact_graph.schema.yaml`
 - `canonical/examples/LAB-001-example.yaml`
-- `benchmark/scenarios/lab_core_v0.1.yaml`
+- `benchmark/scenarios/lab_core_v0.1.yaml`\n- `benchmark/lri_profile_selection.yaml`
 
 ## Prohibited during initial clean-room implementation
 
