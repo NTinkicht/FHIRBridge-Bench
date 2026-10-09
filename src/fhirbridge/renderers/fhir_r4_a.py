@@ -68,8 +68,18 @@ def _identifier(identifier: dict[str, Any]) -> dict[str, Any]:
     rendered: dict[str, Any] = {"value": identifier["value"]}
     if identifier.get("system") is not None:
         rendered["system"] = identifier["system"]
-    if identifier.get("type") is not None:
-        rendered["type"] = {"text": str(identifier["type"])}
+
+    identifier_type = identifier.get("type")
+    if identifier_type in {"MR", "PI"}:
+        rendered["type"] = {
+            "coding": [
+                {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                    "code": str(identifier_type),
+                }
+            ],
+            "text": str(identifier_type),
+        }
     return rendered
 
 
