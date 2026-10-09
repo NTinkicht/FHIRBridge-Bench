@@ -141,3 +141,38 @@ def test_bundle_full_urls_are_valid_absolute_urls() -> None:
     assert full_urls
     assert all(url.startswith("https://fhirbridge.example/fhir/") for url in full_urls)
     assert all(not url.startswith("urn:uuid:fb-") for url in full_urls)
+
+
+def test_patient_identifier_types_use_v2_0203_coding() -> None:
+    _, rendered, _, _ = _round_trip("LAB-010", 9008)
+    patient = next(
+        entry["resource"]
+        for entry in rendered.artifact["entry"]
+        if entry["resource"]["resourceType"] == "Patient"
+    )
+
+    codings = [
+        identifier["type"]["coding"][0]
+        for identifier in patient["identifier"]
+        if "type" in identifier
+    ]
+    assert {coding["code"] for coding in codings} == {"MR", "PI"}
+    assert all(
+        coding["system"] == "http://terminology.hl7.org/CodeSystem/v2-0203"
+        for coding in codings
+    )
+
+
+def test_nonstandard_identifier_labels_are_not_rendered_as_uncoded_fhir_types() -> None:
+    _, rendered, _, _ = _round_trip("LAB-006", 9009)
+    resources = [entry["resource"] for entry in rendered.artifact["entry"]]
+
+    report = next(
+        resource for resource in resources if resource["resourceType"] == "DiagnosticReport"
+    )
+    specimen = next(
+        resource for resource in resources if resource["resourceType"] == "Specimen"
+    )
+
+    assert all("type" not in identifier for identifier in report["identifier"])
+    assert all("type" not in identifier for identifier in specimen["identifier"])
