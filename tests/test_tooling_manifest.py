@@ -80,6 +80,15 @@ def test_candidate_versions_are_pinned_to_documented_protocol_choices() -> None:
     assert manifest["units"]["ucum"]["functional_tests_history_date"] == "2014-08-18"
     assert manifest["terminology"]["hl7_terminology"]["version"] == "7.4.0"
     assert (
+        manifest["terminology"]["hl7_terminology"]["package_sha256"]
+        == "1dc558c204f5ee1f2b96ab9a8cd83d0811475b08a4e06a7c2bcea55d1ab116ed"
+    )
+    assert manifest["terminology"]["hl7_terminology"]["qualification_passed"] is True
+    assert (
+        manifest["terminology"]["hl7_terminology"]["qualification_workflow_run_id"]
+        == 37953147893
+    )
+    assert (
         manifest["structural_validation"]["fhir"]["validator_wrapper_version"]
         == "1.0.82"
     )
