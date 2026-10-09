@@ -14,7 +14,7 @@ def test_relationship_candidates_are_explicitly_non_scored_before_review() -> No
 
     assert document["candidate_set"]["status"] == "external_review_required"
     assert document["candidate_set"]["parent_contract"]["version"] == "0.2.0"
-    assert len(candidates) == 3
+    assert len(candidates) == 4
     assert len({item["candidate_rule_id"] for item in candidates}) == len(candidates)
     assert all(
         item["current_projectability"] == "INDETERMINATE"
@@ -22,7 +22,7 @@ def test_relationship_candidates_are_explicitly_non_scored_before_review() -> No
     )
 
 
-def test_misattribution_candidates_cover_report_and_specimen_context() -> None:
+def test_misattribution_candidates_cover_all_current_attribution_contexts() -> None:
     document = _candidates()
     by_id = {
         item["candidate_rule_id"]: item for item in document["candidates"]
@@ -32,6 +32,7 @@ def test_misattribution_candidates_cover_report_and_specimen_context() -> None:
         "REPORT_RESULT_MEMBERSHIP_001",
         "REPORT_SPECIMEN_MEMBERSHIP_001",
         "OBSERVATION_SPECIMEN_MEMBERSHIP_001",
+        "OBSERVATION_SUBJECT_ATTRIBUTION_001",
     }
     assert all(
         item["candidate_failure_class_if_scored"] == "MISATTRIBUTION"
@@ -39,3 +40,18 @@ def test_misattribution_candidates_cover_report_and_specimen_context() -> None:
     )
     assert all(item["candidate_severity"] == "S3" for item in by_id.values())
     assert all(item["external_review_questions"] for item in by_id.values())
+
+
+def test_subject_attribution_candidate_remains_external_review_only() -> None:
+    document = _candidates()
+    candidate = next(
+        item
+        for item in document["candidates"]
+        if item["candidate_rule_id"] == "OBSERVATION_SUBJECT_ATTRIBUTION_001"
+    )
+
+    assert candidate["canonical_relation"] == "observation.subject_ref"
+    assert candidate["current_projectability"] == "INDETERMINATE"
+    assert candidate["candidate_failure_class_if_scored"] == "MISATTRIBUTION"
+    assert candidate["candidate_severity"] == "S3"
+    assert "Observation.subject" in candidate["source_semantics"]["fhir_paths"]
