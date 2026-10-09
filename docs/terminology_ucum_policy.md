@@ -37,10 +37,11 @@ Official evidence:
 
 ### UCUM
 
-- Candidate content version: **UCUM 2.2**.
-- Candidate essence revision date: **2024-06-17**.
-- The canonical development content is the UCUM `ucum-essence.xml` representation associated with those identifiers.
-- Candidate local implementation: **`org.fhir:ucum:1.0.10`**. It remains unqualified until the frozen UCUM 2.2 essence file passes the official functional suite plus the project laboratory conversion matrix.
+- Frozen candidate content version: **UCUM 2.2**.
+- Essence revision date: **2024-06-17**.
+- Frozen essence SHA-256: `dfccea1b5dc284245ebae97edd1dc03c45864da4e87df55bc9851797b4fd0b61`.
+- Local implementation: **`org.fhir:ucum:1.0.10`**, pinned to commit `db9d22ade3f0f4a667b45817b85a9ac4534e4224`.
+- Qualification status: **passed for the current laboratory scope**. The pinned implementation passed 573/573 official functional tests and all cases in `FHIRBRIDGE-UCUM-LAB-001`.
 
 Official evidence:
 - https://github.com/ucum-org/ucum/blob/main/ucum-essence.xml
@@ -48,9 +49,10 @@ Official evidence:
 
 ### HL7 Terminology (THO)
 
-- Candidate terminology package: **HL7 Terminology 7.4.0**.
-- The published package identifies itself as version 7.4.0 and active as of 2026-09-22.
-- For FHIR R4 validation, the R4-compatible package form is preferred where the validator/package resolver requires it.
+- Semantic terminology package: **HL7 Terminology R4 7.4.0**.
+- The published package identifies itself as `hl7.terminology.r4` version 7.4.0.
+- Frozen package SHA-256: `1dc558c204f5ee1f2b96ab9a8cd83d0811475b08a4e06a7c2bcea55d1ab116ed`.
+- Package identity and publication metadata were independently exercised in CI; the structural US Core validator retains its own published `hl7.terminology.r4#7.1.0` dependency rather than silently substituting this later semantic package.
 
 Official evidence:
 - https://terminology.hl7.org/
@@ -63,9 +65,9 @@ For the confirmatory structural-validity path, the current candidate is:
 - `org.hl7.fhir.validator-wrapper` **1.0.82**
 - underlying `org.hl7.fhir.core` **6.10.0**
 
-The 1.0.82 release explicitly reports the update to core 6.10.0. The validator must be run locally against frozen package dependencies rather than depending on mutable network lookups during confirmatory scoring.
+The 1.0.82 release explicitly reports the update to core 6.10.0. The validator is run locally against frozen package dependencies rather than depending on mutable network lookups during confirmatory scoring.
 
-Candidate package/runtime pins are `hl7.fhir.r4.core#4.0.1`, `hl7.fhir.us.core#9.0.0`, the US Core 9.0.0 published dependency `hl7.terminology.r4#7.1.0`, and Java 17. The exact validator artifact, package files/cache, command line, and checksums must still be captured in the frozen tooling manifest. The semantic terminology layer may separately freeze a later THO release, but structural validation must preserve the dependency set of the published US Core package unless a documented compatibility analysis justifies an override.
+The current package/runtime pins are `hl7.fhir.r4.core#4.0.1`, `hl7.fhir.us.core#9.0.0`, the US Core 9.0.0 published dependency `hl7.terminology.r4#7.1.0`, and Java 17. Validator artifacts and the resolved package-cache manifest are cryptographically pinned in `benchmark/tooling_versions.yaml`. The semantic terminology layer may separately use THO R4 7.4.0, but structural validation preserves the dependency set of the published US Core package unless a documented compatibility analysis justifies an override.
 
 Official evidence:
 - https://github.com/hapifhir/org.hl7.fhir.validator-wrapper/releases
@@ -118,13 +120,14 @@ A source quantity `(v_s, u_s)` and target quantity `(v_t, u_t)` may be considere
 
 A unit label change without a consistent numeric conversion is a semantic corruption.
 
-Before `UNIT_CONVERT` is enabled for confirmatory scoring, the selected local UCUM implementation must pass:
+The selected local UCUM implementation has passed its executable qualification gate for the current laboratory scope:
 
-- official/maintainer-provided UCUM functional tests where available;
-- a project-specific laboratory conversion matrix containing expected equivalent and non-equivalent pairs;
-- regression tests for common laboratory units used in the benchmark;
-- negative tests for dimensionally incompatible units;
-- deterministic repeated-run checks.
+- 573/573 official/maintainer-provided functional tests;
+- the project-specific laboratory conversion matrix containing equivalent and non-equivalent pairs;
+- regression coverage for benchmark laboratory units;
+- negative tests for incompatible or context-dependent conversions.
+
+`UNIT_CONVERT` remains usable only when the projectability contract licenses the operation. Provider qualification does not broaden contract scope.
 
 Every unit-equivalence decision must retain machine-readable evidence containing at least the source value/unit, target value/unit, UCUM content version, implementation/version, operation, and tolerance rule.
 
