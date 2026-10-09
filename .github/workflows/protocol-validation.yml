@@ -277,3 +277,56 @@ jobs:
             qualification/hl7v2/legacy-differential-report.log
           if-no-files-found: warn
           retention-days: 90
+
+
+  tho-qualification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout FHIRBridge-Bench
+        uses: actions/checkout@v4
+
+      - name: Download published HL7 Terminology R4 package 7.4.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/terminology/results
+          curl -L --fail --retry 3             -o qualification/terminology/hl7.terminology.r4-7.4.0.tgz             https://terminology.hl7.org/7.4.0/hl7.terminology.r4.tgz
+          sha256sum qualification/terminology/hl7.terminology.r4-7.4.0.tgz             | tee qualification/terminology/results/hl7.terminology.r4-7.4.0.sha256
+
+      - name: Verify package identity and publication metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -xOf qualification/terminology/hl7.terminology.r4-7.4.0.tgz             package/package.json             > qualification/terminology/results/package.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("qualification/terminology/results/package.json")
+          package = json.loads(path.read_text(encoding="utf-8"))
+          assert package["name"] == "hl7.terminology.r4", package["name"]
+          assert package["version"] == "7.4.0", package["version"]
+          report = {
+              "name": package["name"],
+              "version": package["version"],
+              "canonical": package.get("canonical"),
+              "url": package.get("url"),
+              "fhirVersions": package.get("fhirVersions"),
+          }
+          Path(
+              "qualification/terminology/results/qualification.json"
+          ).write_text(
+              json.dumps(report, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(report, indent=2, sort_keys=True))
+          PY
+
+      - name: Archive HL7 Terminology qualification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: tho-7.4.0-qualification-${{ github.run_id }}
+          path: |
+            qualification/terminology/results/**
+          if-no-files-found: error
+          retention-days: 90
