@@ -62,6 +62,17 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      - name: Score serialized HL7 v2 development fault batch
+        run: python qualification/faults/score_serialized_development_batch.py
+
+      - name: Archive serialized HL7 v2 fault qualification
+        uses: actions/upload-artifact@v4
+        with:
+          name: serialized-development-fault-qualification-${{ github.run_id }}
+          path: qualification/faults/results/serialized-development-fault-qualification.json
+          if-no-files-found: error
+          retention-days: 90
+
 
       - name: Build clean-room Renderer B challenge package
         run: python renderer_validation/build_renderer_b_challenge.py
