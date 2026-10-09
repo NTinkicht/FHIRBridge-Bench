@@ -172,14 +172,14 @@ At minimum, independently review the current candidate rules for:
 8. Are temporal precision and timezone normalization rules sufficiently constrained?
 9. Are code equivalence and UCUM conversion rules conservative enough to prevent broader/narrower concept substitutions from being counted as equivalent?
 10. Which rules, if any, should remain `INDETERMINATE` for the primary endpoint even after adjudication?
-11. Are the three relationship/grouping candidates in
+11. Are the four relationship/grouping candidates in
     `relationship_candidates_v0.1.yaml` stable enough under LRI Edition 5 to
     enter Contract v1.0? For any promoted candidate, provide the exact grouping
     semantics or equivalence class that should be scored.
 
 ## Relationship/grouping candidates requiring explicit review
 
-The grouped ORU development slice now makes three attribution questions testable,
+The grouped ORU development slice and seeded wrong-patient diagnostics now make four attribution questions testable,
 but they remain outside the current v0.2 primary endpoint:
 
 - `REPORT_RESULT_MEMBERSHIP_001`: whether a source
@@ -190,6 +190,11 @@ but they remain outside the current v0.2 primary endpoint:
   group;
 - `OBSERVATION_SPECIMEN_MEMBERSHIP_001`: whether an Observation's source
   specimen association can be scored from the SPM context containing its OBX.
+- `OBSERVATION_SUBJECT_ATTRIBUTION_001`: whether a source
+  Observation-to-patient relationship must be preserved by placing the result in
+  the corresponding PID/PATIENT_RESULT context, and whether wrong-patient
+  placement should be an S3 MISATTRIBUTION failure.
+
 
 For each candidate, decide independently whether the relationship should become
 `MUST_PRESERVE`, `MAY_TRANSFORM`, `MAY_LOSE`, remain
