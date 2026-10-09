@@ -96,12 +96,22 @@ structural_validation:
     validator: gov.cdc:lib-hl7v2-nist-validator
     validator_version: "1.5.0"
     validator_license: Apache-2.0
+    validator_repository_commit: eeac90c5f88dca3018992005232acdf3da644d88
     nist_engine_version: "1.7.3"
     runtime: Java_17
     profile_source: IGAMT-2_exported_XML_resource_bundle
     profile_artifact: unresolved
     profile_artifact_sha256: unresolved
     support_level: candidate_profile_level_offline
+    harness_compilation_passed: true
+    legacy_differential_execution_passed: true
+    legacy_differential_profile_generation: LRI_R2_2016
+    legacy_differential_repository_commit: 3ee9df7d3345944f4a70cccf9be504e499a24c1b
+    legacy_differential_expected_status: STRUCTURE_ERRORS
+    legacy_differential_error_total: 14
+    legacy_differential_workflow_run_id: 37950773310
+    legacy_differential_artifact_id: 11626385991
+    legacy_differential_fixture_sha256: f218e03f539b03d1d21e03a33d1c511927d259d25018a7e3400f061a6c8dcdf3
     profile_validation_qualification_passed: false
     hosted_gvt_role: audit_only
     network_during_confirmatory_scoring: disabled
