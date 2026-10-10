@@ -61,21 +61,30 @@ def _paths(tmp_path: Path) -> dict[str, Path]:
     )
     result["instrument_component_manifest"] = component_manifest
 
-    case_ids = tmp_path / "case-ids.json"
-    case_ids.write_text(
-        json.dumps(["CASE-002", "CASE-001"]) + "\n",
-        encoding="utf-8",
-    )
-    result["sealed_case_ids"] = case_ids
-
     case_manifest = tmp_path / "sealed-case-manifest.json"
     case_manifest.write_text(
         json.dumps(
             {
+                "schema_version": "0.1.0",
+                "manifest_id": "SEALED-CASES-001",
+                "status": "sealed",
+                "created_at": "2026-10-20T15:00:00Z",
+                "split": "sealed_test",
+                "case_count": 2,
                 "cases": [
-                    {"case_id": "CASE-001"},
-                    {"case_id": "CASE-002"},
-                ]
+                    {
+                        "case_id": "CASE-001",
+                        "scenario_family": "LAB-001",
+                        "source_input_sha256": "a" * 64,
+                        "canonical_graph_sha256": "b" * 64,
+                    },
+                    {
+                        "case_id": "CASE-002",
+                        "scenario_family": "LAB-006",
+                        "source_input_sha256": "c" * 64,
+                        "canonical_graph_sha256": "d" * 64,
+                    },
+                ],
             },
             sort_keys=True,
         )
@@ -105,7 +114,6 @@ def _build(
         model_config_path=paths["model_config"],
         pilot_acceptance_path=paths["pilot_acceptance"],
         sealed_case_manifest_path=paths["sealed_case_manifest"],
-        sealed_case_ids_path=paths["sealed_case_ids"],
         authorization_id=authorization_id,
         created_at="2026-10-20T16:00:00Z",
         repository_commit="abcdef1",
@@ -179,22 +187,9 @@ def test_case_set_hash_is_order_independent() -> None:
     assert first == second
 
 
-def test_case_id_loader_rejects_duplicates(tmp_path: Path) -> None:
-    path = tmp_path / "case-ids.json"
-    path.write_text(
-        json.dumps(["CASE-001", "CASE-001"]) + "\n",
-        encoding="utf-8",
-    )
-
-    try:
-        _MODULE._load_case_ids(path)
-    except ValueError as exc:
-        assert "duplicate sealed case ID" in str(exc)
-    else:
-        raise AssertionError("duplicate sealed case IDs must be rejected")
 
 
-def test_case_manifest_hash_is_independent_of_canonical_case_id_list(
+def test_case_identity_set_is_derived_from_frozen_manifest(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -207,8 +202,8 @@ def test_case_manifest_hash_is_independent_of_canonical_case_id_list(
 
     record = _build(paths)
 
-    assert record["input_artifacts"]["sealed_case_manifest_sha256"] != (
-        _MODULE._sha256(paths["sealed_case_ids"])
+    assert record["input_artifacts"]["sealed_case_manifest_sha256"] == (
+        _MODULE._sha256(paths["sealed_case_manifest"])
     )
     assert record["sealed_case_set"]["canonical_case_ids_sha256"] == (
         _MODULE._case_ids_sha256({"CASE-001", "CASE-002"})
