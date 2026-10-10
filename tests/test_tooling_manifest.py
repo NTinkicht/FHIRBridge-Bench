@@ -33,6 +33,7 @@ def test_candidate_manifest_is_explicitly_not_freeze_ready() -> None:
     assert readiness.unresolved_paths == (
         "structural_validation.hl7v2.profile_artifact",
         "structural_validation.hl7v2.profile_artifact_sha256",
+        "structural_validation.hl7v2.validator_runtime_classpath_sha256",
     )
     assert readiness.false_boolean_paths == (
         "structural_validation.hl7v2.profile_validation_qualification_passed",
@@ -162,6 +163,18 @@ def test_candidate_versions_are_pinned_to_documented_protocol_choices() -> None:
         manifest["structural_validation"]["hl7v2"]["validator_repository_commit"]
         == "eeac90c5f88dca3018992005232acdf3da644d88"
     )
+    assert (
+        manifest["structural_validation"]["hl7v2"][
+            "validator_runtime_classpath_sha256"
+        ]
+        == "unresolved"
+    )
+    assert (
+        manifest["structural_validation"]["hl7v2"][
+            "validator_runtime_hash_method"
+        ]
+        == "stable_label_sha256_size_manifest_v1"
+    )
     assert manifest["structural_validation"]["hl7v2"]["harness_compilation_passed"] is True
     assert (
         manifest["structural_validation"]["hl7v2"]["legacy_differential_execution_passed"]
@@ -238,5 +251,5 @@ def test_freeze_readiness_export_counts_current_candidate_blockers() -> None:
     assert exported["blocker_count"] == (
         len(exported["unresolved_paths"]) + len(exported["false_boolean_paths"])
     )
-    assert exported["blocker_count"] == 3
+    assert exported["blocker_count"] == 4
     assert "structural_validation.hl7v2.profile_artifact" in exported["unresolved_paths"]
