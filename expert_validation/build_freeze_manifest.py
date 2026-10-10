@@ -169,6 +169,116 @@ def _dependencies(tooling: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def _require_hash_match(
+    *,
+    observed: Any,
+    expected: str,
+    label: str,
+) -> None:
+    if (
+        not isinstance(observed, str)
+        or observed.lower() != expected.lower()
+    ):
+        raise ValueError(f"{label} hash does not match frozen artifact bytes")
+
+
+def _validate_governance_crosslinks(
+    *,
+    analysis: dict[str, Any],
+    primary_hypothesis: dict[str, Any],
+    sample_size: dict[str, Any],
+    model_config: dict[str, Any],
+    repository_commit: str,
+    primary_hypothesis_sha256: str,
+    sample_size_sha256: str,
+    model_config_sha256: str,
+) -> None:
+    """Reject individually-ready governance records that reference different inputs."""
+
+    frozen_inputs = analysis.get("frozen_inputs")
+    if not isinstance(frozen_inputs, dict):
+        raise ValueError("analysis preregistration lacks frozen_inputs")
+    if str(frozen_inputs.get("repository_commit", "")).lower() != (
+        repository_commit.lower()
+    ):
+        raise ValueError(
+            "analysis repository_commit does not match freeze repository_commit"
+        )
+    _require_hash_match(
+        observed=frozen_inputs.get("primary_vur_hypothesis_sha256"),
+        expected=primary_hypothesis_sha256,
+        label="analysis primary VUR hypothesis",
+    )
+    _require_hash_match(
+        observed=frozen_inputs.get("sample_size_preregistration_sha256"),
+        expected=sample_size_sha256,
+        label="analysis sample-size preregistration",
+    )
+    _require_hash_match(
+        observed=frozen_inputs.get("model_prompt_configuration_sha256"),
+        expected=model_config_sha256,
+        label="analysis model/prompt configuration",
+    )
+
+    sample_method = sample_size.get("frozen_method")
+    if not isinstance(sample_method, dict):
+        raise ValueError("sample-size preregistration lacks frozen_method")
+    _require_hash_match(
+        observed=sample_method.get("model_prompt_configuration_sha256"),
+        expected=model_config_sha256,
+        label="sample-size model/prompt configuration",
+    )
+
+    sample_model_keys = sample_size.get("model_keys")
+    model_rows = model_config.get("llm_models")
+    if not isinstance(model_rows, list) or not model_rows:
+        raise ValueError("model configuration lacks llm_models")
+    model_keys = [
+        row.get("model_key")
+        for row in model_rows
+        if isinstance(row, dict)
+    ]
+    if sample_model_keys != model_keys:
+        raise ValueError(
+            "sample-size model_keys do not match frozen model configuration"
+        )
+
+    analysis_summary = analysis.get("primary_hypothesis")
+    if not isinstance(analysis_summary, dict):
+        raise ValueError("analysis preregistration lacks primary_hypothesis")
+    if analysis_summary.get("record_id") != primary_hypothesis.get("record_id"):
+        raise ValueError(
+            "analysis primary-hypothesis record_id does not match frozen record"
+        )
+    hypothesis = primary_hypothesis.get("hypothesis")
+    target = primary_hypothesis.get("target_population")
+    inference = primary_hypothesis.get("inference")
+    if not all(
+        isinstance(value, dict)
+        for value in (hypothesis, target, inference)
+    ):
+        raise ValueError("primary VUR hypothesis record is incomplete")
+    expected_summary = {
+        "nontrivial_vur_threshold": hypothesis.get(
+            "nontrivial_vur_threshold"
+        ),
+        "model_strategy_aggregation_policy": target.get(
+            "model_strategy_aggregation_policy"
+        ),
+        "inference_method": inference.get("method"),
+        "alpha": inference.get("alpha"),
+        "sidedness": inference.get("sidedness"),
+        "cluster_id_field": target.get("cluster_id_field"),
+        "decision_rule": inference.get("decision_rule"),
+    }
+    for key, expected in expected_summary.items():
+        if analysis_summary.get(key) != expected:
+            raise ValueError(
+                f"analysis primary_hypothesis.{key} does not match "
+                "the frozen primary VUR hypothesis record"
+            )
+
+
 def _role_entries(roster: dict[str, Any]) -> list[dict[str, str]]:
     result: list[dict[str, str]] = []
     for member in roster["members"]:
@@ -280,6 +390,17 @@ def build_freeze_manifest(
             "pilot acceptance preregistration is not ready: "
             + "; ".join(pilot_readiness.blockers)
         )
+
+    _validate_governance_crosslinks(
+        analysis=analysis,
+        primary_hypothesis=primary_hypothesis,
+        sample_size=sample_size,
+        model_config=model_config,
+        repository_commit=repository_commit,
+        primary_hypothesis_sha256=_sha256(primary_vur_hypothesis_path),
+        sample_size_sha256=_sha256(sample_size_path),
+        model_config_sha256=_sha256(model_config_path),
+    )
 
     component_manifest = _load(instrument_component_manifest_path)
     component_digests = hash_components_from_manifest(
