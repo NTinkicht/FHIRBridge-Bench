@@ -1,6 +1,6 @@
 sample_size_method:
   id: FHIRBRIDGE-SAMPLE-SIZE-METHOD-001
-  version: 0.1.0
+  version: 0.2.0
   status: method_preregistered_numeric_plan_pending_pilot
   source_sap: docs/statistical_analysis_plan.md
   implementation: src/fhirbridge/sample_size_planning.py
@@ -24,8 +24,11 @@ sample_size_method:
     familywise_alpha: 0.05
     power: 0.80
     multiplicity_test_method: Holm
-    planning_alpha_policy: Bonferroni_upper_bound_for_Holm_family
-    per_comparison_planning_alpha: 0.008333333333333333
+    planning_alpha_policy: >-
+      Bonferroni_upper_bound_for_Holm_family_using_0.05_divided_by_
+      six_times_number_of_frozen_LLM_models
+    family_size_rule: six_strategy_contrasts_times_number_of_frozen_LLM_models
+    frozen_model_source: models/model_prompt_freeze.yaml
     discordant_probabilities:
       p10_source: pilot_only
       p01_source: pilot_only
