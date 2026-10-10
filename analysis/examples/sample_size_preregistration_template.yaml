@@ -1,0 +1,43 @@
+schema_version: "0.1.0"
+record_id: "SAMPLE-SIZE-TO-BE-ASSIGNED"
+status: incomplete_template
+created_at: null
+sealed_set_opened: false
+pilot_evidence:
+  pilot_case_manifest_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  pilot_analysis_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  expected_vur: 0.0
+  valid_determinate_retention: 1.0
+  mean_cluster_size: 1.0
+  icc: 0.0
+primary_precision_plan:
+  confidence_level: 0.95
+  target_half_width: 0.01
+  independent_n: 1
+  design_effect: 1.0
+  cluster_inflated_n: 1
+  attempted_n: 1
+paired_comparison_plans:
+  - &placeholder_pair
+    comparison_id: "TO_BE_PILOT_DERIVED"
+    p10: 0.0
+    p01: 0.0
+    alpha: 0.05
+    power: 0.8
+    expected_pair_retention: 1.0
+    independent_pair_n: 2
+    design_effect: 1.0
+    cluster_inflated_pair_n: 2
+    attempted_pair_n: 2
+    planning_method: normal_approximation_for_planning_only
+  - <<: *placeholder_pair
+  - <<: *placeholder_pair
+  - <<: *placeholder_pair
+  - <<: *placeholder_pair
+  - <<: *placeholder_pair
+final_case_count: 1
+selection_rule: maximum_required_attempted_n_across_primary_precision_and_all_predeclared_paired_comparisons
+attestation:
+  pilot_only_used_for_planning: true
+  sealed_results_used_for_planning: false
+  final_case_count_recorded_before_confirmatory_inference: true
