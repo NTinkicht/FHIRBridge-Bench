@@ -274,3 +274,33 @@ def test_missing_actual_component_hash_blocks_authorization(
         "actual component SHA-256 is missing: verifier"
         in result.blockers
     )
+
+
+def test_unfrozen_extra_component_blocks_authorization(
+    ready_dependencies,
+) -> None:
+    components = _component_hashes()
+    components["unexpected_component"] = "c" * 64
+
+    result = _authorize(component_hashes=components)
+
+    assert not result.authorized
+    assert any(
+        "contains unfrozen components: unexpected_component" in item
+        for item in result.blockers
+    )
+
+
+def test_missing_component_from_actual_digest_set_blocks_authorization(
+    ready_dependencies,
+) -> None:
+    components = _component_hashes()
+    del components["deterministic_baseline_renderer"]
+
+    result = _authorize(component_hashes=components)
+
+    assert not result.authorized
+    assert any(
+        "missing frozen components: deterministic_baseline_renderer" in item
+        for item in result.blockers
+    )
