@@ -142,11 +142,19 @@ gates:
     status: blocked
     blockers:
       - sealed_set_freeze_manifest_not_complete
-      - blinded_expert_roles_not_complete
+      - reviewer_roster_not_locked_and_hashed
       - sealed_set_not_authorized_for_opening
+    evidence:
+      reviewer_roster_schema: expert_validation/schema/reviewer_roster.schema.json
+      reviewer_roster_template: expert_validation/examples/reviewer_roster_template.yaml
+      reviewer_roster_readiness: src/fhirbridge/expert_roles.py
+      freeze_manifest_schema_version: "0.2.0"
+      reviewer_roster_manifest_binding: required_and_sha256_pinned
+      status: infrastructure_ready_actual_external_roster_and_sealed_bundle_pending
     completion_rule: >-
-      The sealed-set manifest, roles, blinding controls, dependencies, and
-      acceptance gate must satisfy the pre-opening freeze audit.
+      The sealed-set manifest, reviewer roster, roles, blinding controls,
+      dependencies, and acceptance gate must satisfy the pre-opening freeze
+      audit.
 
 confirmatory_run_policy:
   allowed_when_all_protocol_gates_passed: true
