@@ -83,6 +83,16 @@ def assess_sealed_case_manifest(
         ):
             blockers.append(f"{case_id}: scenario_family is malformed")
 
+        cluster_id = item.get("analysis_cluster_id")
+        if (
+            not isinstance(cluster_id, str)
+            or not cluster_id.strip()
+            or _placeholder(cluster_id)
+        ):
+            blockers.append(
+                f"{case_id}: analysis_cluster_id is missing or placeholder"
+            )
+
         if not _valid_sha256(item.get("source_input_sha256")):
             blockers.append(
                 f"{case_id}: source_input_sha256 is missing/malformed/placeholder"
@@ -119,5 +129,20 @@ def source_input_sha256_by_case(
         )
     return {
         str(item["case_id"]): str(item["source_input_sha256"]).lower()
+        for item in document["cases"]
+    }
+
+
+def analysis_cluster_id_by_case(
+    document: dict[str, Any],
+) -> dict[str, str]:
+    readiness = assess_sealed_case_manifest(document)
+    if not readiness.ready:
+        raise ValueError(
+            "sealed case manifest is not ready: "
+            + "; ".join(readiness.blockers)
+        )
+    return {
+        str(item["case_id"]): str(item["analysis_cluster_id"])
         for item in document["cases"]
     }
