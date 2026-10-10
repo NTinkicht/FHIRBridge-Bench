@@ -1,4 +1,4 @@
-schema_version: "0.4.0"
+schema_version: "0.5.0"
 manifest_id: "FREEZE-TO-BE-ASSIGNED"
 freeze_timestamp: null
 protocol_version: "TO_BE_FROZEN"
@@ -55,6 +55,11 @@ analysis_preregistration:
   artifact_id: "confirmatory-analysis-preregistration"
   version: "TO_BE_FROZEN"
   path_or_ref: "analysis/analysis_preregistration.yaml"
+  sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+sample_size_preregistration:
+  artifact_id: "pilot-derived-sample-size-preregistration"
+  version: "TO_BE_FROZEN"
+  path_or_ref: "analysis/sample_size_preregistration.yaml"
   sha256: "0000000000000000000000000000000000000000000000000000000000000000"
 model_prompt_configuration:
   artifact_id: "confirmatory-model-prompt-configuration"
