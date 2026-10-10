@@ -190,13 +190,10 @@ def assess_model_prompt_freeze(
             )
 
         structured = model.get("structured_output_mode")
-        if (
-            not isinstance(structured, str)
-            or not structured
-            or _placeholder(structured)
-        ):
+        if structured != "plain_text_hl7_message":
             blockers.append(
-                f"{label}: structured_output_mode is missing or placeholder"
+                f"{label}: structured_output_mode must equal "
+                "plain_text_hl7_message"
             )
 
         seed_policy = model.get("seed_policy")
