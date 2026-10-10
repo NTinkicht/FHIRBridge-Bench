@@ -5,8 +5,17 @@ from fhirbridge.confirmatory_execution_audit import (
 )
 
 
+_MODEL_FREEZE_HASH = "1" * 64
+_SOURCE_HASHES = {"C1": "2" * 64, "C2": "3" * 64}
+_PROMPT_HASH = "4" * 64
+_MAPPING_CONTEXT_HASH = "5" * 64
+
+
 def _plan() -> dict:
     return {
+        "frozen_artifacts": {
+            "model_prompt_configuration_sha256": _MODEL_FREEZE_HASH,
+        },
         "sealed_set": {"case_count": 2},
         "model_keys": ["M1"],
         "expected_execution_counts": {
@@ -30,6 +39,15 @@ def _provider(
         "execution_id": execution_id,
         "case_id": case_id,
         "model_key": "M1",
+        "schema_version": "0.3.0",
+        "model_prompt_freeze_sha256": _MODEL_FREEZE_HASH,
+        "source_input_sha256": _SOURCE_HASHES[case_id],
+        "rendered_prompt_sha256": _PROMPT_HASH,
+        "mapping_context_sha256": (
+            _MAPPING_CONTEXT_HASH
+            if strategy_id == "mapping_aware_llm"
+            else None
+        ),
         "strategy_id": strategy_id,
         "generation_source": "provider_call",
         "attempt_number": 1,
@@ -57,6 +75,11 @@ def _repair_success(
         "execution_id": execution_id,
         "case_id": case_id,
         "model_key": "M1",
+        "schema_version": "0.3.0",
+        "model_prompt_freeze_sha256": _MODEL_FREEZE_HASH,
+        "source_input_sha256": _SOURCE_HASHES[case_id],
+        "rendered_prompt_sha256": None,
+        "mapping_context_sha256": _MAPPING_CONTEXT_HASH,
         "strategy_id": "mapping_aware_plus_syntax_repair",
         "generation_source": "reuse_mapping_aware_raw_output",
         "attempt_number": None,
@@ -78,6 +101,11 @@ def _repair_upstream_failure(
         "execution_id": execution_id,
         "case_id": case_id,
         "model_key": "M1",
+        "schema_version": "0.3.0",
+        "model_prompt_freeze_sha256": _MODEL_FREEZE_HASH,
+        "source_input_sha256": _SOURCE_HASHES[case_id],
+        "rendered_prompt_sha256": None,
+        "mapping_context_sha256": _MAPPING_CONTEXT_HASH,
         "strategy_id": "mapping_aware_plus_syntax_repair",
         "generation_source": "reuse_mapping_aware_raw_output",
         "attempt_number": None,
@@ -282,3 +310,74 @@ def test_baseline_must_cover_exact_sealed_case_set() -> None:
     assert not result.complete
     assert any("deterministic baseline missing cases" in item for item in result.blockers)
     assert any("deterministic_baseline_outputs" in item for item in result.blockers)
+
+
+def test_execution_records_must_match_run_plan_model_freeze_hash() -> None:
+    records = _records()
+    records[0]["model_prompt_freeze_sha256"] = "f" * 64
+
+    result = audit_confirmatory_execution(
+        _plan(),
+        records,
+        sealed_case_ids={"C1", "C2"},
+        deterministic_baseline_case_ids={"C1", "C2"},
+    )
+
+    assert not result.complete
+    assert any(
+        "model_prompt_freeze_sha256 does not match run plan" in item
+        for item in result.blockers
+    )
+
+
+def test_source_input_hash_must_match_across_all_arms_for_case() -> None:
+    records = _records()
+    mapping = next(item for item in records if item["execution_id"] == "C1-M")
+    mapping["source_input_sha256"] = "e" * 64
+
+    result = audit_confirmatory_execution(
+        _plan(),
+        records,
+        sealed_case_ids={"C1", "C2"},
+        deterministic_baseline_case_ids={"C1", "C2"},
+    )
+
+    assert not result.complete
+    assert any(
+        "source_input_sha256 differs across planned arms" in item
+        for item in result.blockers
+    )
+
+
+def test_repair_mapping_context_must_match_mapping_arm() -> None:
+    records = _records()
+    repair = next(item for item in records if item["execution_id"] == "C1-R")
+    repair["mapping_context_sha256"] = "e" * 64
+
+    result = audit_confirmatory_execution(
+        _plan(),
+        records,
+        sealed_case_ids={"C1", "C2"},
+        deterministic_baseline_case_ids={"C1", "C2"},
+    )
+
+    assert not result.complete
+    assert any(
+        "repair mapping-context hash does not match mapping arm" in item
+        for item in result.blockers
+    )
+
+
+def test_execution_schema_version_must_match_frozen_record_version() -> None:
+    records = _records()
+    records[0]["schema_version"] = "0.2.0"
+
+    result = audit_confirmatory_execution(
+        _plan(),
+        records,
+        sealed_case_ids={"C1", "C2"},
+        deterministic_baseline_case_ids={"C1", "C2"},
+    )
+
+    assert not result.complete
+    assert any("schema_version must be 0.3.0" in item for item in result.blockers)
