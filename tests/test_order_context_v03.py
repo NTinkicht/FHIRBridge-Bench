@@ -152,3 +152,39 @@ def test_order_mapping_questions_remain_indeterminate_in_v03() -> None:
     assert {
         rule["status"] for rule in order_rules.values()
     } == {"indeterminate"}
+
+
+def test_extra_target_requester_identifier_is_primary_fabrication() -> None:
+    graph, contract, rendered, _, _ = _case(9915)
+    mutated = deepcopy(rendered.artifact)
+    service_request = next(
+        entry["resource"]
+        for entry in mutated["entry"]
+        if entry["resource"]["resourceType"] == "ServiceRequest"
+    )
+    service_request["requester"]["identifier"]["value"] = "FABRICATED-PROVIDER-9915"
+
+    lifted = fhirbridge.lifters.FhirR4LabLifter().lift(
+        mutated,
+        artifact_id="fabricated-requester-identifier",
+    )
+    policy = fhirbridge.verifier.compile_verification_policy(contract)
+    result = fhirbridge.verifier.classify_graph(
+        graph["facts"],
+        list(lifted.facts),
+        policy=policy,
+    )
+
+    guard_decisions = [
+        decision
+        for decision in result.decisions
+        if decision.evidence.get("guard_id")
+        == "ORDER_REQUESTER_IDENTIFIER_SOURCE_GROUNDING_001"
+    ]
+    assert len(guard_decisions) == 1
+    assert guard_decisions[0].classification == "FABRICATION"
+    assert guard_decisions[0].primary_endpoint_eligible
+    assert guard_decisions[0].evidence["unsupported_values"] == [
+        "FABRICATED-PROVIDER-9915"
+    ]
+    assert result.primary_endpoint_verdict == "UNFAITHFUL"
