@@ -19,6 +19,7 @@ sample_size_method:
     planning_method: normal_approximation_for_McNemar_sample_size_only
     confirmatory_test: two_sided_exact_binomial_McNemar
     familywise_alpha: 0.05
+    power: 0.80
     multiplicity_test_method: Holm
     planning_alpha_policy: Bonferroni_upper_bound_for_Holm_family
     per_comparison_planning_alpha: 0.008333333333333333
