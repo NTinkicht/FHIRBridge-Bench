@@ -30,6 +30,7 @@ def _valid_sha256(value: Any) -> bool:
         isinstance(value, str)
         and len(value) == 64
         and all(character in "0123456789abcdefABCDEF" for character in value)
+        and set(value.lower()) != {"0"}
     )
 
 
@@ -51,12 +52,33 @@ def audit_confirmatory_execution(
     *,
     sealed_case_ids: set[str],
     deterministic_baseline_case_ids: set[str],
+    expected_source_input_sha256: dict[str, str],
 ) -> ConfirmatoryExecutionAudit:
     """Check exact run-plan coverage and repair provenance without imputing data."""
 
     blockers: list[str] = []
     if not sealed_case_ids:
         blockers.append("sealed_case_ids must not be empty")
+
+    expected_source_case_ids = set(expected_source_input_sha256)
+    if expected_source_case_ids != sealed_case_ids:
+        missing = sealed_case_ids - expected_source_case_ids
+        extra = expected_source_case_ids - sealed_case_ids
+        if missing:
+            blockers.append(
+                "sealed source-hash map missing cases: "
+                + ", ".join(sorted(missing))
+            )
+        if extra:
+            blockers.append(
+                "sealed source-hash map contains unknown cases: "
+                + ", ".join(sorted(extra))
+            )
+    for case_id, digest in sorted(expected_source_input_sha256.items()):
+        if not _valid_sha256(digest):
+            blockers.append(
+                f"{case_id}: frozen source_input_sha256 is missing or invalid"
+            )
 
     sealed = run_plan.get("sealed_set")
     if not isinstance(sealed, dict):
@@ -175,6 +197,15 @@ def audit_confirmatory_execution(
             )
         else:
             normalized_source_hash = str(source_hash).lower()
+            expected_source_hash = expected_source_input_sha256.get(key[0])
+            if (
+                isinstance(expected_source_hash, str)
+                and _valid_sha256(expected_source_hash)
+                and normalized_source_hash != expected_source_hash.lower()
+            ):
+                blockers.append(
+                    f"{key[0]}: source_input_sha256 does not match sealed manifest"
+                )
             existing_source_hash = source_hash_by_case.get(key[0])
             if existing_source_hash is None:
                 source_hash_by_case[key[0]] = normalized_source_hash
