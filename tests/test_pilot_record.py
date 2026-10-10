@@ -65,6 +65,10 @@ def _build(**overrides) -> dict:
 def test_builder_preserves_expert_and_verifier_indeterminacy() -> None:
     record = _build()
 
+    assert record["schema_version"] == "0.5.0"
+    assert len(
+        record["pilot_evidence"]["pilot_verifier_results_bundle_sha256"]
+    ) == 64
     assert record["pilot_evidence"]["case_count"] == 5
     assert record["pilot_evidence"]["expert_major_error_positive_count"] == 2
     assert record["pilot_evidence"]["expert_major_error_negative_count"] == 2
@@ -132,3 +136,15 @@ def test_builder_does_not_supply_default_acceptance_thresholds() -> None:
             verifier_sha256="2" * 64,
             projectability_contract_sha256="3" * 64,
         )
+
+
+def test_verifier_bundle_hash_changes_when_verifier_results_change() -> None:
+    first = _build()
+    verifier = _verifier()
+    verifier[0] = {"case_id": "C1", "semantic_verdict": "FAITHFUL"}
+    second = _build(verifier_results=verifier)
+
+    assert (
+        first["pilot_evidence"]["pilot_verifier_results_bundle_sha256"]
+        != second["pilot_evidence"]["pilot_verifier_results_bundle_sha256"]
+    )
