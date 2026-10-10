@@ -14,8 +14,8 @@ from .hl7v2_profile_bundle import (
     ProfileBundleManifest,
     ProfileReferenceInventory,
     assert_single_oru_r01_profile,
-    compute_profile_bundle_manifest,
     assess_lri_target_reference_signals,
+    compute_profile_bundle_manifest,
     inspect_profile_identity,
     inspect_profile_reference_inventory,
 )
