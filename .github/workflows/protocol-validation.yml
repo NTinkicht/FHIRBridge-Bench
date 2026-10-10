@@ -132,6 +132,19 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      - name: Build independent precedence review packet
+        run: python expert_validation/build_precedence_blind_packet.py
+
+      - name: Archive independent precedence review packet
+        uses: actions/upload-artifact@v4
+        with:
+          name: precedence-review-stage1-${{ github.run_id }}
+          path: |
+            expert_validation/generated/precedence-review-stage1-independent.zip
+            expert_validation/generated/precedence-review-stage1-independent-manifest.json
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Build semantic mapping review packet
         run: python contracts/review/build_semantic_mapping_packet.py
 
