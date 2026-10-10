@@ -24,6 +24,7 @@ gate_metrics:
   primary:
     - sensitivity
     - positive_predictive_value
+    - runtime_indeterminate_rate
   diagnostic_only:
     - specificity
     - negative_predictive_value
@@ -34,9 +35,12 @@ gate_metrics:
 threshold_semantics:
   numeric_thresholds_may_be_set_only_after_pilot: true
   numeric_thresholds_must_be_recorded_before_sealed_opening: true
-  permitted_gate_statistic:
+  permitted_gate_statistic_for_minimum_performance:
     - point_estimate
     - lower_95_percent_confidence_bound
+  permitted_gate_statistic_for_maximum_indeterminate_rate:
+    - point_estimate
+    - upper_95_percent_confidence_bound
   selected_statistic_must_be_preregistered: true
   same_statistic_required_for_sensitivity_and_ppv: false
   threshold_range: "[0,1]"
@@ -47,6 +51,7 @@ threshold_semantics:
     - consequence_of_false_positive_verifier_decisions
     - pilot_sample_size_and_confidence_interval_width
     - observed_prevalence_and_any_sampling_enrichment
+    - consequence_of_verifier_abstention_or_unresolved_measurement
   threshold_selection_from_sealed_results: prohibited
 
 required_pilot_record:
@@ -67,6 +72,7 @@ required_pilot_record:
     - specificity_with_95_percent_CI
     - NPV_with_95_percent_CI
     - accuracy_with_95_percent_CI
+    - runtime_indeterminate_count_and_rate_with_95_percent_CI
 
 post_threshold_policy:
   material_verifier_change_requires:
