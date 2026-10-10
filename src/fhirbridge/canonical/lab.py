@@ -801,3 +801,30 @@ def generate_lab_scenario(
         },
     }
     return deepcopy(graph)
+
+
+def generate_primary_lab_scenario(
+    template_id: str,
+    seed: int,
+    *,
+    implementation_variant_id: str = "canonical_profile",
+    include_specimen: bool | None = None,
+    partition: str = "development",
+) -> dict[str, Any]:
+    """Generate a primary-slice graph with mandatory order context."""
+
+    if template_id == "LAB-012":
+        raise ValueError(
+            "LAB-012 is an ambiguity/contract-sensitivity family, not primary"
+        )
+    graph = generate_lab_scenario(
+        template_id,
+        seed,
+        implementation_variant_id=implementation_variant_id,
+        include_specimen=include_specimen,
+        partition=partition,
+        include_order_context=True,
+    )
+    if graph["scenario_metadata"]["primary_endpoint_eligible"] is not True:
+        raise ValueError(f"{template_id} is not primary-endpoint eligible")
+    return graph
