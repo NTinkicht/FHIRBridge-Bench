@@ -1,0 +1,57 @@
+schema_version: "0.1.0"
+roster_id: "ROSTER-TO-BE-ASSIGNED"
+status: incomplete_template
+created_at: null
+sealed_set_opened: false
+members:
+  - member_id: "PRIMARY-INTEROP-TO-BE-ASSIGNED"
+    roles:
+      - primary_reviewer_interoperability
+    expertise:
+      - hl7v2_fhir_interoperability
+      - laboratory_interfaces
+    conflicts_of_interest: "TO_BE_COMPLETED"
+    prior_project_involvement: "TO_BE_COMPLETED"
+    contract_review_participation: false
+    analytical_separation_attested: true
+    renderer_implementation_participation: false
+    access:
+      model_identity: false
+      generation_strategy: false
+      verifier_verdict: false
+      claimed_provenance: false
+      other_primary_reviewer_labels: false
+  - member_id: "PRIMARY-CLINICAL-TO-BE-ASSIGNED"
+    roles:
+      - primary_reviewer_clinical_informatics
+    expertise:
+      - clinical_informatics_laboratory
+    conflicts_of_interest: "TO_BE_COMPLETED"
+    prior_project_involvement: "TO_BE_COMPLETED"
+    contract_review_participation: false
+    analytical_separation_attested: true
+    renderer_implementation_participation: false
+    access:
+      model_identity: false
+      generation_strategy: false
+      verifier_verdict: false
+      claimed_provenance: false
+      other_primary_reviewer_labels: false
+  - member_id: "ADJUDICATOR-TO-BE-ASSIGNED"
+    roles:
+      - adjudicator
+    expertise:
+      - hl7v2_fhir_interoperability
+      - clinical_informatics_laboratory
+    conflicts_of_interest: "TO_BE_COMPLETED"
+    prior_project_involvement: "TO_BE_COMPLETED"
+    contract_review_participation: false
+    analytical_separation_attested: true
+    renderer_implementation_participation: false
+    access:
+      model_identity: false
+      generation_strategy: false
+      verifier_verdict: false
+      claimed_provenance: false
+      other_primary_reviewer_labels: true
+notes: null
