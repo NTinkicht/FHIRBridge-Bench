@@ -289,8 +289,16 @@ def _order_resource(
     requester = attributes.get("requester")
     if isinstance(requester, dict):
         requester_reference: dict[str, Any] = {"type": "Practitioner"}
-        requester_identifier = requester.get("identifier")
-        if isinstance(requester_identifier, dict) and requester_identifier.get("value"):
+        requester_identifiers = requester.get("identifiers", [])
+        requester_identifier = next(
+            (
+                item
+                for item in requester_identifiers
+                if isinstance(item, dict) and item.get("value")
+            ),
+            None,
+        )
+        if requester_identifier is not None:
             requester_reference["identifier"] = _identifier(requester_identifier)
         if requester.get("display"):
             requester_reference["display"] = str(requester["display"])
