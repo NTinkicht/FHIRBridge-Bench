@@ -21,6 +21,7 @@ def _ready() -> dict:
     document["members"][0]["member_id"] = "EXT-INTEROP-01"
     document["members"][1]["member_id"] = "EXT-CLINICAL-01"
     document["members"][2]["member_id"] = "EXT-ADJ-01"
+    document["members"][3]["member_id"] = "EXT-DATA-01"
     return document
 
 
@@ -83,3 +84,17 @@ def test_adjudicator_must_be_distinct_from_primary_reviewers() -> None:
     assert not readiness.ready
     assert any("duplicate reviewer" in blocker for blocker in readiness.blockers)
     assert any("adjudicator must be distinct" in blocker for blocker in readiness.blockers)
+
+
+def test_ready_roster_requires_data_custodian() -> None:
+    document = _ready()
+    document["members"] = [
+        member
+        for member in document["members"]
+        if "data_custodian" not in member["roles"]
+    ]
+
+    readiness = assess_reviewer_roster(document)
+
+    assert not readiness.ready
+    assert any("data_custodian" in blocker for blocker in readiness.blockers)
