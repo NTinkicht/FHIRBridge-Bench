@@ -73,19 +73,21 @@ def _identifier(identifier: dict[str, Any]) -> dict[str, Any]:
         rendered["system"] = identifier["system"]
 
     identifier_type = identifier.get("type")
-    if isinstance(identifier_type, str) and identifier_type:
-        # Preserve the authored type label without manufacturing a code that
-        # falls outside FHIR R4 IdentifierType. MR is in the bound value set;
-        # PI is retained as text only because the validator rejects v2-0203#PI
-        # for Identifier.type under the base R4 binding.
-        rendered["type"] = {"text": identifier_type}
-        if identifier_type == "MR":
-            rendered["type"]["coding"] = [
+    if identifier_type == "MR":
+        rendered["type"] = {
+            "coding": [
                 {
                     "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
                     "code": "MR",
                 }
-            ]
+            ],
+            "text": "MR",
+        }
+    elif identifier_type == "PI":
+        # Preserve the authored patient-identifier label without asserting
+        # v2-0203#PI as a FHIR R4 IdentifierType code. The base R4 binding does
+        # not accept PI and the external validator reports it as a warning.
+        rendered["type"] = {"text": "PI"}
     return rendered
 
 
