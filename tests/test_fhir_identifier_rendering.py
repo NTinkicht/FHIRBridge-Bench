@@ -19,7 +19,7 @@ def test_medical_record_identifier_keeps_valid_r4_identifier_type_code() -> None
     ]
 
 
-def test_patient_internal_identifier_does_not_assert_invalid_r4_type_code() -> None:
+def test_patient_internal_identifier_omits_unsupported_r4_type_annotation() -> None:
     rendered = _identifier(
         {
             "system": "urn:test:alternate",
@@ -28,9 +28,9 @@ def test_patient_internal_identifier_does_not_assert_invalid_r4_type_code() -> N
         }
     )
 
-    assert rendered["type"] == {"text": "PI"}
     assert rendered["value"] == "ALT-1"
     assert rendered["system"] == "urn:test:alternate"
+    assert "type" not in rendered
 
 
 def test_unknown_identifier_type_is_not_projected_without_review() -> None:
