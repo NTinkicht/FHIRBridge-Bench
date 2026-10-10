@@ -100,3 +100,76 @@ def test_complete_but_unfrozen_profile_pin_is_rejected_for_confirmatory_use() ->
 
     with pytest.raises(ValueError, match="status must be frozen"):
         assert_hl7_profile_pin_frozen(document)
+
+
+def test_profile_bundle_pin_guard_accepts_exact_hashes(tmp_path: Path) -> None:
+    root = tmp_path / "bundle"
+    root.mkdir()
+    (root / "PROFILE.xml").write_text(
+        '<ConformanceProfile HL7Version="2.5.1"><Messages>'
+        '<Message ID="ORU" Type="ORU" Event="R01" StructID="ORU_R01"/>'
+        '</Messages></ConformanceProfile>',
+        encoding="utf-8",
+    )
+    (root / "CONSTRAINTS.xml").write_text("<constraints/>", encoding="utf-8")
+    manifest = compute_profile_bundle_manifest(root)
+    profile = next(item for item in manifest.files if item.name == "PROFILE.xml")
+    pin = {
+        "bundle": {
+            "aggregate_sha256": manifest.aggregate_sha256,
+            "profile_xml_sha256": profile.sha256,
+        }
+    }
+
+    observed = assert_profile_bundle_matches_pin(root, pin)
+
+    assert observed == manifest
+
+
+def test_profile_bundle_pin_guard_rejects_comparator_substitution(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "bundle"
+    root.mkdir()
+    profile_path = root / "PROFILE.xml"
+    profile_path.write_text(
+        '<ConformanceProfile HL7Version="2.5.1"><Messages>'
+        '<Message ID="TARGET" Type="ORU" Event="R01" StructID="ORU_R01"/>'
+        '</Messages></ConformanceProfile>',
+        encoding="utf-8",
+    )
+    target = compute_profile_bundle_manifest(root)
+    target_profile = next(item for item in target.files if item.name == "PROFILE.xml")
+    pin = {
+        "bundle": {
+            "aggregate_sha256": target.aggregate_sha256,
+            "profile_xml_sha256": target_profile.sha256,
+        }
+    }
+
+    profile_path.write_text(
+        '<ConformanceProfile HL7Version="2.5.1"><Messages>'
+        '<Message ID="HISTORICAL" Type="ORU" Event="R01" StructID="ORU_R01"/>'
+        '</Messages></ConformanceProfile>',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="does not match the pinned Edition 5 artifact"):
+        assert_profile_bundle_matches_pin(root, pin)
+
+
+def test_profile_bundle_pin_guard_rejects_unresolved_hashes(tmp_path: Path) -> None:
+    root = tmp_path / "bundle"
+    root.mkdir()
+    (root / "PROFILE.xml").write_text("<profile/>", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="must be a resolved 64-character SHA-256"):
+        assert_profile_bundle_matches_pin(
+            root,
+            {
+                "bundle": {
+                    "aggregate_sha256": "unresolved",
+                    "profile_xml_sha256": "unresolved",
+                }
+            },
+        )

@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
+
+from .hl7v2_profile_bundle import ProfileBundleManifest, compute_profile_bundle_manifest
 
 
 @dataclass(frozen=True)
@@ -96,3 +99,55 @@ def assert_hl7_profile_pin_frozen(document: dict[str, Any]) -> None:
         )
     if not readiness.ready:
         raise ValueError("HL7 profile pin freeze gate is incomplete")
+
+
+def assert_profile_bundle_matches_pin(
+    root: Path,
+    document: dict[str, Any],
+) -> ProfileBundleManifest:
+    """Require a local bundle to match the cryptographic profile pin.
+
+    This check intentionally runs before validator qualification. A historical
+    comparator or vendor-specific profile must not be able to satisfy the
+    Edition 5 qualification path merely because it is also HL7 v2.5.1 ORU^R01.
+    """
+
+    bundle = document.get("bundle")
+    if not isinstance(bundle, dict):
+        raise ValueError("profile pin must contain bundle metadata")
+
+    expected_aggregate = bundle.get("aggregate_sha256")
+    expected_profile = bundle.get("profile_xml_sha256")
+    for field_name, value in (
+        ("bundle.aggregate_sha256", expected_aggregate),
+        ("bundle.profile_xml_sha256", expected_profile),
+    ):
+        if (
+            not isinstance(value, str)
+            or len(value) != 64
+            or any(character not in "0123456789abcdefABCDEF" for character in value)
+        ):
+            raise ValueError(
+                f"{field_name} must be a resolved 64-character SHA-256 before "
+                "local profile qualification"
+            )
+
+    manifest = compute_profile_bundle_manifest(root)
+    profile_file = next(
+        (item for item in manifest.files if item.name == "PROFILE.xml"),
+        None,
+    )
+    if profile_file is None:  # pragma: no cover - manifest already requires it
+        raise ValueError("profile bundle manifest does not contain PROFILE.xml")
+
+    mismatches: list[str] = []
+    if manifest.aggregate_sha256.lower() != expected_aggregate.lower():
+        mismatches.append("bundle.aggregate_sha256")
+    if profile_file.sha256.lower() != expected_profile.lower():
+        mismatches.append("bundle.profile_xml_sha256")
+    if mismatches:
+        raise ValueError(
+            "local profile bundle does not match the pinned Edition 5 artifact: "
+            + ", ".join(mismatches)
+        )
+    return manifest

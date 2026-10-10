@@ -9,12 +9,14 @@ import sys
 from pathlib import Path
 
 from fhirbridge.hl7v2_profile_bundle import assert_single_oru_r01_profile
+from fhirbridge.hl7v2_profile_pin import assert_profile_bundle_matches_pin
 from fhirbridge.hl7v2_negative_controls import build_structural_negative_controls
 from fhirbridge.renderers import Hl7V251OruRendererA
 from fhirbridge.schema_validation import load_yaml
 from fhirbridge.canonical import generate_lab_scenario
 
 _CONTRACT = Path("contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml")
+_PROFILE_PIN = Path("benchmark/hl7v2_lri_profile_pin.yaml")
 _HARNESS_POM = Path("qualification/hl7v2/pom.xml")
 _VENDOR = Path("vendor/lib-hl7v2-nist-validator")
 _MAIN_CLASS = "org.fhirbridge.hl7v2.ValidateLriProfile"
@@ -81,6 +83,10 @@ def _verify_local_prerequisites(profile_dir: Path) -> None:
     if not profile_dir.is_dir():
         raise ValueError(f"profile directory does not exist: {profile_dir}")
     assert_single_oru_r01_profile(profile_dir)
+    if not _PROFILE_PIN.is_file():
+        raise ValueError(f"profile pin is missing: {_PROFILE_PIN}")
+    pin = load_yaml(_PROFILE_PIN)
+    assert_profile_bundle_matches_pin(profile_dir, pin)
     if not _HARNESS_POM.is_file():
         raise ValueError(f"qualification harness POM is missing: {_HARNESS_POM}")
     if not (_VENDOR / "pom.xml").is_file():

@@ -58,6 +58,7 @@ acquisition:
 
 bundle:
   local_directory: unresolved
+  archive_sha256: unresolved
   aggregate_sha256: unresolved
   profile_xml_sha256: unresolved
   component_manifest_path: unresolved
@@ -133,6 +134,7 @@ freeze_gate:
     - acquisition.acquired_by_role_id
     - acquisition.redistribution_status
     - bundle.local_directory
+    - bundle.archive_sha256
     - bundle.aggregate_sha256
     - bundle.profile_xml_sha256
     - bundle.component_manifest_path
