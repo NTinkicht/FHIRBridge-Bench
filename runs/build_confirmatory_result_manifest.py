@@ -160,6 +160,9 @@ def build_result_manifest(
         raise ValueError("execution audit lacks input hash bindings")
     expected_audit_inputs = {
         "run_plan_sha256": run_plan_sha256,
+        "sealed_case_manifest_sha256": sealed.get(
+            "case_manifest_sha256"
+        ),
         "execution_records_sha256": _sha256(raw_execution_records_path),
         "deterministic_baseline_sha256": _sha256(
             deterministic_baseline_path
