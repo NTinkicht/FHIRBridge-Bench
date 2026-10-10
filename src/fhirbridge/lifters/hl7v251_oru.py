@@ -98,14 +98,33 @@ def _number(value: str) -> int | float | str | None:
         return _unescape(value)
 
 
-def _status(status: str) -> str | None:
+def _report_status(status: str) -> str | None:
+    """Map OBR-25 using the evidence-backed v2 -> FHIR candidate only."""
+
     mapping = {
-        "R": "registered",
+        "O": "registered",
+        "I": "registered",
+        "S": "registered",
         "P": "preliminary",
-        "F": "final",
         "C": "corrected",
+        "R": "partial",
+        "F": "final",
         "X": "cancelled",
-        "U": "unknown",
+    }
+    return mapping.get(status) if status else None
+
+
+def _observation_status(status: str) -> str | None:
+    """Map OBX-11 using the evidence-backed v2 -> FHIR candidate only."""
+
+    mapping = {
+        "A": "amended",
+        "C": "corrected",
+        "D": "entered-in-error",
+        "F": "final",
+        "P": "preliminary",
+        "X": "cancelled",
+        "W": "entered-in-error",
     }
     return mapping.get(status) if status else None
 
@@ -339,7 +358,7 @@ def _report_fact(
             for relation_type, target_id in relationships
         ],
         "attributes": {
-            "status": _status(_field(obr, 25)),
+            "status": _report_status(_field(obr, 25)),
             "category": "laboratory",
         },
     }
@@ -424,7 +443,7 @@ def _observation_fact(
 ) -> LiftedFact:
     value_type = _field(obx, 2)
     raw_value = _field(obx, 5)
-    attributes: dict[str, Any] = {"status": _status(_field(obx, 11))}
+    attributes: dict[str, Any] = {"status": _observation_status(_field(obx, 11))}
     unit = _unit(_field(obx, 6))
     if value_type in {"CWE", "CE"}:
         coded = _concept(raw_value)
