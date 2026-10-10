@@ -2,7 +2,7 @@ schema_version: "0.1.0"
 calibration_id: "SEVERITY-CALIBRATION-TO-BE-ASSIGNED"
 status: incomplete_template
 created_at: null
-severity_policy_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+candidate_policy_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
 reviewers:
   - reviewer_id: "REVIEWER-A-TO-BE-ASSIGNED"
     expertise:
