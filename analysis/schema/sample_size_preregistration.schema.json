@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/sample_size_preregistration.schema.json",
+  "title": "FHIRBridge Pilot-Derived Sample Size Preregistration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_id",
+    "status",
+    "created_at",
+    "sealed_set_opened",
+    "pilot_evidence",
+    "primary_precision_plan",
+    "paired_comparison_plans",
+    "final_case_count",
+    "attestation"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "record_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["incomplete_template", "preregistered"]},
+    "created_at": {"type": ["string", "null"], "format": "date-time"},
+    "sealed_set_opened": {"const": false},
+    "pilot_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pilot_case_manifest_sha256",
+        "pilot_analysis_sha256",
+        "expected_vur",
+        "valid_determinate_retention",
+        "mean_cluster_size",
+        "icc"
+      ],
+      "properties": {
+        "pilot_case_manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "pilot_analysis_sha256": {"$ref": "#/$defs/sha256"},
+        "expected_vur": {"$ref": "#/$defs/probability"},
+        "valid_determinate_retention": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "mean_cluster_size": {"type": "number", "minimum": 1},
+        "icc": {"$ref": "#/$defs/probability"}
+      }
+    },
+    "primary_precision_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "confidence_level",
+        "target_half_width",
+        "independent_n",
+        "design_effect",
+        "cluster_inflated_n",
+        "attempted_n"
+      ],
+      "properties": {
+        "confidence_level": {"const": 0.95},
+        "target_half_width": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "independent_n": {"type": "integer", "minimum": 1},
+        "design_effect": {"type": "number", "minimum": 1},
+        "cluster_inflated_n": {"type": "integer", "minimum": 1},
+        "attempted_n": {"type": "integer", "minimum": 1}
+      }
+    },
+    "paired_comparison_plans": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {"$ref": "#/$defs/pairedPlan"}
+    },
+    "final_case_count": {"type": "integer", "minimum": 1},
+    "selection_rule": {
+      "const": "maximum_required_attempted_n_across_primary_precision_and_all_predeclared_paired_comparisons"
+    },
+    "attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pilot_only_used_for_planning",
+        "sealed_results_used_for_planning",
+        "final_case_count_recorded_before_confirmatory_inference"
+      ],
+      "properties": {
+        "pilot_only_used_for_planning": {"const": true},
+        "sealed_results_used_for_planning": {"const": false},
+        "final_case_count_recorded_before_confirmatory_inference": {"const": true}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    },
+    "probability": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "pairedPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comparison_id",
+        "p10",
+        "p01",
+        "alpha",
+        "power",
+        "expected_pair_retention",
+        "independent_pair_n",
+        "design_effect",
+        "cluster_inflated_pair_n",
+        "attempted_pair_n",
+        "planning_method"
+      ],
+      "properties": {
+        "comparison_id": {"type": "string", "minLength": 1},
+        "p10": {"$ref": "#/$defs/probability"},
+        "p01": {"$ref": "#/$defs/probability"},
+        "alpha": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 1
+        },
+        "power": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 1
+        },
+        "expected_pair_retention": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "independent_pair_n": {"type": "integer", "minimum": 2},
+        "design_effect": {"type": "number", "minimum": 1},
+        "cluster_inflated_pair_n": {"type": "integer", "minimum": 2},
+        "attempted_pair_n": {"type": "integer", "minimum": 2},
+        "planning_method": {
+          "const": "normal_approximation_for_planning_only"
+        }
+      }
+    }
+  }
+}
