@@ -119,6 +119,10 @@ def _fixture(tmp_path: Path) -> dict[str, Path]:
         tmp_path / "assignments.yaml",
         {"schema_version": "0.1.0"},
     )
+    primary_hypothesis = _write_yaml(
+        tmp_path / "primary-hypothesis.yaml",
+        {"schema_version": "0.1.0"},
+    )
     analysis = _write_yaml(
         tmp_path / "analysis.yaml",
         {"schema_version": "0.1.0"},
@@ -159,12 +163,14 @@ def _fixture(tmp_path: Path) -> dict[str, Path]:
                     {
                         "case_id": "CASE-001",
                         "scenario_family": "LAB-001",
+                        "analysis_cluster_id": "CLUSTER-001",
                         "source_input_sha256": "a" * 64,
                         "canonical_graph_sha256": "b" * 64,
                     },
                     {
                         "case_id": "CASE-002",
                         "scenario_family": "LAB-006",
+                        "analysis_cluster_id": "CLUSTER-002",
                         "source_input_sha256": "c" * 64,
                         "canonical_graph_sha256": "d" * 64,
                     },
@@ -183,6 +189,7 @@ def _fixture(tmp_path: Path) -> dict[str, Path]:
         "components": component_manifest,
         "roster": roster,
         "assignments": assignments,
+        "primary_hypothesis": primary_hypothesis,
         "analysis": analysis,
         "sample": sample,
         "model": model,
@@ -207,6 +214,11 @@ def _patch_ready(monkeypatch) -> None:
         _MODULE,
         "assess_case_assignment_manifest",
         lambda *_args, **_kwargs: SimpleNamespace(ready=True, blockers=()),
+    )
+    monkeypatch.setattr(
+        _MODULE,
+        "assess_primary_vur_hypothesis",
+        lambda _: SimpleNamespace(ready=True, blockers=()),
     )
     monkeypatch.setattr(
         _MODULE,
@@ -236,6 +248,7 @@ def _build(tmp_path: Path, paths: dict[str, Path]) -> dict:
         instrument_component_manifest_path=paths["components"],
         reviewer_roster_path=paths["roster"],
         case_assignment_path=paths["assignments"],
+        primary_vur_hypothesis_path=paths["primary_hypothesis"],
         analysis_preregistration_path=paths["analysis"],
         sample_size_path=paths["sample"],
         model_config_path=paths["model"],
@@ -262,7 +275,7 @@ def test_freeze_manifest_builder_binds_all_components_and_governance_artifacts(
 
     schema = json.loads(_SCHEMA.read_text(encoding="utf-8"))
     jsonschema.Draft202012Validator(schema).validate(result)
-    assert result["schema_version"] == "0.7.0"
+    assert result["schema_version"] == "0.8.0"
     assert result["freeze_complete"] is True
     assert set(result["instrument_components"]) == set(_COMPONENT_NAMES)
     assert result["sealed_set"]["case_count"] == 2
@@ -271,6 +284,9 @@ def test_freeze_manifest_builder_binds_all_components_and_governance_artifacts(
         item["purpose"] for item in result["dependencies"]
     } >= {"terminology", "ucum", "fhir_validation", "hl7v2_validation"}
     assert result["acceptance_gate"]["defined_before_sealed_opening"] is True
+    assert result["primary_vur_hypothesis"]["artifact_id"] == (
+        "primary-vur-hypothesis-preregistration"
+    )
 
 
 def test_freeze_manifest_builder_component_hash_changes_with_component_bytes(
@@ -331,3 +347,28 @@ def test_freeze_manifest_builder_refuses_unready_governance_artifact(
         assert "model snapshot missing" in str(exc)
     else:
         raise AssertionError("unready model freeze must block final freeze")
+
+
+def test_freeze_manifest_builder_refuses_unready_primary_hypothesis(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    paths = _fixture(tmp_path)
+    _patch_ready(monkeypatch)
+    monkeypatch.setattr(
+        _MODULE,
+        "assess_primary_vur_hypothesis",
+        lambda _: SimpleNamespace(
+            ready=False,
+            blockers=("primary threshold not frozen",),
+        ),
+    )
+
+    try:
+        _build(tmp_path, paths)
+    except ValueError as exc:
+        assert "primary threshold not frozen" in str(exc)
+    else:
+        raise AssertionError(
+            "unready primary VUR hypothesis must block final freeze"
+        )
