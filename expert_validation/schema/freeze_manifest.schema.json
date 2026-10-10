@@ -15,6 +15,7 @@
     "dependencies",
     "reviewer_roster",
     "case_assignment_manifest",
+    "primary_vur_hypothesis",
     "analysis_preregistration",
     "sample_size_preregistration",
     "model_prompt_configuration",
@@ -25,7 +26,7 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "0.7.0"
+      "const": "0.8.0"
     },
     "manifest_id": {
       "type": "string",
@@ -328,6 +329,9 @@
       "$ref": "#/$defs/frozenArtifact"
     },
     "instrument_component_manifest": {
+      "$ref": "#/$defs/frozenArtifact"
+    },
+    "primary_vur_hypothesis": {
       "$ref": "#/$defs/frozenArtifact"
     }
   },
