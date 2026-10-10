@@ -143,7 +143,11 @@ def assess_confirmatory_run_plan(
                 f"sealed_set.{key} is missing, malformed, or placeholder"
             )
     case_count = sealed.get("case_count")
-    if not isinstance(case_count, int) or isinstance(case_count, bool) or case_count < 1:
+    if (
+        not isinstance(case_count, int)
+        or isinstance(case_count, bool)
+        or case_count < 1
+    ):
         blockers.append("sealed_set.case_count must be a positive integer")
 
     model_keys = document.get("model_keys")
