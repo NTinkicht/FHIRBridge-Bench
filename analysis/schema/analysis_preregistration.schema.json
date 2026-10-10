@@ -20,7 +20,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "0.1.0"
+      "const": "0.2.0"
     },
     "analysis_id": {
       "type": "string",
@@ -49,7 +49,8 @@
         "repository_commit",
         "projectability_contract_sha256",
         "structural_validity_policy_sha256",
-        "statistical_analysis_plan_sha256"
+        "statistical_analysis_plan_sha256",
+        "model_prompt_configuration_sha256"
       ],
       "properties": {
         "repository_commit": {
@@ -63,6 +64,9 @@
           "$ref": "#/$defs/sha256"
         },
         "statistical_analysis_plan_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "model_prompt_configuration_sha256": {
           "$ref": "#/$defs/sha256"
         }
       }
