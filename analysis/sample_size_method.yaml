@@ -24,9 +24,7 @@ sample_size_method:
     familywise_alpha: 0.05
     power: 0.80
     multiplicity_test_method: Holm
-    planning_alpha_policy: >-
-      Bonferroni_upper_bound_for_Holm_family_using_0.05_divided_by_
-      six_times_number_of_frozen_LLM_models
+    planning_alpha_policy: Bonferroni_upper_bound_for_Holm_family_dynamic_6M
     family_size_rule: six_strategy_contrasts_times_number_of_frozen_LLM_models
     frozen_model_source: models/model_prompt_freeze.yaml
     discordant_probabilities:
