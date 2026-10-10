@@ -190,6 +190,21 @@ def assess_confirmatory_authorization(
     if not isinstance(frozen_components, dict):
         blockers.append("freeze manifest instrument_components are missing")
         frozen_components = {}
+    frozen_component_names = set(frozen_components)
+    actual_component_names = set(actual_component_sha256)
+    missing_component_hashes = frozen_component_names - actual_component_names
+    unexpected_component_hashes = actual_component_names - frozen_component_names
+    if missing_component_hashes:
+        blockers.append(
+            "actual component digest set is missing frozen components: "
+            + ", ".join(sorted(missing_component_hashes))
+        )
+    if unexpected_component_hashes:
+        blockers.append(
+            "actual component digest set contains unfrozen components: "
+            + ", ".join(sorted(unexpected_component_hashes))
+        )
+
     for component_name, component in sorted(frozen_components.items()):
         if not isinstance(component, dict):
             blockers.append(
