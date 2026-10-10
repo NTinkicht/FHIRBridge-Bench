@@ -112,7 +112,11 @@ def assess_confirmatory_result_manifest(
     else:
         model_count = len(model_keys)
     case_count = sealed_plan.get("case_count")
-    if not isinstance(case_count, int) or isinstance(case_count, bool) or case_count < 1:
+    if (
+        not isinstance(case_count, int)
+        or isinstance(case_count, bool)
+        or case_count < 1
+    ):
         blockers.append("run plan case_count is invalid")
         case_count = 0
 
