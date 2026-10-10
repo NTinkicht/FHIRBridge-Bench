@@ -84,10 +84,11 @@ def _identifier(identifier: dict[str, Any]) -> dict[str, Any]:
             "text": "MR",
         }
     elif identifier_type == "PI":
-        # Preserve the authored patient-identifier label without asserting
-        # v2-0203#PI as a FHIR R4 IdentifierType code. The base R4 binding does
-        # not accept PI and the external validator reports it as a warning.
-        rendered["type"] = {"text": "PI"}
+        # FHIR R4 Identifier.type has an extensible binding whose published
+        # IdentifierType value set does not include v2-0203#PI. Preserve the
+        # source identifier value/system and do not invent a different type or
+        # emit an uncoded CodeableConcept solely to retain the local label.
+        pass
     return rendered
 
 
