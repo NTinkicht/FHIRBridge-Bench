@@ -53,7 +53,11 @@ def test_profile_selection_requires_source_grounded_order_context() -> None:
     assert "unique_source_grounded_filler_order_identifier" in source_requirements
     assert "source_grounded_ordering_provider" in source_requirements
     assert "US_Core_ServiceRequest_projection" in source_requirements
-    assert "no_DiagnosticReport_identifier_repurposing_as_order_identifier" in source_requirements
+    assert "explicit_single_canonical_order_identifier_semantics" in source_requirements
+    assert (
+        "ServiceRequest_vs_DiagnosticReport_identifier_locus_independent_review"
+        in source_requirements
+    )
 
 
 def test_order_semantics_stay_outside_primary_endpoint_until_review() -> None:
