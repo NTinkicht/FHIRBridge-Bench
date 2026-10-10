@@ -93,6 +93,39 @@ def assess_pilot_acceptance_preregistration(
     elif isinstance(case_count, int) and runtime_indeterminate_count > case_count:
         blockers.append("runtime_indeterminate_count exceeds case_count")
 
+    indeterminate_positive_count = metrics.get(
+        "runtime_indeterminate_expert_positive_count"
+    )
+    indeterminate_negative_count = metrics.get(
+        "runtime_indeterminate_expert_negative_count"
+    )
+    for name, value in (
+        (
+            "runtime_indeterminate_expert_positive_count",
+            indeterminate_positive_count,
+        ),
+        (
+            "runtime_indeterminate_expert_negative_count",
+            indeterminate_negative_count,
+        ),
+    ):
+        if not isinstance(value, int) or value < 0:
+            blockers.append(f"{name} must be a nonnegative integer")
+
+    if (
+        isinstance(runtime_indeterminate_count, int)
+        and isinstance(indeterminate_positive_count, int)
+        and isinstance(indeterminate_negative_count, int)
+        and (
+            indeterminate_positive_count + indeterminate_negative_count
+            != runtime_indeterminate_count
+        )
+    ):
+        blockers.append(
+            "class-specific indeterminate counts do not sum to "
+            "runtime_indeterminate_count"
+        )
+
     determinate_case_count = (
         case_count - runtime_indeterminate_count
         if isinstance(case_count, int)
@@ -116,6 +149,30 @@ def assess_pilot_acceptance_preregistration(
         if positive_count + negative_count != case_count:
             blockers.append(
                 "expert positive/negative counts do not sum to case_count"
+            )
+
+    if (
+        len(counts) == len(count_keys)
+        and isinstance(positive_count, int)
+        and isinstance(negative_count, int)
+        and isinstance(indeterminate_positive_count, int)
+        and isinstance(indeterminate_negative_count, int)
+    ):
+        tp, tn, fp, fn = (
+            int(metrics["true_positive"]),
+            int(metrics["true_negative"]),
+            int(metrics["false_positive"]),
+            int(metrics["false_negative"]),
+        )
+        if tp + fn + indeterminate_positive_count != positive_count:
+            blockers.append(
+                "expert-positive count does not match TP + FN + "
+                "positive indeterminates"
+            )
+        if tn + fp + indeterminate_negative_count != negative_count:
+            blockers.append(
+                "expert-negative count does not match TN + FP + "
+                "negative indeterminates"
             )
 
     for metric_name in (
@@ -157,6 +214,54 @@ def assess_pilot_acceptance_preregistration(
             blockers.append(
                 "runtime_indeterminate_rate estimate does not match count/case_count"
             )
+
+    if (
+        len(counts) == len(count_keys)
+        and isinstance(case_count, int)
+        and case_count > 0
+        and isinstance(positive_count, int)
+        and positive_count > 0
+        and isinstance(negative_count, int)
+        and negative_count > 0
+        and isinstance(runtime_indeterminate_count, int)
+    ):
+        tp = int(metrics["true_positive"])
+        tn = int(metrics["true_negative"])
+        fp = int(metrics["false_positive"])
+        fn = int(metrics["false_negative"])
+        expected_estimates: dict[str, float] = {
+            "sensitivity": tp / positive_count,
+            "specificity": tn / negative_count,
+            "accuracy": (tp + tn) / case_count,
+            "runtime_indeterminate_rate": (
+                runtime_indeterminate_count / case_count
+            ),
+        }
+        predicted_positive = tp + fp
+        predicted_negative = tn + fn
+        if predicted_positive > 0:
+            expected_estimates["ppv"] = tp / predicted_positive
+        else:
+            blockers.append(
+                "PPV is undefined because determinate verifier positives are absent"
+            )
+        if predicted_negative > 0:
+            expected_estimates["npv"] = tn / predicted_negative
+        else:
+            blockers.append(
+                "NPV is undefined because determinate verifier negatives are absent"
+            )
+
+        for metric_name, expected in expected_estimates.items():
+            metric = metrics.get(metric_name)
+            estimate = metric.get("estimate") if isinstance(metric, dict) else None
+            if (
+                not isinstance(estimate, (int, float))
+                or abs(float(estimate) - expected) > 1e-12
+            ):
+                blockers.append(
+                    f"{metric_name} estimate does not match frozen count semantics"
+                )
 
     gate = document.get("acceptance_gate", {})
     if not isinstance(gate, dict):
