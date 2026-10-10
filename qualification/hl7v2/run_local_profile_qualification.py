@@ -23,16 +23,87 @@ _MAIN_CLASS = "org.fhirbridge.hl7v2.ValidateLriProfile"
 
 
 def _extract_json(stdout: str) -> dict:
+    summary: dict | None = None
+    full_report: dict | None = None
     for line in reversed(stdout.splitlines()):
         candidate = line.strip()
-        if candidate.startswith("{") and candidate.endswith("}"):
-            try:
-                value = json.loads(candidate)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(value, dict) and "error_total" in value:
-                return value
-    raise ValueError("NIST validator JSON report was not found in process output")
+        if not (candidate.startswith("{") and candidate.endswith("}")):
+            continue
+        try:
+            value = json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(value, dict):
+            continue
+        if summary is None and "error_total" in value:
+            summary = value
+        elif full_report is None and "entries" in value:
+            full_report = value
+        if summary is not None and full_report is not None:
+            break
+
+    if summary is None:
+        raise ValueError("NIST validator JSON summary was not found in process output")
+    if full_report is None:
+        raise ValueError("NIST validator entry-level JSON report was not found in process output")
+
+    result = dict(summary)
+    result["entries"] = full_report.get("entries", {})
+    result["reported_counts"] = {
+        key: full_report.get(key)
+        for key in (
+            "error-count",
+            "warning-count",
+            "alert-count",
+            "informational-count",
+        )
+        if key in full_report
+    }
+    return result
+
+
+def _error_entries(report: dict) -> list[dict]:
+    entries = report.get("entries", {})
+    if not isinstance(entries, dict):
+        return []
+    result: list[dict] = []
+    for bucket in ("structure", "value-set", "content"):
+        values = entries.get(bucket, [])
+        if not isinstance(values, list):
+            continue
+        for entry in values:
+            if (
+                isinstance(entry, dict)
+                and str(entry.get("classification", "")).lower() == "error"
+            ):
+                result.append(entry)
+    return result
+
+
+def _expected_error_observed(
+    report: dict,
+    expected_tokens: tuple[str, ...],
+) -> bool:
+    if not expected_tokens:
+        return False
+    lowered_tokens = tuple(token.lower() for token in expected_tokens)
+    for entry in _error_entries(report):
+        haystack = " ".join(
+            str(entry.get(key, ""))
+            for key in ("path", "description", "category")
+        ).lower()
+        if all(token in haystack for token in lowered_tokens):
+            return True
+    return False
+
+
+def _blocking_total(report: dict) -> int:
+    """Fail closed on errors, warnings, and alerts before an allowlist is frozen."""
+
+    return sum(
+        int(report.get(key, 0))
+        for key in ("error_total", "warning_total", "alert_total")
+    )
 
 
 def _run_validator(profile_dir: Path, message_path: Path) -> dict:
@@ -71,11 +142,17 @@ def _render_fixtures(output_dir: Path) -> tuple[Path, list[tuple[str, Path]]]:
     baseline = output_dir / "baseline-LAB-001-9501.er7"
     baseline.write_text(rendered.artifact, encoding="utf-8")
 
-    controls: list[tuple[str, Path]] = []
+    controls: list[tuple[str, Path, tuple[str, ...]]] = []
     for control in build_structural_negative_controls(rendered.artifact):
         path = output_dir / f"{control.control_id}.er7"
         path.write_text(control.artifact, encoding="utf-8")
-        controls.append((control.control_id, path))
+        controls.append(
+            (
+                control.control_id,
+                path,
+                control.expected_error_location_tokens,
+            )
+        )
     return baseline, controls
 
 
@@ -122,18 +199,27 @@ def qualify_profile(profile_dir: Path, output_dir: Path) -> dict:
 
     baseline_report = _run_validator(profile_dir, baseline_path)
     negative_reports = []
-    for control_id, path in controls:
+    for control_id, path, expected_tokens in controls:
         report = _run_validator(profile_dir, path)
+        expected_location_observed = _expected_error_observed(
+            report,
+            expected_tokens,
+        )
         negative_reports.append(
             {
                 "control_id": control_id,
                 "path": str(path),
+                "expected_error_location_tokens": list(expected_tokens),
                 "report": report,
-                "passed_expected_failure": int(report.get("error_total", 0)) > 0,
+                "expected_location_observed": expected_location_observed,
+                "passed_expected_failure": (
+                    int(report.get("error_total", 0)) > 0
+                    and expected_location_observed
+                ),
             }
         )
 
-    baseline_passed = int(baseline_report.get("error_total", 0)) == 0
+    baseline_passed = _blocking_total(baseline_report) == 0
     negative_controls_passed = all(
         item["passed_expected_failure"] for item in negative_reports
     )
@@ -147,6 +233,13 @@ def qualify_profile(profile_dir: Path, output_dir: Path) -> dict:
         "negative_controls": negative_reports,
         "local_reference_messages_passed": baseline_passed,
         "structural_negative_controls_passed": negative_controls_passed,
+        "warning_alert_policy": (
+            "fail_closed_on_all_warning_and_alert_classifications_until_"
+            "explicit_allowlist_is_frozen"
+        ),
+        "negative_control_policy": (
+            "requires_error_at_expected_semantic_locus_not_merely_any_error"
+        ),
         "qualification_passed": baseline_passed and negative_controls_passed,
     }
 
