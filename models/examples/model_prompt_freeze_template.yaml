@@ -1,4 +1,4 @@
-schema_version: "0.5.0"
+schema_version: "0.6.0"
 config_id: "MODEL-FREEZE-TO-BE-ASSIGNED"
 status: incomplete_template
 created_at: null
@@ -23,6 +23,9 @@ global_execution_policy:
 deterministic_baseline:
   implementation_artifact:
     path_or_ref: "TO_BE_FROZEN"
+    sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  qualification_artifact:
+    path_or_ref: "models/baseline_qualification.yaml"
     sha256: "0000000000000000000000000000000000000000000000000000000000000000"
 llm_models:
   - model_key: "MODEL-TO-BE-FROZEN"
