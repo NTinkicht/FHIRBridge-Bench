@@ -10,6 +10,7 @@
     "status",
     "created_at",
     "sealed_set_opened",
+    "frozen_method",
     "pilot_evidence",
     "primary_precision_plan",
     "paired_comparison_plans",
@@ -19,7 +20,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "0.3.0"
+      "const": "0.4.0"
     },
     "record_id": {
       "type": "string",
@@ -153,6 +154,22 @@
     "final_source_cluster_count": {
       "type": "integer",
       "minimum": 1
+    },
+    "frozen_method": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sample_size_method_sha256",
+        "core_confirmatory_design_sha256"
+      ],
+      "properties": {
+        "sample_size_method_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "core_confirmatory_design_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
     }
   },
   "$defs": {
