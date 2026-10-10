@@ -253,3 +253,36 @@ def test_mapping_and_repair_context_must_be_identical() -> None:
         "must use identical mapping context artifacts" in blocker
         for blocker in readiness.blockers
     )
+
+
+def test_repair_provider_generation_call_must_remain_zero() -> None:
+    document = _ready()
+    document["global_execution_policy"][
+        "provider_generation_calls_per_case_model"
+    ]["mapping_aware_plus_syntax_repair"] = 1
+
+    readiness = assess_model_prompt_freeze(document)
+
+    assert not readiness.ready
+    assert any(
+        "provider generation-call policy" in blocker
+        for blocker in readiness.blockers
+    )
+
+
+def test_repair_generation_source_must_reuse_mapping_output() -> None:
+    document = _ready()
+    repair = next(
+        strategy
+        for strategy in document["llm_strategies"]
+        if strategy["strategy_id"] == "mapping_aware_plus_syntax_repair"
+    )
+    repair["generation_source"] = "provider_call"
+
+    readiness = assess_model_prompt_freeze(document)
+
+    assert not readiness.ready
+    assert any(
+        "generation_source does not match frozen design" in blocker
+        for blocker in readiness.blockers
+    )
