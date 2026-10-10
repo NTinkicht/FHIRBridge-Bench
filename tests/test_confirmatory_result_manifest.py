@@ -92,6 +92,13 @@ def _ready() -> dict:
             "record_count": 70,
         }
     )
+    document["analysis_dataset_build"].update(
+        {
+            "path_or_ref": "runs/results/analysis-dataset-build.json",
+            "sha256": "9" * 64,
+            "complete": True,
+        }
+    )
     document["analysis_ready_dataset"].update(
         {
             "path_or_ref": "runs/results/analysis-rows.jsonl",
@@ -282,5 +289,22 @@ def test_result_manifest_rejects_malformed_run_plan_commit() -> None:
     assert not readiness.ready
     assert any(
         "run plan repository_commit is missing or malformed" in item
+        for item in readiness.blockers
+    )
+
+
+def test_result_manifest_requires_analysis_dataset_build_audit() -> None:
+    document = _ready()
+    document["analysis_dataset_build"]["complete"] = False
+
+    readiness = assess_confirmatory_result_manifest(
+        document,
+        run_plan=_run_plan(),
+        run_plan_sha256="1" * 64,
+    )
+
+    assert not readiness.ready
+    assert any(
+        "analysis dataset build audit is not complete" in item
         for item in readiness.blockers
     )
