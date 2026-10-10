@@ -1,4 +1,4 @@
-schema_version: "0.2.0"
+schema_version: "0.3.0"
 run_plan_id: "RUN-PLAN-TO-BE-ASSIGNED"
 status: incomplete_template
 created_at: null
@@ -8,7 +8,7 @@ inference_started: false
 authorization:
   authorized: true
   record_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
-  record_schema_version: "0.1.0"
+  record_schema_version: "0.2.0"
   record_schema_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
 frozen_artifacts:
   freeze_manifest_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
