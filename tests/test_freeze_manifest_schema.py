@@ -20,7 +20,7 @@ def _write_yaml(tmp_path: Path, name: str, payload: dict) -> Path:
 def test_nonassertive_freeze_manifest_template_matches_schema() -> None:
     document = load_yaml(TEMPLATE)
 
-    assert document["schema_version"] == "0.5.0"
+    assert document["schema_version"] == "0.6.0"
     assert validate_document(TEMPLATE, SCHEMA) == []
 
 
@@ -168,3 +168,21 @@ def test_freeze_manifest_requires_governance_artifacts(
 
     assert problems
     assert any(artifact_name in problem.message for problem in problems)
+
+
+def test_freeze_manifest_requires_component_boundary_artifact(
+    tmp_path: Path,
+) -> None:
+    manifest = deepcopy(load_yaml(TEMPLATE))
+    del manifest["instrument_component_manifest"]
+
+    problems = validate_document(
+        _write_yaml(tmp_path, "missing-component-boundary.yaml", manifest),
+        SCHEMA,
+    )
+
+    assert problems
+    assert any(
+        "instrument_component_manifest" in problem.message
+        for problem in problems
+    )
