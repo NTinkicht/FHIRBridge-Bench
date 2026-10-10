@@ -84,10 +84,10 @@ def _planning_constants(method: dict[str, Any]) -> tuple[float, float, float]:
     ):
         raise ValueError("familywise alpha is invalid")
 
-    # The planning method currently freezes 80% power. Keep this explicit in
-    # the builder until/unless the preregistered method version changes.
-    power = 0.80
-    return float(alpha), float(familywise_alpha), power
+    power = paired.get("power")
+    if not isinstance(power, (int, float)) or not 0 < float(power) < 1:
+        raise ValueError("planning power is invalid")
+    return float(alpha), float(familywise_alpha), float(power)
 
 
 def assemble_sample_size_preregistration(
@@ -99,6 +99,8 @@ def assemble_sample_size_preregistration(
     created_at: str,
     core_design: dict[str, Any],
     method: dict[str, Any],
+    sample_size_method_sha256: str,
+    core_confirmatory_design_sha256: str,
 ) -> dict[str, Any]:
     """Compute every numeric planning output from frozen pilot-derived inputs."""
 
@@ -180,11 +182,17 @@ def assemble_sample_size_preregistration(
         raise ValueError("familywise alpha has drifted from 0.05")
 
     result = {
-        "schema_version": "0.3.0",
+        "schema_version": "0.4.0",
         "record_id": record_id,
         "status": "preregistered",
         "created_at": created_at,
         "sealed_set_opened": False,
+        "frozen_method": {
+            "sample_size_method_sha256": sample_size_method_sha256,
+            "core_confirmatory_design_sha256": (
+                core_confirmatory_design_sha256
+            ),
+        },
         "pilot_evidence": {
             "pilot_case_manifest_sha256": pilot_case_manifest_sha256,
             "pilot_analysis_sha256": pilot_analysis_sha256,
@@ -254,6 +262,8 @@ def main() -> int:
         created_at=args.created_at,
         core_design=_load_yaml(_CORE_DESIGN),
         method=_load_yaml(_METHOD),
+        sample_size_method_sha256=_sha256_file(_METHOD),
+        core_confirmatory_design_sha256=_sha256_file(_CORE_DESIGN),
     )
 
     output_schema = json.loads(_OUTPUT_SCHEMA.read_text(encoding="utf-8"))
