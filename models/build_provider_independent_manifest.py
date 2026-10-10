@@ -23,6 +23,8 @@ _ARTIFACTS = (
     Path("runs/schema/confirmatory_run_plan.schema.json"),
     Path("src/fhirbridge/confirmatory_run_plan.py"),
     Path("src/fhirbridge/confirmatory_execution_audit.py"),
+    Path("runs/schema/confirmatory_result_manifest.schema.json"),
+    Path("src/fhirbridge/confirmatory_result_manifest.py"),
 )
 
 
@@ -69,6 +71,7 @@ def build_manifest() -> dict[str, object]:
             "confirmatory_run_authorization",
             "pre_inference_run_plan",
             "post_run_execution_completeness_audit",
+            "post_run_result_provenance_manifest",
         ],
         "not_included": [
             "final_model_provider_snapshot",
