@@ -1,0 +1,36 @@
+{
+  "evidence_id": "FHIRBRIDGE-LRI-PUBLIC-CORROBORATION-001",
+  "captured_at": "2026-10-10",
+  "scientific_role": "secondary_public_corroboration_only",
+  "confirmatory_ground_truth": false,
+  "may_satisfy_machine_profile_gate": false,
+  "target_profile_candidate": "LRI_NG_FRU_Profile_V3",
+  "sources": [
+    {
+      "title": "HL7 response/comment submitted in HHS ONC HTI-2 rulemaking",
+      "publication_date": "2024-10-04",
+      "url": "https://downloads.regulations.gov/HHS-ONC-2024-0010-0127/attachment_1.pdf",
+      "observed_claims": {
+        "LRI_COMMON_COMPONENT_V3": "2.16.840.1.113883.9.195.3.22",
+        "LRI_NG_COMPONENT_R1": "2.16.840.1.113883.9.13",
+        "LAB_FRU_COMPONENT": "2.16.840.1.113883.9.83",
+        "LAB_FRN_COMPONENT": "2.16.840.1.113883.9.84"
+      },
+      "interpretation": "Independently corroborates the component names and OIDs used in the selected Common+NG+FRU design."
+    },
+    {
+      "title": "HL7 Tools - Newborn Screening Health IT Guide and Tools",
+      "url": "https://www.newsteps.org/sites/default/files/resources/download/baby_steps_towards_defining_the_message.pdf",
+      "observed_claims": {
+        "result_profile_composition_rule": "A valid result profile includes LRI Common, either GU or NG, and either FRU or FRN."
+      },
+      "interpretation": "Independently corroborates the component-composition model used when selecting Common+NG+FRU."
+    }
+  ],
+  "explicit_limitations": [
+    "Neither source provides the original Edition 5 machine-readable IGAMT/GVT export.",
+    "Neither source establishes the SHA-256 identity of LRI_NG_FRU_Profile_V3.",
+    "Neither source may replace exact Edition 5 profile qualification.",
+    "The pre-coordinated profile OID remains governed by the authoritative Edition 5 publication and exact machine bundle when acquired."
+  ]
+}
