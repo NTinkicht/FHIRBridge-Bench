@@ -140,6 +140,7 @@ def build_authorization_record(
         name: digest.sha256
         for name, digest in sorted(component_digests.items())
     }
+    current_commit = _repository_commit(repository_commit)
 
     decision = assess_confirmatory_authorization(
         protocol_gates=documents["protocol_freeze_gates"],
@@ -177,13 +178,14 @@ def build_authorization_record(
         },
         actual_component_sha256=component_hashes,
         sealed_case_ids=sealed_case_ids,
+        actual_repository_commit=current_commit,
     )
 
     record = {
         "schema_version": "0.2.0",
         "authorization_id": authorization_id,
         "created_at": created_at,
-        "repository_commit": _repository_commit(repository_commit),
+        "repository_commit": current_commit,
         "authorized": decision.authorized,
         "blockers": list(decision.blockers),
         "input_artifacts": {
