@@ -82,6 +82,26 @@ def assess_pilot_acceptance_preregistration(
         else:
             counts.append(value)
     case_count = pilot.get("case_count")
+    positive_count = pilot.get("expert_major_error_positive_count")
+    negative_count = pilot.get("expert_major_error_negative_count")
+    expert_indeterminate_count = pilot.get(
+        "expert_major_error_indeterminate_count"
+    )
+    if (
+        not isinstance(expert_indeterminate_count, int)
+        or expert_indeterminate_count < 0
+    ):
+        blockers.append(
+            "expert_major_error_indeterminate_count must be a nonnegative integer"
+        )
+
+    determinate_reference_count = (
+        positive_count + negative_count
+        if isinstance(positive_count, int)
+        and isinstance(negative_count, int)
+        else None
+    )
+
     runtime_indeterminate_count = metrics.get("runtime_indeterminate_count")
     if (
         not isinstance(runtime_indeterminate_count, int)
@@ -90,8 +110,13 @@ def assess_pilot_acceptance_preregistration(
         blockers.append(
             "runtime_indeterminate_count must be a nonnegative integer"
         )
-    elif isinstance(case_count, int) and runtime_indeterminate_count > case_count:
-        blockers.append("runtime_indeterminate_count exceeds case_count")
+    elif (
+        isinstance(determinate_reference_count, int)
+        and runtime_indeterminate_count > determinate_reference_count
+    ):
+        blockers.append(
+            "runtime_indeterminate_count exceeds determinate expert-reference count"
+        )
 
     indeterminate_positive_count = metrics.get(
         "runtime_indeterminate_expert_positive_count"
@@ -127,8 +152,8 @@ def assess_pilot_acceptance_preregistration(
         )
 
     determinate_case_count = (
-        case_count - runtime_indeterminate_count
-        if isinstance(case_count, int)
+        determinate_reference_count - runtime_indeterminate_count
+        if isinstance(determinate_reference_count, int)
         and isinstance(runtime_indeterminate_count, int)
         else None
     )
@@ -141,14 +166,21 @@ def assess_pilot_acceptance_preregistration(
             "pilot confusion counts do not sum to determinate case count"
         )
 
-    positive_count = pilot.get("expert_major_error_positive_count")
-    negative_count = pilot.get("expert_major_error_negative_count")
     if isinstance(case_count, int) and all(
-        isinstance(value, int) for value in (positive_count, negative_count)
+        isinstance(value, int)
+        for value in (
+            positive_count,
+            negative_count,
+            expert_indeterminate_count,
+        )
     ):
-        if positive_count + negative_count != case_count:
+        if (
+            positive_count + negative_count + expert_indeterminate_count
+            != case_count
+        ):
             blockers.append(
-                "expert positive/negative counts do not sum to case_count"
+                "expert positive/negative/indeterminate counts do not sum to "
+                "case_count"
             )
 
     if (
@@ -201,24 +233,24 @@ def assess_pilot_acceptance_preregistration(
     indeterminate_metric = metrics.get("runtime_indeterminate_rate")
     if (
         isinstance(indeterminate_metric, dict)
-        and isinstance(case_count, int)
-        and case_count > 0
+        and isinstance(determinate_reference_count, int)
+        and determinate_reference_count > 0
         and isinstance(runtime_indeterminate_count, int)
     ):
-        expected_rate = runtime_indeterminate_count / case_count
+        expected_rate = runtime_indeterminate_count / determinate_reference_count
         estimate = indeterminate_metric.get("estimate")
         if (
             not isinstance(estimate, (int, float))
             or abs(float(estimate) - expected_rate) > 1e-12
         ):
             blockers.append(
-                "runtime_indeterminate_rate estimate does not match count/case_count"
+                "runtime_indeterminate_rate estimate does not match count/determinate reference count"
             )
 
     if (
         len(counts) == len(count_keys)
-        and isinstance(case_count, int)
-        and case_count > 0
+        and isinstance(determinate_reference_count, int)
+        and determinate_reference_count > 0
         and isinstance(positive_count, int)
         and positive_count > 0
         and isinstance(negative_count, int)
@@ -232,9 +264,9 @@ def assess_pilot_acceptance_preregistration(
         expected_estimates: dict[str, float] = {
             "sensitivity": tp / positive_count,
             "specificity": tn / negative_count,
-            "accuracy": (tp + tn) / case_count,
+            "accuracy": (tp + tn) / determinate_reference_count,
             "runtime_indeterminate_rate": (
-                runtime_indeterminate_count / case_count
+                runtime_indeterminate_count / determinate_reference_count
             ),
         }
         predicted_positive = tp + fp
