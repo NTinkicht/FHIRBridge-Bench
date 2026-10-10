@@ -9,7 +9,7 @@ import fhirbridge.canonical
 import fhirbridge.renderers
 import fhirbridge.schema_validation
 
-_CONTRACT_PATH = "contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml"
+_CONTRACT_PATH = "contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml"
 _CASES = (
     ("LAB-001", 9401),
     ("LAB-004", 9402),
@@ -43,6 +43,9 @@ def main() -> None:
                 "output": str(output_path),
                 "renderer_id": rendered.manifest.renderer_id,
                 "renderer_version": rendered.manifest.renderer_version,
+                "contract_version": contract["contract"]["version"],
+                "order_context": False,
+                "scientific_role": "legacy_order_free_development_diagnostic",
             }
         )
 
