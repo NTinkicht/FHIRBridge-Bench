@@ -103,6 +103,124 @@ def test_expert_calibrated_frozen_policies_can_be_freeze_ready() -> None:
 
     frozen_severity["severity_policy"]["status"] = "frozen"
     frozen_severity["primary_endpoint_major_candidate"]["status"] = "frozen"
+    frozen_severity["primary_endpoint_major_candidate"]["threshold"] = (
+        "S2_or_higher"
+    )
+    frozen_severity["expert_calibration"] = {
+        "status": "completed",
+        "record_ref": "expert_validation/severity-calibration.json",
+        "record_sha256": "a" * 64,
+    }
+    frozen_precedence["precedence_policy"]["status"] = "frozen"
+    frozen_precedence["expert_review"] = {
+        "status": "completed",
+        "review_ref": "expert_validation/precedence-review.yaml",
+        "review_sha256": "b" * 64,
+        "adjudicated_decision": "ACCEPT",
+    }
+
+    result = assess_measurement_policies(
+        contract,
+        faults,
+        frozen_severity,
+        frozen_precedence,
+    )
+
+    assert result.consistent
+    assert result.freeze_ready
+    assert result.consistency_blockers == ()
+    assert result.freeze_blockers == ()
+
+
+def test_expert_selected_s3_only_policy_can_be_freeze_ready() -> None:
+    contract, faults, severity, precedence = _documents()
+    frozen_severity = deepcopy(severity)
+    frozen_precedence = deepcopy(precedence)
+
+    frozen_severity["severity_policy"]["status"] = "frozen"
+    frozen_severity["primary_endpoint_major_candidate"].update(
+        {
+            "status": "frozen",
+            "threshold": "S3_only",
+            "levels": ["S3"],
+        }
+    )
+    frozen_severity["expert_calibration"] = {
+        "status": "completed",
+        "record_ref": "expert_validation/severity-calibration.json",
+        "record_sha256": "a" * 64,
+    }
+    frozen_precedence["precedence_policy"]["status"] = "frozen"
+    frozen_precedence["expert_review"] = {
+        "status": "completed",
+        "review_ref": "expert_validation/precedence-review.yaml",
+        "review_sha256": "b" * 64,
+        "adjudicated_decision": "ACCEPT",
+    }
+
+    result = assess_measurement_policies(
+        contract,
+        faults,
+        frozen_severity,
+        frozen_precedence,
+    )
+
+    assert result.consistent
+    assert result.freeze_ready
+
+
+def test_frozen_severity_threshold_must_match_included_levels() -> None:
+    contract, faults, severity, precedence = _documents()
+    frozen_severity = deepcopy(severity)
+    frozen_precedence = deepcopy(precedence)
+
+    frozen_severity["severity_policy"]["status"] = "frozen"
+    frozen_severity["primary_endpoint_major_candidate"].update(
+        {
+            "status": "frozen",
+            "threshold": "S3_only",
+            "levels": ["S2", "S3"],
+        }
+    )
+    frozen_severity["expert_calibration"] = {
+        "status": "completed",
+        "record_ref": "expert_validation/severity-calibration.json",
+        "record_sha256": "a" * 64,
+    }
+    frozen_precedence["precedence_policy"]["status"] = "frozen"
+    frozen_precedence["expert_review"] = {
+        "status": "completed",
+        "review_ref": "expert_validation/precedence-review.yaml",
+        "review_sha256": "b" * 64,
+        "adjudicated_decision": "ACCEPT",
+    }
+
+    result = assess_measurement_policies(
+        contract,
+        faults,
+        frozen_severity,
+        frozen_precedence,
+    )
+
+    assert not result.consistent
+    assert any(
+        "major levels do not match" in item
+        for item in result.consistency_blockers
+    )
+
+
+def test_frozen_precedence_policy_requires_accepted_review_evidence() -> None:
+    contract, faults, severity, precedence = _documents()
+    frozen_severity = deepcopy(severity)
+    frozen_precedence = deepcopy(precedence)
+
+    frozen_severity["severity_policy"]["status"] = "frozen"
+    frozen_severity["primary_endpoint_major_candidate"].update(
+        {
+            "status": "frozen",
+            "threshold": "S2_or_higher",
+        }
+    )
     frozen_severity["expert_calibration"] = {
         "status": "completed",
         "record_ref": "expert_validation/severity-calibration.json",
@@ -117,7 +235,8 @@ def test_expert_calibrated_frozen_policies_can_be_freeze_ready() -> None:
         frozen_precedence,
     )
 
-    assert result.consistent
-    assert result.freeze_ready
-    assert result.consistency_blockers == ()
-    assert result.freeze_blockers == ()
+    assert not result.freeze_ready
+    assert any(
+        "precedence expert review evidence is missing" in item
+        for item in result.freeze_blockers
+    )
