@@ -1,7 +1,7 @@
 instrument_component_manifest:
   id: FHIRBRIDGE-INSTRUMENT-COMPONENTS-001
   version: 0.1.0
-  status: prefreeze_component_boundary
+  status: frozen_component_boundary
   hash_method: path_bound_sha256_manifest_v1
   note: >-
     Each component digest is computed from the ordered relative file paths and
