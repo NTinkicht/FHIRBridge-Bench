@@ -10,6 +10,7 @@
     "protocol_version",
     "repository_commit",
     "freeze_complete",
+    "instrument_component_manifest",
     "instrument_components",
     "dependencies",
     "reviewer_roster",
@@ -24,7 +25,7 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "0.5.0"
+      "const": "0.6.0"
     },
     "manifest_id": {
       "type": "string",
@@ -320,6 +321,9 @@
       "$ref": "#/$defs/frozenArtifact"
     },
     "sample_size_preregistration": {
+      "$ref": "#/$defs/frozenArtifact"
+    },
+    "instrument_component_manifest": {
       "$ref": "#/$defs/frozenArtifact"
     }
   },
