@@ -14,7 +14,7 @@ from .model_strategies import (
 )
 
 _RESPONSE = "RESPONSE_RECEIVED"
-_FAILURES = frozenset(
+_PROVIDER_FAILURES = frozenset(
     {
         "MEASUREMENT_FAILURE_TRANSPORT",
         "MEASUREMENT_FAILURE_RATE_LIMIT",
@@ -23,6 +23,7 @@ _FAILURES = frozenset(
         "MEASUREMENT_FAILURE_AUTH_OR_CONFIG",
     }
 )
+_REPAIR_FAILURE = "MEASUREMENT_FAILURE_POSTPROCESSING"
 
 
 @dataclass(frozen=True)
@@ -32,7 +33,9 @@ class ModelExecutionRecord:
     case_id: str
     model_key: str
     strategy_id: str
-    attempt_number: int
+    generation_source: str
+    attempt_number: int | None
+    source_execution_id: str | None
     request_started_at: str
     request_finished_at: str
     outcome_class: str
@@ -57,8 +60,9 @@ def build_success_record(
     request_started_at: str,
     request_finished_at: str,
     provider_request_id: str | None = None,
+    source_execution_id: str | None = None,
 ) -> ModelExecutionRecord:
-    """Build a successful-attempt record from actual strategy output."""
+    """Build one immutable successful execution/derived-output record."""
 
     repair = strategy_output.syntax_repair
     repair_applied = bool(repair is not None and repair.changed)
@@ -69,6 +73,12 @@ def build_success_record(
             raise ValueError("non-repair strategies cannot record syntax repair")
         if strategy_output.final_output != strategy_output.raw_output:
             raise ValueError("non-repair strategy final output must equal raw output")
+        if source_execution_id is not None:
+            raise ValueError(
+                "provider-call strategies cannot reference source_execution_id"
+            )
+        generation_source = "provider_call"
+        attempt_number: int | None = 1
     elif strategy_output.strategy_id == REPAIR_STRATEGY:
         if repair is None:
             raise ValueError("repair strategy must provide repair metadata")
@@ -76,16 +86,28 @@ def build_success_record(
             raise ValueError("repair input hash does not match raw output")
         if repair.output_sha256 != _digest(strategy_output.final_output):
             raise ValueError("repair output hash does not match final output")
+        if not isinstance(source_execution_id, str) or not source_execution_id:
+            raise ValueError(
+                "repair strategy requires the mapping source_execution_id"
+            )
+        if provider_request_id is not None:
+            raise ValueError(
+                "repair strategy reuses mapping output and has no provider_request_id"
+            )
+        generation_source = "reuse_mapping_aware_raw_output"
+        attempt_number = None
     else:
         raise ValueError(f"unsupported strategy_id: {strategy_output.strategy_id}")
 
     return ModelExecutionRecord(
-        schema_version="0.1.0",
+        schema_version="0.2.0",
         execution_id=execution_id,
         case_id=case_id,
         model_key=model_key,
         strategy_id=strategy_output.strategy_id,
-        attempt_number=1,
+        generation_source=generation_source,
+        attempt_number=attempt_number,
+        source_execution_id=source_execution_id,
         request_started_at=request_started_at,
         request_finished_at=request_finished_at,
         outcome_class=_RESPONSE,
@@ -109,23 +131,51 @@ def build_failure_record(
     request_finished_at: str,
     error_summary: str,
     provider_request_id: str | None = None,
+    source_execution_id: str | None = None,
 ) -> ModelExecutionRecord:
-    """Record one failed provider attempt without fabricating response hashes."""
+    """Record one failed provider call or deterministic repair operation."""
 
     if strategy_id not in {DIRECT_STRATEGY, MAPPING_STRATEGY, REPAIR_STRATEGY}:
         raise ValueError(f"unsupported strategy_id: {strategy_id}")
-    if outcome_class not in _FAILURES:
-        raise ValueError(f"unsupported failure outcome_class: {outcome_class}")
     if not isinstance(error_summary, str) or not error_summary.strip():
         raise ValueError("failure record requires a non-empty error_summary")
 
+    if strategy_id in {DIRECT_STRATEGY, MAPPING_STRATEGY}:
+        if outcome_class not in _PROVIDER_FAILURES:
+            raise ValueError(
+                f"unsupported provider failure outcome_class: {outcome_class}"
+            )
+        if source_execution_id is not None:
+            raise ValueError(
+                "provider-call failure cannot reference source_execution_id"
+            )
+        generation_source = "provider_call"
+        attempt_number: int | None = 1
+    else:
+        if outcome_class != _REPAIR_FAILURE:
+            raise ValueError(
+                "repair failure must use MEASUREMENT_FAILURE_POSTPROCESSING"
+            )
+        if not isinstance(source_execution_id, str) or not source_execution_id:
+            raise ValueError(
+                "repair failure requires the mapping source_execution_id"
+            )
+        if provider_request_id is not None:
+            raise ValueError(
+                "repair failure cannot have provider_request_id"
+            )
+        generation_source = "reuse_mapping_aware_raw_output"
+        attempt_number = None
+
     return ModelExecutionRecord(
-        schema_version="0.1.0",
+        schema_version="0.2.0",
         execution_id=execution_id,
         case_id=case_id,
         model_key=model_key,
         strategy_id=strategy_id,
-        attempt_number=1,
+        generation_source=generation_source,
+        attempt_number=attempt_number,
+        source_execution_id=source_execution_id,
         request_started_at=request_started_at,
         request_finished_at=request_finished_at,
         outcome_class=outcome_class,
