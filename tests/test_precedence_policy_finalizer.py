@@ -17,11 +17,18 @@ _CANDIDATE = Path("benchmark/error_precedence_policy_candidate.yaml")
 
 def _review(candidate_hash: str, adjudicated: str = "ACCEPT") -> dict:
     return {
-        "schema_version": "0.1.0",
+        "schema_version": "0.2.0",
         "review_id": "PRECEDENCE-REVIEW-001",
         "status": "completed",
         "created_at": "2026-10-20T19:00:00Z",
         "candidate_policy_sha256": candidate_hash,
+        "blind_stage_evidence": {
+            "assignment_id": "FHIRBRIDGE-PRECEDENCE-BLIND-001",
+            "reviewer_a_response_sha256": "b" * 64,
+            "reviewer_b_response_sha256": "c" * 64,
+            "original_responses_retained": True,
+            "other_reviewer_decisions_hidden_initially": True,
+        },
         "reviewers": [
             {
                 "reviewer_id": "R-A",
@@ -103,6 +110,15 @@ def test_finalizer_freezes_exact_accepted_candidate(tmp_path: Path) -> None:
     assert frozen["order"] == original["order"]
     assert frozen["rule"] == original["rule"]
     assert frozen["expert_review"]["status"] == "completed"
+    assert frozen["expert_review"]["blind_assignment_id"] == (
+        "FHIRBRIDGE-PRECEDENCE-BLIND-001"
+    )
+    assert frozen["expert_review"]["reviewer_a_response_sha256"] == "b" * 64
+    assert frozen["expert_review"]["reviewer_b_response_sha256"] == "c" * 64
+    assert (
+        frozen["expert_review"]["other_reviewer_decisions_hidden_initially"]
+        is True
+    )
     assert frozen["expert_review"]["adjudicated_decision"] == "ACCEPT"
     assert frozen["expert_review"]["review_sha256"] == _MODULE._sha256(review)
 
