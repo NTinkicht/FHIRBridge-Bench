@@ -15,7 +15,7 @@ from typing import Any
 from .base import RenderManifest, RenderResult, RenderWarning
 
 _RENDERER_ID = "hl7v251-lri-oru-renderer-a"
-_RENDERER_VERSION = "0.3.0-dev"
+_RENDERER_VERSION = "0.3.1-dev"
 
 
 def _segment(name: str, fields: dict[int, str]) -> str:
@@ -225,6 +225,14 @@ class Hl7V251OruRendererA:
         reports = _facts(graph, "diagnostic_report")
         observations = _facts(graph, "observation")
         specimens = _facts(graph, "specimen")
+        orders = _facts(graph, "order")
+        if orders:
+            raise ValueError(
+                "HL7 v2 order-context rendering is fail-closed until the exact "
+                "Edition 5 machine profile resolves the remaining ORC-1, EI/XCN "
+                "datatype, binding, and profile-identity serialization details. "
+                "Renderer A must not silently drop or invent required order facts."
+            )
         if patient is None or not reports:
             raise ValueError(
                 "HL7 v2 lab renderer requires patient_identity and diagnostic_report"
