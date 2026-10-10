@@ -62,37 +62,60 @@ def load_warning_policy(path: Path) -> list[tuple[str, re.Pattern[str]]]:
     return compiled
 
 
-def audit_warning_logs(
-    log_directory: Path,
+def audit_warning_log(
+    log_path: Path,
     policy_path: Path,
 ) -> WarningAudit:
+    """Audit one archived validator log against the warning policy."""
+
     policy = load_warning_policy(policy_path)
     classifications: list[WarningClassification] = []
     counts: Counter[str] = Counter()
 
-    for path in sorted(log_directory.glob("LAB-*.log")):
-        for line in _warning_lines(path):
-            matched = [
-                category_id
-                for category_id, pattern in policy
-                if pattern.search(line)
-            ]
-            if len(matched) > 1:
-                raise ValueError(
-                    "FHIR warning matched multiple policy categories: "
-                    f"{matched}: {line}"
-                )
-            category_id = matched[0] if matched else None
-            if category_id is not None:
-                counts[category_id] += 1
-            classifications.append(
-                WarningClassification(
-                    line=line,
-                    category_id=category_id,
-                )
+    for line in _warning_lines(log_path):
+        matched = [
+            category_id
+            for category_id, pattern in policy
+            if pattern.search(line)
+        ]
+        if len(matched) > 1:
+            raise ValueError(
+                "FHIR warning matched multiple policy categories: "
+                f"{matched}: {line}"
             )
+        category_id = matched[0] if matched else None
+        if category_id is not None:
+            counts[category_id] += 1
+        classifications.append(
+            WarningClassification(
+                line=line,
+                category_id=category_id,
+            )
+        )
 
     unknown = sum(item.category_id is None for item in classifications)
+    return WarningAudit(
+        total_warnings=len(classifications),
+        unknown_warnings=unknown,
+        category_counts=dict(sorted(counts.items())),
+        classifications=tuple(classifications),
+    )
+
+
+def audit_warning_logs(
+    log_directory: Path,
+    policy_path: Path,
+) -> WarningAudit:
+    classifications: list[WarningClassification] = []
+    counts: Counter[str] = Counter()
+    unknown = 0
+
+    for path in sorted(log_directory.glob("LAB-*.log")):
+        audit = audit_warning_log(path, policy_path)
+        classifications.extend(audit.classifications)
+        counts.update(audit.category_counts)
+        unknown += audit.unknown_warnings
+
     return WarningAudit(
         total_warnings=len(classifications),
         unknown_warnings=unknown,
