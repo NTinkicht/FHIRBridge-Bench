@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from .sealed_case_manifest import source_input_sha256_by_case
+from .sealed_case_manifest import (
+    analysis_cluster_id_by_case,
+    source_input_sha256_by_case,
+)
 
 _BASELINE = "deterministic_baseline"
 _LLM_ARMS = (
@@ -202,6 +205,7 @@ def build_analysis_rows(
         raise ValueError("model_keys must be unique")
 
     source_hashes = source_input_sha256_by_case(sealed_case_manifest)
+    cluster_ids = analysis_cluster_id_by_case(sealed_case_manifest)
     case_ids = set(source_hashes)
     expected = _expected_keys(case_ids, model_keys)
     structural_by_key = _index(structural_records, kind="structural")
@@ -244,6 +248,7 @@ def build_analysis_rows(
                     "schema_version": "0.1.0",
                     "case_id": case_id,
                     "model_key": model_key,
+                    "analysis_cluster_id": cluster_ids[case_id],
                     "source_input_sha256": source_hashes[case_id],
                     "arms": arms,
                 }
