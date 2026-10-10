@@ -54,4 +54,20 @@ members:
       verifier_verdict: false
       claimed_provenance: false
       other_primary_reviewer_labels: true
+  - member_id: "DATA-CUSTODIAN-TO-BE-ASSIGNED"
+    roles:
+      - data_custodian
+    expertise:
+      - statistics_measurement
+    conflicts_of_interest: "TO_BE_COMPLETED"
+    prior_project_involvement: "TO_BE_COMPLETED"
+    contract_review_participation: false
+    analytical_separation_attested: true
+    renderer_implementation_participation: false
+    access:
+      model_identity: false
+      generation_strategy: false
+      verifier_verdict: false
+      claimed_provenance: false
+      other_primary_reviewer_labels: false
 notes: null
