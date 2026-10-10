@@ -102,6 +102,16 @@ gates:
       severity_candidate: benchmark/severity_policy_candidate.yaml
       precedence_candidate: benchmark/error_precedence_policy_candidate.yaml
       readiness_check: src/fhirbridge/measurement_policy_readiness.py
+      severity_calibration_schema: expert_validation/schema/severity_calibration.schema.json
+      severity_calibration_template: expert_validation/examples/severity_calibration_template.yaml
+      severity_calibration_readiness: src/fhirbridge/severity_calibration.py
+      severity_policy_finalizer: expert_validation/finalize_severity_policy.py
+      expected_frozen_severity_policy: benchmark/severity_policy_frozen.yaml
+      precedence_review_schema: expert_validation/schema/precedence_review.schema.json
+      precedence_review_template: expert_validation/examples/precedence_review_template.yaml
+      precedence_review_readiness: src/fhirbridge/precedence_review.py
+      precedence_policy_finalizer: expert_validation/finalize_precedence_policy.py
+      expected_frozen_precedence_policy: benchmark/error_precedence_policy_frozen.yaml
       source_rubric: docs/expert_validation_protocol.md
       current_major_candidate: [S2, S3]
       current_policy_consistency: internally_consistent_not_freeze_ready
