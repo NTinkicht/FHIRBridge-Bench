@@ -1,4 +1,4 @@
-schema_version: "0.7.0"
+schema_version: "0.8.0"
 manifest_id: "FREEZE-TO-BE-ASSIGNED"
 freeze_timestamp: null
 protocol_version: "TO_BE_FROZEN"
@@ -60,6 +60,11 @@ case_assignment_manifest:
   artifact_id: "sealed-expert-case-assignments"
   version: "TO_BE_FROZEN"
   path_or_ref: "expert_validation/case_assignment_manifest.yaml"
+  sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+primary_vur_hypothesis:
+  artifact_id: "primary-vur-hypothesis-preregistration"
+  version: "TO_BE_FROZEN"
+  path_or_ref: "analysis/primary_vur_hypothesis_preregistration.yaml"
   sha256: "0000000000000000000000000000000000000000000000000000000000000000"
 analysis_preregistration:
   artifact_id: "confirmatory-analysis-preregistration"
