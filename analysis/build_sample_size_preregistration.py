@@ -48,6 +48,10 @@ def _base_comparison_ids(core_design: dict[str, Any]) -> tuple[str, ...]:
     family = design.get("paired_secondary_comparison_family")
     if not isinstance(family, dict):
         raise ValueError("core design lacks paired comparison family")
+    if family.get("family_size_rule") != (
+        "six_strategy_contrasts_times_number_of_frozen_LLM_models"
+    ):
+        raise ValueError("core design paired family-size rule has drifted")
     rows = family.get("base_comparisons")
     if not isinstance(rows, list) or len(rows) != 6:
         raise ValueError("core design must define exactly six base comparisons")
@@ -65,7 +69,28 @@ def _base_comparison_ids(core_design: dict[str, Any]) -> tuple[str, ...]:
     return tuple(result)
 
 
-def _planning_constants(method: dict[str, Any]) -> tuple[float, float, float]:
+def _model_keys(model_config: dict[str, Any]) -> tuple[str, ...]:
+    models = model_config.get("llm_models")
+    if not isinstance(models, list) or not models:
+        raise ValueError("model configuration has no LLM models")
+    result: list[str] = []
+    for item in models:
+        if not isinstance(item, dict):
+            raise ValueError("LLM model entry is malformed")
+        model_key = item.get("model_key")
+        if not isinstance(model_key, str) or not model_key:
+            raise ValueError("LLM model entry lacks model_key")
+        if model_key in result:
+            raise ValueError(f"duplicate model_key: {model_key}")
+        result.append(model_key)
+    return tuple(result)
+
+
+def _planning_constants(
+    method: dict[str, Any],
+    *,
+    comparison_count: int,
+) -> tuple[float, float, float]:
     root = method.get("sample_size_method")
     if not isinstance(root, dict):
         raise ValueError("sample size method lacks sample_size_method")
@@ -73,21 +98,38 @@ def _planning_constants(method: dict[str, Any]) -> tuple[float, float, float]:
     if not isinstance(paired, dict):
         raise ValueError("sample size method lacks paired planning")
 
-    alpha = paired.get("per_comparison_planning_alpha")
-    if not isinstance(alpha, (int, float)) or not 0 < float(alpha) < 1:
-        raise ValueError("planning alpha is invalid")
-
     familywise_alpha = paired.get("familywise_alpha")
     if (
         not isinstance(familywise_alpha, (int, float))
         or not 0 < float(familywise_alpha) < 1
     ):
         raise ValueError("familywise alpha is invalid")
+    if paired.get("multiplicity_test_method") != "Holm":
+        raise ValueError("sample-size method multiplicity is not Holm")
+    if paired.get("family_size_rule") != (
+        "six_strategy_contrasts_times_number_of_frozen_LLM_models"
+    ):
+        raise ValueError("sample-size method family-size rule has drifted")
+    if comparison_count < 6 or comparison_count % 6 != 0:
+        raise ValueError("comparison_count must be a positive multiple of six")
 
     power = paired.get("power")
     if not isinstance(power, (int, float)) or not 0 < float(power) < 1:
         raise ValueError("planning power is invalid")
-    return float(alpha), float(familywise_alpha), float(power)
+
+    alpha = float(familywise_alpha) / comparison_count
+    return alpha, float(familywise_alpha), float(power)
+
+
+def _expected_comparison_rows(
+    model_keys: tuple[str, ...],
+    base_comparisons: tuple[str, ...],
+) -> tuple[tuple[str, str], ...]:
+    return tuple(
+        (model_key, f"{model_key}__{base_id}")
+        for model_key in model_keys
+        for base_id in base_comparisons
+    )
 
 
 def assemble_sample_size_preregistration(
@@ -99,13 +141,27 @@ def assemble_sample_size_preregistration(
     created_at: str,
     core_design: dict[str, Any],
     method: dict[str, Any],
+    model_config: dict[str, Any],
     sample_size_method_sha256: str,
     core_confirmatory_design_sha256: str,
+    model_prompt_configuration_sha256: str,
 ) -> dict[str, Any]:
     """Compute every numeric planning output from frozen pilot-derived inputs."""
 
-    comparison_ids = _base_comparison_ids(core_design)
-    alpha, familywise_alpha, power = _planning_constants(method)
+    base_ids = _base_comparison_ids(core_design)
+    frozen_model_keys = _model_keys(model_config)
+    pilot_model_keys = pilot_inputs.get("model_keys")
+    if pilot_model_keys != list(frozen_model_keys):
+        raise ValueError(
+            "pilot model_keys must exactly match frozen model configuration"
+        )
+
+    expected_rows = _expected_comparison_rows(frozen_model_keys, base_ids)
+    expected_ids = {comparison_id for _, comparison_id in expected_rows}
+    alpha, familywise_alpha, power = _planning_constants(
+        method,
+        comparison_count=len(expected_rows),
+    )
 
     pilot_rows = pilot_inputs.get("paired_comparisons")
     if not isinstance(pilot_rows, list):
@@ -115,17 +171,24 @@ def assemble_sample_size_preregistration(
         if not isinstance(row, dict):
             raise ValueError("pilot comparison input must be a mapping")
         comparison_id = row.get("comparison_id")
+        model_key = row.get("model_key")
         if not isinstance(comparison_id, str) or not comparison_id:
             raise ValueError("pilot comparison input lacks comparison_id")
+        if not isinstance(model_key, str) or not model_key:
+            raise ValueError("pilot comparison input lacks model_key")
         if comparison_id in pilot_by_id:
             raise ValueError(f"duplicate pilot comparison: {comparison_id}")
+        if not comparison_id.startswith(f"{model_key}__"):
+            raise ValueError(
+                f"{comparison_id}: comparison_id must be prefixed by model_key"
+            )
         pilot_by_id[comparison_id] = row
 
-    if set(pilot_by_id) != set(comparison_ids):
+    if set(pilot_by_id) != expected_ids:
         raise ValueError(
-            "pilot comparison set must match core design exactly; "
-            f"missing={sorted(set(comparison_ids) - set(pilot_by_id))}, "
-            f"unexpected={sorted(set(pilot_by_id) - set(comparison_ids))}"
+            "pilot comparison set must match model-specific core design exactly; "
+            f"missing={sorted(expected_ids - set(pilot_by_id))}, "
+            f"unexpected={sorted(set(pilot_by_id) - expected_ids)}"
         )
 
     expected_vur = float(pilot_inputs["expected_vur"])
@@ -145,8 +208,12 @@ def assemble_sample_size_preregistration(
 
     pair_plans: list[dict[str, Any]] = []
     required_cluster_counts = [primary.planned_source_cluster_count]
-    for comparison_id in comparison_ids:
+    for model_key, comparison_id in expected_rows:
         source = pilot_by_id[comparison_id]
+        if source.get("model_key") != model_key:
+            raise ValueError(
+                f"{comparison_id}: model_key does not match frozen family"
+            )
         plan = plan_paired_mcnemar(
             p10=float(source["p10"]),
             p01=float(source["p01"]),
@@ -160,6 +227,7 @@ def assemble_sample_size_preregistration(
         pair_plans.append(
             {
                 "comparison_id": comparison_id,
+                "model_key": model_key,
                 "p10": plan.p10,
                 "p01": plan.p01,
                 "alpha": plan.alpha,
@@ -178,11 +246,8 @@ def assemble_sample_size_preregistration(
             }
         )
 
-    if abs(familywise_alpha - 0.05) > 1e-12:
-        raise ValueError("familywise alpha has drifted from 0.05")
-
     result = {
-        "schema_version": "0.4.0",
+        "schema_version": "0.5.0",
         "record_id": record_id,
         "status": "preregistered",
         "created_at": created_at,
@@ -192,6 +257,9 @@ def assemble_sample_size_preregistration(
             "core_confirmatory_design_sha256": (
                 core_confirmatory_design_sha256
             ),
+            "model_prompt_configuration_sha256": (
+                model_prompt_configuration_sha256
+            ),
         },
         "pilot_evidence": {
             "pilot_case_manifest_sha256": pilot_case_manifest_sha256,
@@ -200,6 +268,16 @@ def assemble_sample_size_preregistration(
             "valid_determinate_retention": retention,
             "mean_cluster_size": mean_cluster_size,
             "icc": icc,
+        },
+        "model_keys": list(frozen_model_keys),
+        "multiplicity": {
+            "method": "Holm",
+            "familywise_alpha": familywise_alpha,
+            "comparison_family_size": len(expected_rows),
+            "planning_alpha_policy": (
+                "Bonferroni_upper_bound_for_Holm_family"
+            ),
+            "per_comparison_planning_alpha": alpha,
         },
         "primary_precision_plan": {
             "confidence_level": primary.confidence_level,
@@ -245,6 +323,7 @@ def main() -> int:
     )
     parser.add_argument("--pilot-inputs", type=Path, required=True)
     parser.add_argument("--pilot-case-manifest", type=Path, required=True)
+    parser.add_argument("--model-config", type=Path, required=True)
     parser.add_argument("--record-id", required=True)
     parser.add_argument("--created-at", required=True)
     parser.add_argument("--output", type=Path, default=_DEFAULT_OUTPUT)
@@ -262,8 +341,10 @@ def main() -> int:
         created_at=args.created_at,
         core_design=_load_yaml(_CORE_DESIGN),
         method=_load_yaml(_METHOD),
+        model_config=_load_yaml(args.model_config),
         sample_size_method_sha256=_sha256_file(_METHOD),
         core_confirmatory_design_sha256=_sha256_file(_CORE_DESIGN),
+        model_prompt_configuration_sha256=_sha256_file(args.model_config),
     )
 
     output_schema = json.loads(_OUTPUT_SCHEMA.read_text(encoding="utf-8"))
