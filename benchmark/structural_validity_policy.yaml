@@ -74,26 +74,32 @@ targets:
       artifact_sha256: fc663ae55dd31bbfde19788dddfb49cacbeebc3c64498fa7b7779df90000434b
       fhir_version: 4.0.1
       implementation_guide: hl7.fhir.us.core#9.0.0
+    active_evidence_path: archived_FHIR_CLI_log
+    warning_policy: benchmark/fhir_validator_warning_policy.yaml
     classifications:
-      fatal:
+      Error:
         structural_validity_effect: INVALID
-      error:
-        structural_validity_effect: INVALID
-      warning:
+      reviewed_allowlisted_Warning:
+        structural_validity_effect: nonblocking_recorded
+      unknown_Warning:
         structural_validity_effect: POLICY_UNRESOLVED
-      information:
+      Information_or_note:
         structural_validity_effect: nonblocking_recorded
     qualification_note: >-
-      Current development qualification uses validator process success with the
-      pinned US Core package path and terminology server disabled. Confirmatory
-      reverse-direction structural validity requires an explicit frozen
-      OperationOutcome severity policy rather than inheriting process-exit
-      behavior.
-    freeze_requirements:
-      - OperationOutcome_severity_parser_frozen
-      - warning_policy_frozen_before_confirmatory_reverse_direction
-      - terminology_disabled_qualification_scope_explicitly_justified
-      - validator_execution_failure_policy_tested
+      The frozen path parses archived output from the pinned FHIR validator CLI,
+      checks the validator summary against archived warning lines, and applies a
+      versioned warning allowlist. Unknown warnings fail closed. Live terminology
+      is disabled and terminology-sensitive claims remain delegated to separately
+      pinned UCUM/LOINC/THO qualification evidence.
+    freeze_status: frozen_for_pinned_offline_CLI_log_path
+    freeze_evidence:
+      github_actions_run_id: 38072689400
+      github_actions_job_id: 114273236072
+      primary_order_context_fixture_count: 11
+      combined_unknown_warning_count_required_by_CI: 0
+    alternate_OperationOutcome_classifier:
+      role: diagnostic_only_not_confirmatory_evidence_path
+      warning_behavior: POLICY_UNRESOLVED
 
 analysis_reporting:
   required_counts:
@@ -115,5 +121,3 @@ freeze_gate:
   blockers:
     - exact_Edition5_profile_not_qualified
     - HL7v2_warning_alert_policy_not_frozen
-    - FHIR_OperationOutcome_warning_policy_not_frozen
-    - FHIR_terminology_disabled_scope_not_yet_frozen_for_confirmatory_reverse_direction
