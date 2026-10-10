@@ -176,6 +176,54 @@ properties:
           type: string
           enum: [draft, reviewed, frozen, indeterminate]
       additionalProperties: true
+  grounding_guards:
+    type: array
+    items:
+      type: object
+      required:
+        - guard_id
+        - source_fact_type
+        - source_field
+        - target_fact_type
+        - target_field
+        - match_type
+        - status
+      properties:
+        guard_id:
+          type: string
+          minLength: 1
+        source_fact_type:
+          type: string
+          minLength: 1
+        source_field:
+          type: string
+          minLength: 1
+        target_fact_type:
+          type: string
+          minLength: 1
+        target_field:
+          type: string
+          minLength: 1
+        match_type:
+          type: string
+          enum:
+            - exact_scalar_membership
+        primary_endpoint_eligible:
+          type: boolean
+        rationale:
+          type: string
+        evidence:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum:
+            - draft
+            - reviewed
+            - frozen
+            - disabled
+      additionalProperties: false
   indeterminate_candidates:
     type: array
     items:
