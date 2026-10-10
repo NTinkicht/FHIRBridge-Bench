@@ -86,7 +86,10 @@ def test_renderer_a_exposure_blocks_comparison() -> None:
         "renderer_a_source_inspected_before_initial_commit"
     ] = True
 
-    readiness = assess_renderer_b_declaration(declaration, expected_clean_room_inputs=_expected_inputs())
+    readiness = assess_renderer_b_declaration(
+        declaration,
+        expected_clean_room_inputs=_expected_inputs(),
+    )
 
     assert readiness.ready_for_differential_comparison is False
     assert any(
@@ -99,7 +102,10 @@ def test_python_requires_same_language_independence_rationale() -> None:
     declaration = _declaration()
     declaration["implementation"]["language"] = "Python 3.11"
 
-    blocked = assess_renderer_b_declaration(declaration, expected_clean_room_inputs=_expected_inputs())
+    blocked = assess_renderer_b_declaration(
+        declaration,
+        expected_clean_room_inputs=_expected_inputs(),
+    )
     assert blocked.ready_for_differential_comparison is False
     assert any("same-language" in blocker for blocker in blocked.blockers)
 
@@ -107,7 +113,10 @@ def test_python_requires_same_language_independence_rationale() -> None:
         "Independently authored with a different standards library and no "
         "shared mapping or serialization utilities."
     )
-    ready = assess_renderer_b_declaration(declaration, expected_clean_room_inputs=_expected_inputs())
+    ready = assess_renderer_b_declaration(
+        declaration,
+        expected_clean_room_inputs=_expected_inputs(),
+    )
     assert ready.ready_for_differential_comparison is True
 
 
@@ -115,7 +124,10 @@ def test_llm_mapping_use_is_audit_warning_not_automatic_failure() -> None:
     declaration = _declaration()
     declaration["independence"]["llm_generated_mapping_code_used"] = True
 
-    readiness = assess_renderer_b_declaration(declaration, expected_clean_room_inputs=_expected_inputs())
+    readiness = assess_renderer_b_declaration(
+        declaration,
+        expected_clean_room_inputs=_expected_inputs(),
+    )
 
     assert readiness.ready_for_differential_comparison is True
     assert len(readiness.warnings) == 1
@@ -131,7 +143,10 @@ def test_placeholders_block_comparison() -> None:
         "TO_BE_COMPLETED_BY_INDEPENDENT_IMPLEMENTER"
     ]
 
-    readiness = assess_renderer_b_declaration(declaration, expected_clean_room_inputs=_expected_inputs())
+    readiness = assess_renderer_b_declaration(
+        declaration,
+        expected_clean_room_inputs=_expected_inputs(),
+    )
 
     assert readiness.ready_for_differential_comparison is False
     assert len(readiness.blockers) >= 2
