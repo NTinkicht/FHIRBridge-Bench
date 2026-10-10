@@ -201,6 +201,27 @@ def assemble_analysis_preregistration(
         ):
             raise ValueError(f"{name} is not a SHA-256 digest")
 
+    sample_model_keys = sample_size.get("model_keys")
+    if sample_model_keys != keys:
+        raise ValueError(
+            "sample-size model_keys do not match frozen model configuration"
+        )
+    frozen_method = sample_size.get("frozen_method")
+    if not isinstance(frozen_method, dict):
+        raise ValueError("sample-size record lacks frozen_method provenance")
+    sample_model_hash = frozen_method.get(
+        "model_prompt_configuration_sha256"
+    )
+    expected_model_hash = input_hashes["model_prompt_configuration_sha256"]
+    if (
+        not isinstance(sample_model_hash, str)
+        or sample_model_hash.lower() != expected_model_hash.lower()
+    ):
+        raise ValueError(
+            "sample-size record was not built from the same frozen model "
+            "configuration"
+        )
+
     result = {
         "schema_version": "0.4.0",
         "analysis_id": analysis_id,
