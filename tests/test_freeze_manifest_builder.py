@@ -202,6 +202,11 @@ def _fixture(tmp_path: Path) -> dict[str, Path]:
 def _patch_ready(monkeypatch) -> None:
     monkeypatch.setattr(
         _MODULE,
+        "_validate_governance_crosslinks",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        _MODULE,
         "assess_freeze_readiness",
         lambda _: SimpleNamespace(ready=True, manifest_status="frozen"),
     )
@@ -372,3 +377,144 @@ def test_freeze_manifest_builder_refuses_unready_primary_hypothesis(
         raise AssertionError(
             "unready primary VUR hypothesis must block final freeze"
         )
+
+
+def _crosslink_documents() -> tuple[dict, dict, dict, dict]:
+    primary = {
+        "record_id": "PRIMARY-VUR-001",
+        "hypothesis": {"nontrivial_vur_threshold": 0.10},
+        "target_population": {
+            "model_strategy_aggregation_policy": "Frozen aggregation.",
+            "cluster_id_field": "analysis_cluster_id",
+        },
+        "inference": {
+            "method": "cluster_aware_one_sided_threshold_test",
+            "alpha": 0.05,
+            "sidedness": "one_sided",
+            "decision_rule": "Frozen decision rule.",
+        },
+    }
+    sample = {
+        "model_keys": ["M1"],
+        "frozen_method": {
+            "model_prompt_configuration_sha256": "c" * 64,
+        },
+    }
+    model = {"llm_models": [{"model_key": "M1"}]}
+    analysis = {
+        "frozen_inputs": {
+            "repository_commit": "abcdef1",
+            "primary_vur_hypothesis_sha256": "a" * 64,
+            "sample_size_preregistration_sha256": "b" * 64,
+            "model_prompt_configuration_sha256": "c" * 64,
+        },
+        "primary_hypothesis": {
+            "record_id": "PRIMARY-VUR-001",
+            "nontrivial_vur_threshold": 0.10,
+            "model_strategy_aggregation_policy": "Frozen aggregation.",
+            "inference_method": "cluster_aware_one_sided_threshold_test",
+            "alpha": 0.05,
+            "sidedness": "one_sided",
+            "cluster_id_field": "analysis_cluster_id",
+            "decision_rule": "Frozen decision rule.",
+        },
+    }
+    return analysis, primary, sample, model
+
+
+def test_governance_crosslinks_accept_matching_frozen_records() -> None:
+    analysis, primary, sample, model = _crosslink_documents()
+
+    _MODULE._validate_governance_crosslinks(
+        analysis=analysis,
+        primary_hypothesis=primary,
+        sample_size=sample,
+        model_config=model,
+        repository_commit="abcdef1",
+        primary_hypothesis_sha256="a" * 64,
+        sample_size_sha256="b" * 64,
+        model_config_sha256="c" * 64,
+    )
+
+
+def test_governance_crosslinks_reject_analysis_hash_drift() -> None:
+    analysis, primary, sample, model = _crosslink_documents()
+    analysis["frozen_inputs"]["sample_size_preregistration_sha256"] = "d" * 64
+
+    try:
+        _MODULE._validate_governance_crosslinks(
+            analysis=analysis,
+            primary_hypothesis=primary,
+            sample_size=sample,
+            model_config=model,
+            repository_commit="abcdef1",
+            primary_hypothesis_sha256="a" * 64,
+            sample_size_sha256="b" * 64,
+            model_config_sha256="c" * 64,
+        )
+    except ValueError as exc:
+        assert "sample-size preregistration hash" in str(exc)
+    else:
+        raise AssertionError("stale sample-size hash must be rejected")
+
+
+def test_governance_crosslinks_reject_repository_commit_drift() -> None:
+    analysis, primary, sample, model = _crosslink_documents()
+
+    try:
+        _MODULE._validate_governance_crosslinks(
+            analysis=analysis,
+            primary_hypothesis=primary,
+            sample_size=sample,
+            model_config=model,
+            repository_commit="deadbee",
+            primary_hypothesis_sha256="a" * 64,
+            sample_size_sha256="b" * 64,
+            model_config_sha256="c" * 64,
+        )
+    except ValueError as exc:
+        assert "repository_commit" in str(exc)
+    else:
+        raise AssertionError("repository commit drift must be rejected")
+
+
+def test_governance_crosslinks_reject_model_key_drift() -> None:
+    analysis, primary, sample, model = _crosslink_documents()
+    sample["model_keys"] = ["M2"]
+
+    try:
+        _MODULE._validate_governance_crosslinks(
+            analysis=analysis,
+            primary_hypothesis=primary,
+            sample_size=sample,
+            model_config=model,
+            repository_commit="abcdef1",
+            primary_hypothesis_sha256="a" * 64,
+            sample_size_sha256="b" * 64,
+            model_config_sha256="c" * 64,
+        )
+    except ValueError as exc:
+        assert "model_keys do not match" in str(exc)
+    else:
+        raise AssertionError("model-key drift must be rejected")
+
+
+def test_governance_crosslinks_reject_threshold_summary_drift() -> None:
+    analysis, primary, sample, model = _crosslink_documents()
+    analysis["primary_hypothesis"]["nontrivial_vur_threshold"] = 0.20
+
+    try:
+        _MODULE._validate_governance_crosslinks(
+            analysis=analysis,
+            primary_hypothesis=primary,
+            sample_size=sample,
+            model_config=model,
+            repository_commit="abcdef1",
+            primary_hypothesis_sha256="a" * 64,
+            sample_size_sha256="b" * 64,
+            model_config_sha256="c" * 64,
+        )
+    except ValueError as exc:
+        assert "nontrivial_vur_threshold" in str(exc)
+    else:
+        raise AssertionError("threshold summary drift must be rejected")
