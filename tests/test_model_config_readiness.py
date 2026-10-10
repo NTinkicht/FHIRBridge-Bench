@@ -33,7 +33,7 @@ def _model(
         "max_output_tokens": 4096,
         "seed_policy": "fixed_supported_seed",
         "seed": 20261020,
-        "structured_output_mode": "json_schema",
+        "structured_output_mode": "plain_text_hl7_message",
     }
 
 
@@ -286,3 +286,27 @@ def test_repair_generation_source_must_reuse_mapping_output() -> None:
         "generation_source does not match frozen design" in blocker
         for blocker in readiness.blockers
     )
+
+
+def test_structured_output_mode_is_frozen_to_plain_text_hl7() -> None:
+    document = _ready()
+    document["llm_models"][0]["structured_output_mode"] = "json_schema"
+
+    readiness = assess_model_prompt_freeze(document)
+
+    assert not readiness.ready
+    assert any(
+        "structured_output_mode must equal plain_text_hl7_message" in blocker
+        for blocker in readiness.blockers
+    )
+
+
+def test_fixed_supported_seed_requires_concrete_nonnegative_integer() -> None:
+    document = _ready()
+    document["llm_models"][0]["seed_policy"] = "fixed_supported_seed"
+    document["llm_models"][0]["seed"] = None
+
+    readiness = assess_model_prompt_freeze(document)
+
+    assert not readiness.ready
+    assert any("fixed seed is missing" in blocker for blocker in readiness.blockers)
