@@ -27,7 +27,7 @@ def test_wilson_interval_handles_boundary_counts() -> None:
     assert 0.0 < none.upper < 1.0
     assert all_success.estimate == 1.0
     assert 0.0 < all_success.lower < 1.0
-    assert all_success.upper == 1.0
+    assert all_success.upper == pytest.approx(1.0)
 
 
 @pytest.mark.parametrize(
