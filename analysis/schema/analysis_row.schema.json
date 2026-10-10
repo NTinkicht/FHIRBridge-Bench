@@ -8,14 +8,25 @@
     "schema_version",
     "case_id",
     "model_key",
+    "analysis_cluster_id",
     "source_input_sha256",
     "arms"
   ],
   "properties": {
-    "schema_version": {"const": "0.1.0"},
-    "case_id": {"type": "string", "minLength": 1},
-    "model_key": {"type": "string", "minLength": 1},
-    "source_input_sha256": {"$ref": "#/$defs/sha256"},
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_input_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
     "arms": {
       "type": "object",
       "additionalProperties": false,
@@ -26,11 +37,23 @@
         "mapping_aware_plus_syntax_repair"
       ],
       "properties": {
-        "deterministic_baseline": {"$ref": "#/$defs/armState"},
-        "direct_structured_llm": {"$ref": "#/$defs/armState"},
-        "mapping_aware_llm": {"$ref": "#/$defs/armState"},
-        "mapping_aware_plus_syntax_repair": {"$ref": "#/$defs/armState"}
+        "deterministic_baseline": {
+          "$ref": "#/$defs/armState"
+        },
+        "direct_structured_llm": {
+          "$ref": "#/$defs/armState"
+        },
+        "mapping_aware_llm": {
+          "$ref": "#/$defs/armState"
+        },
+        "mapping_aware_plus_syntax_repair": {
+          "$ref": "#/$defs/armState"
+        }
       }
+    },
+    "analysis_cluster_id": {
+      "type": "string",
+      "minLength": 1
     }
   },
   "$defs": {
@@ -60,7 +83,11 @@
           ]
         },
         "semantic_verdict": {
-          "enum": ["FAITHFUL", "UNFAITHFUL", "INDETERMINATE"]
+          "enum": [
+            "FAITHFUL",
+            "UNFAITHFUL",
+            "INDETERMINATE"
+          ]
         },
         "semantic_evaluation_reason": {
           "enum": [
@@ -69,10 +96,18 @@
             "VERIFIER_RUNTIME_INDETERMINATE"
           ]
         },
-        "vur_eligible": {"type": "boolean"},
-        "vfy_success": {"type": "boolean"},
-        "structural_evidence_sha256": {"$ref": "#/$defs/sha256"},
-        "semantic_evidence_sha256": {"$ref": "#/$defs/sha256"}
+        "vur_eligible": {
+          "type": "boolean"
+        },
+        "vfy_success": {
+          "type": "boolean"
+        },
+        "structural_evidence_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "semantic_evidence_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
       }
     }
   }
