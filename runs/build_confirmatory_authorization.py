@@ -13,6 +13,7 @@ from typing import Any
 import jsonschema
 import yaml
 
+from fhirbridge.artifact_bundle import hash_components_from_manifest
 from fhirbridge.confirmatory_authorization import (
     assess_confirmatory_authorization,
 )
@@ -96,6 +97,7 @@ def build_authorization_record(
     protocol_gates_path: Path,
     tooling_manifest_path: Path,
     freeze_manifest_path: Path,
+    instrument_component_manifest_path: Path,
     reviewer_roster_path: Path,
     case_assignment_path: Path,
     analysis_preregistration_path: Path,
@@ -111,6 +113,7 @@ def build_authorization_record(
         "protocol_freeze_gates": protocol_gates_path,
         "tooling_manifest": tooling_manifest_path,
         "freeze_manifest": freeze_manifest_path,
+        "instrument_component_manifest": instrument_component_manifest_path,
         "reviewer_roster": reviewer_roster_path,
         "case_assignment_manifest": case_assignment_path,
         "analysis_preregistration": analysis_preregistration_path,
@@ -128,6 +131,15 @@ def build_authorization_record(
     }
     sealed_case_ids = _load_case_ids(sealed_case_ids_path)
 
+    component_digests = hash_components_from_manifest(
+        documents["instrument_component_manifest"],
+        repository_root=Path("."),
+    )
+    component_hashes = {
+        name: digest.sha256
+        for name, digest in sorted(component_digests.items())
+    }
+
     decision = assess_confirmatory_authorization(
         protocol_gates=documents["protocol_freeze_gates"],
         tooling_manifest=documents["tooling_manifest"],
@@ -141,6 +153,10 @@ def build_authorization_record(
             "pilot_acceptance_preregistration"
         ],
         actual_artifact_sha256={
+            "instrument_component_manifest": artifact_hashes[
+                "instrument_component_manifest"
+            ],
+            "sealed_case_manifest": _sha256(sealed_case_ids_path),
             "reviewer_roster": artifact_hashes["reviewer_roster"],
             "case_assignment_manifest": artifact_hashes[
                 "case_assignment_manifest"
@@ -158,11 +174,12 @@ def build_authorization_record(
                 "pilot_acceptance_preregistration"
             ],
         },
+        actual_component_sha256=component_hashes,
         sealed_case_ids=sealed_case_ids,
     )
 
     record = {
-        "schema_version": "0.1.0",
+        "schema_version": "0.2.0",
         "authorization_id": authorization_id,
         "created_at": created_at,
         "repository_commit": _repository_commit(repository_commit),
@@ -174,6 +191,7 @@ def build_authorization_record(
                 "protocol_freeze_gates",
                 "tooling_manifest",
                 "freeze_manifest",
+                "instrument_component_manifest",
                 "reviewer_roster",
                 "case_assignment_manifest",
                 "analysis_preregistration",
@@ -182,9 +200,11 @@ def build_authorization_record(
                 "pilot_acceptance_preregistration",
             )
         },
+        "instrument_component_sha256": component_hashes,
         "sealed_case_set": {
             "case_count": len(sealed_case_ids),
             "canonical_case_ids_sha256": _case_ids_sha256(sealed_case_ids),
+            "manifest_file_sha256": _sha256(sealed_case_ids_path),
         },
     }
 
@@ -198,6 +218,11 @@ def main() -> int:
     parser.add_argument("--protocol-gates", type=Path, required=True)
     parser.add_argument("--tooling-manifest", type=Path, required=True)
     parser.add_argument("--freeze-manifest", type=Path, required=True)
+    parser.add_argument(
+        "--instrument-component-manifest",
+        type=Path,
+        required=True,
+    )
     parser.add_argument("--reviewer-roster", type=Path, required=True)
     parser.add_argument("--case-assignments", type=Path, required=True)
     parser.add_argument("--analysis-preregistration", type=Path, required=True)
@@ -215,6 +240,7 @@ def main() -> int:
         protocol_gates_path=args.protocol_gates,
         tooling_manifest_path=args.tooling_manifest,
         freeze_manifest_path=args.freeze_manifest,
+        instrument_component_manifest_path=args.instrument_component_manifest,
         reviewer_roster_path=args.reviewer_roster,
         case_assignment_path=args.case_assignments,
         analysis_preregistration_path=args.analysis_preregistration,
