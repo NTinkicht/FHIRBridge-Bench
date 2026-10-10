@@ -19,6 +19,10 @@ _ARTIFACTS = (
     Path("models/build_frozen_mapping_context.py"),
     Path("models/schema/model_execution_record.schema.json"),
     Path("src/fhirbridge/model_execution.py"),
+    Path("src/fhirbridge/confirmatory_authorization.py"),
+    Path("runs/schema/confirmatory_run_plan.schema.json"),
+    Path("src/fhirbridge/confirmatory_run_plan.py"),
+    Path("src/fhirbridge/confirmatory_execution_audit.py"),
 )
 
 
@@ -62,6 +66,9 @@ def build_manifest() -> dict[str, object]:
             "strategy_assembly",
             "syntax_repair",
             "mapping_context_generation_code",
+            "confirmatory_run_authorization",
+            "pre_inference_run_plan",
+            "post_run_execution_completeness_audit",
         ],
         "not_included": [
             "final_model_provider_snapshot",
