@@ -9,8 +9,8 @@ from fhirbridge.hl7v2_profile_bundle import (
     assess_lri_target_reference_signals,
     compute_profile_bundle_manifest,
     inspect_profile_identity,
-    inspect_profile_reference_inventory,
     inspect_profile_messages,
+    inspect_profile_reference_inventory,
 )
 
 
