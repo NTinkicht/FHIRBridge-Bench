@@ -99,7 +99,15 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
 
     _artifact_blockers(manifest.get("instrument_components", {}), blockers)
     _artifact_blockers(
-        {"reviewer_roster": manifest.get("reviewer_roster")},
+        {
+            "reviewer_roster": manifest.get("reviewer_roster"),
+            "case_assignment_manifest": manifest.get(
+                "case_assignment_manifest"
+            ),
+            "analysis_preregistration": manifest.get(
+                "analysis_preregistration"
+            ),
+        },
         blockers,
     )
 
