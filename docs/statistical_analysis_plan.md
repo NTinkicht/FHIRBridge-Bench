@@ -207,13 +207,21 @@ The semantic verifier will be evaluated against a blinded expert-adjudicated ref
 
 Report:
 
-- sensitivity;
-- specificity;
-- positive predictive value;
-- negative predictive value;
-- transformation-level accuracy;
+- effective sensitivity across **all expert-positive cases**, counting verifier
+  `INDETERMINATE` outcomes on expert-positive cases as missed automated
+  detections;
+- effective specificity across all expert-negative cases;
+- positive predictive value and negative predictive value for determinate
+  verifier calls;
+- effective transformation-level accuracy across all validation cases;
+- overall runtime-indeterminate rate;
+- runtime-indeterminate rates/counts stratified by expert-positive versus
+  expert-negative reference status;
+- determinate-only sensitivity/specificity as diagnostic selective-classifier
+  quantities, never as substitutes for the effective primary validation
+  metrics;
 - category-level precision/recall where supported;
-- 95% confidence intervals.
+- Wilson 95% confidence intervals.
 
 Inter-rater reliability before adjudication:
 
