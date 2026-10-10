@@ -560,6 +560,22 @@ grounding_guards:
       - benchmark/lri_profile_selection.yaml
     status: draft
 
+  - guard_id: ORDER_REQUESTER_IDENTIFIER_SOURCE_GROUNDING_001
+    source_fact_type: order
+    source_field: attributes.requester.identifier.value
+    target_fact_type: order
+    target_field: attributes.requester.identifier.value
+    match_type: exact_scalar_membership
+    primary_endpoint_eligible: true
+    rationale: >-
+      Any ordering-provider identifier asserted in a grounded target order fact
+      must exist in the authored canonical order context. The guard does not
+      decide whether a FHIR requester Reference and HL7 v2 XCN are fully
+      equivalent, nor which XCN components must be scored.
+    evidence:
+      - benchmark/lri_order_context_evidence.yaml
+    status: draft
+
 indeterminate_candidates:
   - candidate_id: REPORT_IDENTIFIER_MAPPING
     reason: >-
