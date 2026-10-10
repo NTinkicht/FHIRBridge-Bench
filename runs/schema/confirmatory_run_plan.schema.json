@@ -85,7 +85,8 @@
         "analysis_preregistration_sha256",
         "sample_size_preregistration_sha256",
         "pilot_acceptance_preregistration_sha256",
-        "execution_record_schema_sha256"
+        "execution_record_schema_sha256",
+        "deterministic_baseline_renderer_sha256"
       ],
       "properties": {
         "freeze_manifest_sha256": {
@@ -110,6 +111,9 @@
           "$ref": "#/$defs/sha256"
         },
         "execution_record_schema_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "deterministic_baseline_renderer_sha256": {
           "$ref": "#/$defs/sha256"
         }
       }
