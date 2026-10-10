@@ -756,6 +756,95 @@ def _unscored_absence_decision(
     )
 
 
+def _scalar_values_at_path(payload: dict[str, Any], path: str) -> set[object]:
+    """Collect scalar values through dict/list paths without interpreting semantics."""
+
+    nodes: list[Any] = [payload]
+    for component in path.split("."):
+        next_nodes: list[Any] = []
+        for node in nodes:
+            if not isinstance(node, dict) or component not in node:
+                continue
+            value = node[component]
+            if isinstance(value, list):
+                next_nodes.extend(value)
+            elif value is not None:
+                next_nodes.append(value)
+        nodes = next_nodes
+
+    return {
+        value
+        for value in nodes
+        if isinstance(value, (str, int, float, bool))
+    }
+
+
+def _grounding_guard_decisions(
+    source_facts: list[dict[str, Any]],
+    target_facts: list[LiftedFact],
+    *,
+    used_target_ids: set[str],
+    policy: VerificationPolicy | None,
+) -> list[SemanticDecision]:
+    """Detect target assertions that have no corresponding authored source value.
+
+    Grounding guards are intentionally weaker than mapping/equivalence rules:
+    they ask only whether an asserted scalar value appears in an allowed source
+    fact field. They do not claim that a particular FHIR element maps uniquely
+    to a particular HL7 v2 field.
+    """
+
+    if policy is None or not policy.grounding_guards:
+        return []
+
+    decisions: list[SemanticDecision] = []
+    for guard in policy.grounding_guards:
+        source_values: set[object] = set()
+        for source in source_facts:
+            if source.get("fact_type") != guard.source_fact_type:
+                continue
+            source_values.update(_scalar_values_at_path(source, guard.source_field))
+
+        for target in target_facts:
+            if (
+                target.lifted_fact_id not in used_target_ids
+                or target.fact_type != guard.target_fact_type
+            ):
+                continue
+            target_values = _scalar_values_at_path(
+                target.semantic_payload,
+                guard.target_field,
+            )
+            unsupported = target_values - source_values
+            if not unsupported:
+                continue
+            decisions.append(
+                SemanticDecision(
+                    decision_id=(
+                        f"{target.lifted_fact_id}:fabrication:grounding:{guard.guard_id}"
+                    ),
+                    classification="FABRICATION",
+                    target_fact_ids=(target.lifted_fact_id,),
+                    error_subtype="unsupported_assertion",
+                    severity="S2",
+                    primary_endpoint_eligible=guard.primary_endpoint_eligible,
+                    evidence={
+                        "rationale_code": "TARGET_VALUE_NOT_GROUNDED_IN_SOURCE",
+                        "guard_id": guard.guard_id,
+                        "source_fact_type": guard.source_fact_type,
+                        "source_field": guard.source_field,
+                        "target_fact_type": guard.target_fact_type,
+                        "target_field": guard.target_field,
+                        "unsupported_values": sorted(map(str, unsupported)),
+                        "available_source_values": sorted(map(str, source_values)),
+                        "contract_id": policy.contract_id,
+                        "contract_version": policy.contract_version,
+                    },
+                )
+            )
+    return decisions
+
+
 def classify_graph(
     source_facts: list[dict[str, Any]],
     target_facts: list[LiftedFact],
@@ -933,6 +1022,15 @@ def classify_graph(
                 scope_note=scope_note,
             )
         )
+
+    decisions.extend(
+        _grounding_guard_decisions(
+            source_facts,
+            target_facts,
+            used_target_ids=used_target_ids,
+            policy=policy,
+        )
+    )
 
     for target in target_facts:
         if target.lifted_fact_id in used_target_ids:
