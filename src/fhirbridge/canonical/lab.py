@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from random import Random
 from typing import Any
 
-_GENERATOR_VERSION = "0.2.0"
+_GENERATOR_VERSION = "0.3.0"
 
 _TEMPLATE_RULES = {
     "LAB-001": {
@@ -470,6 +470,61 @@ def _specimen_fact(
     }
 
 
+def _order_fact(
+    template_id: str,
+    seed: int,
+    patient_id: str,
+    report_id: str,
+    authored_time: datetime,
+    rng: Random,
+) -> dict[str, Any]:
+    """Author one standard-independent laboratory order context fact."""
+
+    return {
+        "fact_id": f"order-{seed:08d}",
+        "fact_type": "order",
+        "subject_ref": patient_id,
+        "encounter_ref": None,
+        "concept": {
+            "system": "http://loinc.org",
+            "code": "24323-8",
+            "display": "Comprehensive metabolic panel",
+            "local_code": None,
+        },
+        "value": None,
+        "unit": None,
+        "temporal": {
+            "effective_start": None,
+            "effective_end": None,
+            "recorded_at": _iso(authored_time),
+            "precision": "second",
+        },
+        "identifiers": [
+            {
+                "system": "urn:fhirbridge:lab-order",
+                "value": f"ORD-{rng.randint(100000, 999999)}",
+                "type": "order",
+            }
+        ],
+        "relations": [
+            {"relation_type": "has_report", "target_fact_id": report_id}
+        ],
+        "attributes": {
+            "lifecycle_status": "completed",
+            "request_intent": "order",
+            "requester": {
+                "identifier": {
+                    "system": "urn:fhirbridge:provider",
+                    "value": f"PROV-{seed:08d}",
+                    "type": "provider",
+                },
+                "display": f"Synthetic Ordering Provider {seed}",
+            },
+        },
+        "provenance": _provenance(template_id),
+    }
+
+
 def generate_lab_scenario(
     template_id: str,
     seed: int,
@@ -477,6 +532,7 @@ def generate_lab_scenario(
     implementation_variant_id: str = "canonical_profile",
     include_specimen: bool | None = None,
     partition: str = "development",
+    include_order_context: bool = False,
 ) -> dict[str, Any]:
     """Generate one deterministic canonical lab fact graph.
 
@@ -516,6 +572,7 @@ def generate_lab_scenario(
     specimen_time = base
     result_time = base + timedelta(minutes=rng.randint(5, 25))
     issued_time = result_time + timedelta(minutes=rng.randint(10, 45))
+    order_authored_time = base - timedelta(hours=2)
 
     patient = _patient_fact(template_id, seed, rng)
     mode = template["mode"]
@@ -608,7 +665,27 @@ def generate_lab_scenario(
         template["status"],
     )
 
-    facts = [patient, report, *observations]
+    order: dict[str, Any] | None = None
+    if include_order_context:
+        order = _order_fact(
+            template_id,
+            seed,
+            patient_id,
+            report_id,
+            order_authored_time,
+            rng,
+        )
+        report["relations"].append(
+            {
+                "relation_type": "based_on_order",
+                "target_fact_id": order["fact_id"],
+            }
+        )
+
+    facts = [patient]
+    if order is not None:
+        facts.append(order)
+    facts.extend([report, *observations])
     specimen: dict[str, Any] | None = None
     if include_specimen:
         specimen = _specimen_fact(
@@ -638,6 +715,16 @@ def generate_lab_scenario(
             },
         },
     ]
+    if order is not None:
+        assertions.append(
+            {
+                "assertion_id": f"A-{suffix}-ORDER-REPORT",
+                "assertion_type": "belongs_to_order",
+                "fact_refs": [report_id, order["fact_id"]],
+                "parameters": {},
+            }
+        )
+
     for observation in observations:
         assertions.append(
             {
@@ -671,6 +758,15 @@ def generate_lab_scenario(
             )
 
     expected_rule_ids = list(_EXPECTED_RULE_IDS)
+    if include_order_context:
+        expected_rule_ids.extend(
+            [
+                "ORDER_IDENTIFIER_MAPPING_001",
+                "ORDER_REQUESTER_MAPPING_001",
+                "ORDER_CODE_MAPPING_001",
+                "REPORT_BASEDON_ORDER_001",
+            ]
+        )
     if include_specimen:
         expected_rule_ids.extend(
             [
