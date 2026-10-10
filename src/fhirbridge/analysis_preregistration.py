@@ -51,9 +51,50 @@ def assess_analysis_preregistration(
         "statistical_analysis_plan_sha256",
         "model_prompt_configuration_sha256",
         "sample_size_preregistration_sha256",
+        "primary_vur_hypothesis_sha256",
     ):
         if _zeroish(frozen.get(key)):
             blockers.append(f"{key} is still a zero placeholder")
+
+    primary_hypothesis = document.get("primary_hypothesis")
+    if not isinstance(primary_hypothesis, dict):
+        blockers.append("primary_hypothesis is missing")
+        primary_hypothesis = {}
+    record_id = primary_hypothesis.get("record_id")
+    if (
+        not isinstance(record_id, str)
+        or not record_id.strip()
+        or _placeholder(record_id)
+    ):
+        blockers.append("primary hypothesis record_id is missing or placeholder")
+    threshold = primary_hypothesis.get("nontrivial_vur_threshold")
+    if (
+        not isinstance(threshold, (int, float))
+        or not 0 < float(threshold) < 1
+    ):
+        blockers.append("primary nontrivial VUR threshold must be in (0,1)")
+    for key in (
+        "model_strategy_aggregation_policy",
+        "inference_method",
+        "decision_rule",
+    ):
+        value = primary_hypothesis.get(key)
+        if (
+            not isinstance(value, str)
+            or not value.strip()
+            or _placeholder(value)
+        ):
+            blockers.append(
+                f"primary_hypothesis.{key} is missing or placeholder"
+            )
+    if primary_hypothesis.get("alpha") != 0.05:
+        blockers.append("primary hypothesis alpha is not 0.05")
+    if primary_hypothesis.get("sidedness") != "one_sided":
+        blockers.append("primary hypothesis sidedness is not one_sided")
+    if primary_hypothesis.get("cluster_id_field") != "analysis_cluster_id":
+        blockers.append(
+            "primary hypothesis cluster_id_field is not analysis_cluster_id"
+        )
 
     comparisons = document.get("paired_comparisons")
     if not isinstance(comparisons, dict):
