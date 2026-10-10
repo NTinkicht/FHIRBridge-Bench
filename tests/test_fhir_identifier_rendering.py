@@ -33,7 +33,7 @@ def test_patient_internal_identifier_does_not_assert_invalid_r4_type_code() -> N
     assert rendered["system"] == "urn:test:alternate"
 
 
-def test_unknown_identifier_type_is_preserved_as_text_not_invented_coding() -> None:
+def test_unknown_identifier_type_is_not_projected_without_review() -> None:
     rendered = _identifier(
         {
             "system": "urn:test:other",
@@ -42,4 +42,4 @@ def test_unknown_identifier_type_is_preserved_as_text_not_invented_coding() -> N
         }
     )
 
-    assert rendered["type"] == {"text": "LOCAL-TYPE"}
+    assert "type" not in rendered
