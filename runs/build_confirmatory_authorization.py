@@ -186,19 +186,22 @@ def build_authorization_record(
         "authorized": decision.authorized,
         "blockers": list(decision.blockers),
         "input_artifacts": {
-            f"{key}_sha256": artifact_hashes[key]
-            for key in (
-                "protocol_freeze_gates",
-                "tooling_manifest",
-                "freeze_manifest",
-                "instrument_component_manifest",
-                "reviewer_roster",
-                "case_assignment_manifest",
-                "analysis_preregistration",
-                "sample_size_preregistration",
-                "model_prompt_configuration",
-                "pilot_acceptance_preregistration",
-            )
+            **{
+                f"{key}_sha256": artifact_hashes[key]
+                for key in (
+                    "protocol_freeze_gates",
+                    "tooling_manifest",
+                    "freeze_manifest",
+                    "instrument_component_manifest",
+                    "reviewer_roster",
+                    "case_assignment_manifest",
+                    "analysis_preregistration",
+                    "sample_size_preregistration",
+                    "model_prompt_configuration",
+                    "pilot_acceptance_preregistration",
+                )
+            },
+            "sealed_case_manifest_sha256": _sha256(sealed_case_ids_path),
         },
         "instrument_component_sha256": component_hashes,
         "sealed_case_set": {
