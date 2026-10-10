@@ -145,9 +145,34 @@ def _fixture(tmp_path: Path) -> dict[str, Path]:
             },
         },
     )
-    case_manifest = tmp_path / "case-ids.json"
+    case_manifest = tmp_path / "sealed-case-manifest.json"
     case_manifest.write_text(
-        json.dumps(["CASE-001", "CASE-002"]) + "\n",
+        json.dumps(
+            {
+                "schema_version": "0.1.0",
+                "manifest_id": "SEALED-CASES-001",
+                "status": "sealed",
+                "created_at": "2026-10-20T22:00:00Z",
+                "split": "sealed_test",
+                "case_count": 2,
+                "cases": [
+                    {
+                        "case_id": "CASE-001",
+                        "scenario_family": "LAB-001",
+                        "source_input_sha256": "a" * 64,
+                        "canonical_graph_sha256": "b" * 64,
+                    },
+                    {
+                        "case_id": "CASE-002",
+                        "scenario_family": "LAB-006",
+                        "source_input_sha256": "c" * 64,
+                        "canonical_graph_sha256": "d" * 64,
+                    },
+                ],
+            },
+            sort_keys=True,
+        )
+        + "\n",
         encoding="utf-8",
     )
     sealed_bundle = tmp_path / "sealed-bundle.bin"
