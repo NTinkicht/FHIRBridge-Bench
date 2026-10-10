@@ -47,7 +47,7 @@ def build_contract_review_pair_report(
 
     return {
         "report_id": "FHIRBRIDGE-CONTRACT-REVIEW-PAIR-001",
-        "schema_version": "0.1.0",
+        "schema_version": "0.2.0",
         "contract": {
             "id": summary.contract_id,
             "version": summary.contract_version,
@@ -80,5 +80,7 @@ def build_contract_review_pair_report(
             for item in summary.disagreements
         ],
         "adjudication_required": bool(summary.disagreements),
+        "review_stage": "blind",
+        "agreement_input_policy": "original_blind_stage_labels_only",
         "original_reviews_preserved": True,
     }
