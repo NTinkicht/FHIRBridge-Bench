@@ -51,6 +51,19 @@ def assess_confirmatory_run_plan(
             blockers.append("run authorization is not true")
         if _zeroish(authorization.get("record_sha256")):
             blockers.append("authorization record SHA-256 is still a zero placeholder")
+        if authorization.get("record_schema_version") != "0.1.0":
+            blockers.append(
+                "authorization record schema_version is not frozen to 0.1.0"
+            )
+        schema_hash = authorization.get("record_schema_sha256")
+        if (
+            not isinstance(schema_hash, str)
+            or len(schema_hash) != 64
+            or _zeroish(schema_hash)
+        ):
+            blockers.append(
+                "authorization record schema SHA-256 is missing or placeholder"
+            )
 
     frozen = document.get("frozen_artifacts")
     if not isinstance(frozen, dict):
