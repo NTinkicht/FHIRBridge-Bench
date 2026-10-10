@@ -53,7 +53,7 @@ def test_repository_run_plan_template_is_schema_valid_but_not_ready() -> None:
     jsonschema.Draft202012Validator(_schema()).validate(document)
     readiness = assess_confirmatory_run_plan(document)
 
-    assert document["schema_version"] == "0.2.0"
+    assert document["schema_version"] == "0.3.0"
     assert not readiness.ready
     assert any("not prepared_authorized" in item for item in readiness.blockers)
     assert any("placeholder" in item for item in readiness.blockers)
@@ -118,7 +118,7 @@ def test_run_plan_rejects_older_execution_record_contract() -> None:
 
     assert not readiness.ready
     assert any(
-        "schema_version is not frozen to 0.3.0" in item
+        "schema_version is not frozen to 0.2.0" in item
         for item in readiness.blockers
     )
 
@@ -153,7 +153,7 @@ def test_run_plan_requires_execution_schema_validation() -> None:
 
 def test_run_plan_rejects_wrong_authorization_schema_version() -> None:
     document = _ready()
-    document["authorization"]["record_schema_version"] = "0.2.0"
+    document["authorization"]["record_schema_version"] = "0.1.0"
 
     readiness = assess_confirmatory_run_plan(document)
 
@@ -173,5 +173,18 @@ def test_run_plan_rejects_unfrozen_authorization_schema_hash() -> None:
     assert not readiness.ready
     assert any(
         "authorization record schema SHA-256" in item
+        for item in readiness.blockers
+    )
+
+
+def test_run_plan_rejects_wrong_top_level_schema_version() -> None:
+    document = _ready()
+    document["schema_version"] = "0.2.0"
+
+    readiness = assess_confirmatory_run_plan(document)
+
+    assert not readiness.ready
+    assert any(
+        "run plan schema_version is not 0.3.0" in item
         for item in readiness.blockers
     )
