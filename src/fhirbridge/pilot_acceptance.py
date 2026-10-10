@@ -48,6 +48,7 @@ def assess_pilot_acceptance_preregistration(
     for key in (
         "pilot_case_manifest_sha256",
         "pilot_adjudication_bundle_sha256",
+        "pilot_verifier_results_bundle_sha256",
     ):
         value = pilot.get(key)
         if _zero_hash(value):
