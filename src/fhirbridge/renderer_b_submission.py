@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 _EXPECTED_CONTRACT_ID = "F2V-LAB-ORU-R01-001"
-_EXPECTED_CONTRACT_VERSION = "0.2.0"
+_EXPECTED_CONTRACT_VERSION = "0.3.0"
 _PLACEHOLDER_TOKENS = (
     "TO_BE_",
     "TO-BE-",
