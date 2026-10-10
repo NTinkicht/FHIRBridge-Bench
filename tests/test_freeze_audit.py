@@ -53,6 +53,14 @@ def _ready_manifest() -> dict:
         },
     ]
 
+    manifest["instrument_component_manifest"].update(
+        {
+            "version": "0.1.0",
+            "path_or_ref": "benchmark/instrument_component_manifest.yaml",
+            "sha256": "6" * 64,
+        }
+    )
+
     manifest["reviewer_roster"].update(
         {
             "version": "1.0.0",
@@ -309,5 +317,18 @@ def test_unfrozen_sample_size_preregistration_blocks_sealed_opening() -> None:
     assert not report.ready_to_open_sealed_set
     assert any(
         "sample_size_preregistration" in blocker
+        for blocker in report.blockers
+    )
+
+
+def test_unfrozen_component_boundary_manifest_blocks_sealed_opening() -> None:
+    manifest = _ready_manifest()
+    manifest["instrument_component_manifest"]["sha256"] = "0" * 64
+
+    report = assess_presealed_freeze(manifest)
+
+    assert not report.ready_to_open_sealed_set
+    assert any(
+        "instrument_component_manifest" in blocker
         for blocker in report.blockers
     )
