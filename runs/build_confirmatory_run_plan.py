@@ -24,6 +24,9 @@ _AUTH_SCHEMA = Path(
 )
 _RUN_PLAN_SCHEMA = Path("runs/schema/confirmatory_run_plan.schema.json")
 _EXECUTION_SCHEMA = Path("models/schema/model_execution_record.schema.json")
+_BASELINE_EXECUTION_SCHEMA = Path(
+    "models/schema/deterministic_baseline_execution_record.schema.json"
+)
 _DEFAULT_OUTPUT = Path("runs/confirmatory_run_plan.yaml")
 
 
@@ -234,6 +237,9 @@ def build_run_plan(
             "execution_record_schema_sha256": _sha256(_EXECUTION_SCHEMA),
             "deterministic_baseline_renderer_sha256": (
                 baseline_renderer_sha256
+            ),
+            "deterministic_baseline_execution_schema_sha256": _sha256(
+                _BASELINE_EXECUTION_SCHEMA
             ),
         },
         "execution_record_contract": {
