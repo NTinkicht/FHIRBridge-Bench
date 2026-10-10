@@ -15,6 +15,11 @@ from .sample_size_readiness import assess_sample_size_preregistration
 from .tooling_manifest import assess_freeze_readiness
 
 _REQUIRED_BOUND_HASHES = {
+    "instrument_component_manifest": (
+        "instrument_component_manifest",
+        "sha256",
+    ),
+    "sealed_case_manifest": ("sealed_set", "case_manifest_sha256"),
     "reviewer_roster": ("reviewer_roster", "sha256"),
     "case_assignment_manifest": ("case_assignment_manifest", "sha256"),
     "analysis_preregistration": ("analysis_preregistration", "sha256"),
@@ -105,6 +110,7 @@ def assess_confirmatory_authorization(
     model_prompt_configuration: dict[str, Any],
     pilot_acceptance_preregistration: dict[str, Any],
     actual_artifact_sha256: dict[str, str],
+    actual_component_sha256: dict[str, str],
     sealed_case_ids: set[str],
 ) -> ConfirmatoryAuthorization:
     """Authorize confirmatory inference only when every frozen gate agrees."""
@@ -178,6 +184,29 @@ def assess_confirmatory_authorization(
         if expected != actual:
             blockers.append(
                 f"freeze-manifest SHA-256 mismatch for {key}"
+            )
+
+    frozen_components = freeze_manifest.get("instrument_components")
+    if not isinstance(frozen_components, dict):
+        blockers.append("freeze manifest instrument_components are missing")
+        frozen_components = {}
+    for component_name, component in sorted(frozen_components.items()):
+        if not isinstance(component, dict):
+            blockers.append(
+                f"freeze manifest component is malformed: {component_name}"
+            )
+            continue
+        expected = component.get("sha256")
+        actual = actual_component_sha256.get(component_name)
+        if not isinstance(actual, str) or len(actual) != 64:
+            blockers.append(
+                f"actual component SHA-256 is missing: {component_name}"
+            )
+            continue
+        if expected != actual:
+            blockers.append(
+                f"freeze-manifest component SHA-256 mismatch for "
+                f"{component_name}"
             )
 
     if not sealed_case_ids:
