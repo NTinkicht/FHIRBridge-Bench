@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
-import re
 from xml.etree import ElementTree
 
 _REQUIRED_FILES = ("PROFILE.xml",)
