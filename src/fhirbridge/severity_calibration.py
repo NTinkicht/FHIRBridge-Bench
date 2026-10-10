@@ -58,6 +58,23 @@ def assess_severity_calibration(
     if not _sha256(document.get("candidate_policy_sha256")):
         blockers.append("candidate severity-policy SHA-256 is not frozen")
 
+    blind = document.get("blind_stage_evidence")
+    if not isinstance(blind, dict):
+        blockers.append("blind severity-stage evidence is missing")
+    else:
+        if blind.get("assignment_id") != "FHIRBRIDGE-SEVERITY-BLIND-001":
+            blockers.append("blind severity assignment_id is invalid")
+        for key in (
+            "reviewer_a_response_sha256",
+            "reviewer_b_response_sha256",
+        ):
+            if not _sha256(blind.get(key)):
+                blockers.append(f"{key} is not a frozen SHA-256")
+        if blind.get("original_responses_retained") is not True:
+            blockers.append("blind severity responses are not attested as retained")
+        if blind.get("boundary_roles_hidden_initially") is not True:
+            blockers.append("severity boundary roles were not hidden initially")
+
     reviewers = document.get("reviewers")
     if not isinstance(reviewers, list) or len(reviewers) < 2:
         blockers.append("at least two severity-calibration reviewers are required")
