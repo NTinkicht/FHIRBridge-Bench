@@ -48,6 +48,8 @@ def test_complete_pilot_gate_record_can_be_ready() -> None:
             "false_positive": 1,
             "false_negative": 1,
             "runtime_indeterminate_count": 0,
+            "runtime_indeterminate_expert_positive_count": 0,
+            "runtime_indeterminate_expert_negative_count": 0,
         }
     )
     for name, estimate, lower, upper in (
@@ -102,6 +104,8 @@ def test_pilot_gate_checks_indeterminate_rate_count_consistency() -> None:
     record = _template()
     record["pilot_evidence"]["case_count"] = 10
     record["metrics"]["runtime_indeterminate_count"] = 2
+    record["metrics"]["runtime_indeterminate_expert_positive_count"] = 1
+    record["metrics"]["runtime_indeterminate_expert_negative_count"] = 1
     record["metrics"]["runtime_indeterminate_rate"]["estimate"] = 0.1
 
     readiness = assess_pilot_acceptance_preregistration(record)
@@ -124,6 +128,8 @@ def test_pilot_confusion_counts_exclude_indeterminate_cases() -> None:
             "false_positive": 1,
             "false_negative": 0,
             "runtime_indeterminate_count": 2,
+            "runtime_indeterminate_expert_positive_count": 1,
+            "runtime_indeterminate_expert_negative_count": 1,
         }
     )
     record["metrics"]["runtime_indeterminate_rate"]["estimate"] = 0.2
@@ -132,5 +138,65 @@ def test_pilot_confusion_counts_exclude_indeterminate_cases() -> None:
 
     assert not any(
         "confusion counts do not sum to determinate case count" in blocker
+        for blocker in readiness.blockers
+    )
+
+
+def test_pilot_gate_rejects_sensitivity_that_excludes_positive_abstentions() -> None:
+    record = _template()
+    record["status"] = "preregistered"
+    record["created_at"] = "2026-10-20T10:00:00Z"
+    record["pilot_evidence"].update(
+        {
+            "pilot_case_manifest_sha256": "1" * 64,
+            "pilot_adjudication_bundle_sha256": "2" * 64,
+            "case_count": 8,
+            "expert_major_error_positive_count": 4,
+            "expert_major_error_negative_count": 4,
+        }
+    )
+    record["frozen_instrument"].update(
+        {
+            "repository_commit": "abcdef1",
+            "verifier_sha256": "3" * 64,
+            "projectability_contract_sha256": "4" * 64,
+        }
+    )
+    record["metrics"].update(
+        {
+            "true_positive": 2,
+            "true_negative": 4,
+            "false_positive": 0,
+            "false_negative": 0,
+            "runtime_indeterminate_count": 2,
+            "runtime_indeterminate_expert_positive_count": 2,
+            "runtime_indeterminate_expert_negative_count": 0,
+        }
+    )
+    record["metrics"]["sensitivity"]["estimate"] = 1.0
+    record["metrics"]["specificity"]["estimate"] = 1.0
+    record["metrics"]["ppv"]["estimate"] = 1.0
+    record["metrics"]["npv"]["estimate"] = 1.0
+    record["metrics"]["accuracy"]["estimate"] = 0.75
+    record["metrics"]["runtime_indeterminate_rate"]["estimate"] = 0.25
+
+    readiness = assess_pilot_acceptance_preregistration(record)
+
+    assert any(
+        "sensitivity estimate does not match frozen count semantics" in blocker
+        for blocker in readiness.blockers
+    )
+
+
+def test_class_specific_abstentions_must_sum_to_total() -> None:
+    record = _template()
+    record["metrics"]["runtime_indeterminate_count"] = 2
+    record["metrics"]["runtime_indeterminate_expert_positive_count"] = 2
+    record["metrics"]["runtime_indeterminate_expert_negative_count"] = 1
+
+    readiness = assess_pilot_acceptance_preregistration(record)
+
+    assert any(
+        "class-specific indeterminate counts do not sum" in blocker
         for blocker in readiness.blockers
     )
