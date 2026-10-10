@@ -57,9 +57,9 @@ def test_order_context_is_authored_without_real_world_provider_identifier() -> N
 
     assert order["identifiers"][0]["system"] == "urn:fhirbridge:lab-order"
     requester = order["attributes"]["requester"]
-    assert requester["identifier"]["system"] == "urn:fhirbridge:provider"
-    assert requester["identifier"]["value"].startswith("PROV-")
-    assert "npi" not in requester["identifier"]["system"].lower()
+    assert requester["identifiers"][0]["system"] == "urn:fhirbridge:provider"
+    assert requester["identifiers"][0]["value"].startswith("PROV-")
+    assert "npi" not in requester["identifiers"][0]["system"].lower()
 
 
 def test_fhir_order_context_uses_service_request_and_diagnostic_report_based_on() -> None:
