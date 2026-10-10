@@ -8,7 +8,7 @@ instrument_components:
   projectability_contract:
     artifact_id: "projectability-contract"
     version: "TO_BE_FROZEN"
-    path_or_ref: "contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml"
+    path_or_ref: "contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml"
     sha256: "0000000000000000000000000000000000000000000000000000000000000000"
   verifier:
     artifact_id: "semantic-verifier"
