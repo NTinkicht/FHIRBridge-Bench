@@ -1,0 +1,36 @@
+{
+  "evidence_id": "FHIRBRIDGE-FHIR-ORDER-CONTEXT-PREFREEZE-001",
+  "scientific_role": "prefreeze_development_qualification_only",
+  "confirmatory_evidence": false,
+  "contract_version": "0.3.0",
+  "source_case": {
+    "template_id": "LAB-001",
+    "seed": 9491,
+    "include_order_context": true
+  },
+  "representation": {
+    "order_resource": "ServiceRequest",
+    "service_request_profile": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-servicerequest",
+    "report_order_link": "DiagnosticReport.basedOn"
+  },
+  "validator": {
+    "implementation": "HL7 FHIR validator CLI",
+    "version": "6.10.0",
+    "artifact_sha256": "fc663ae55dd31bbfde19788dddfb49cacbeebc3c64498fa7b7779df90000434b",
+    "fhir_version": "4.0.1",
+    "implementation_guide": "hl7.fhir.us.core#9.0.0",
+    "terminology_server_mode": "disabled_tx_n_a"
+  },
+  "github_actions": {
+    "workflow_run_id": 38044116496,
+    "workflow_run_number": 748,
+    "head_sha": "47d66da4662bb3ae4e63e4e3fb0eb06252e8527f",
+    "job": "fhir-qualification",
+    "result": "success"
+  },
+  "interpretation": [
+    "The authored ServiceRequest and DiagnosticReport.basedOn development representation is accepted by the pinned US Core validation path.",
+    "This does not establish the correctness of the reverse FHIR-to-HL7-v2 order mapping.",
+    "This does not authorize confirmatory inference."
+  ]
+}
