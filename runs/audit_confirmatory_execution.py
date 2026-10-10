@@ -122,6 +122,14 @@ def build_execution_audit(
 ) -> dict[str, Any]:
     run_plan = _load_document(run_plan_path)
     sealed_manifest = _load_document(sealed_case_manifest_path)
+    sealed_binding = run_plan.get("sealed_set")
+    if not isinstance(sealed_binding, dict):
+        raise ValueError("run plan lacks sealed_set binding")
+    sealed_manifest_sha256 = _sha256(sealed_case_manifest_path)
+    if sealed_binding.get("case_manifest_sha256") != sealed_manifest_sha256:
+        raise ValueError(
+            "sealed case manifest bytes do not match confirmatory run plan"
+        )
     records = _load_jsonl(execution_records_path)
     case_ids = sealed_case_ids(sealed_manifest)
     source_hashes = source_input_sha256_by_case(sealed_manifest)
@@ -165,9 +173,7 @@ def build_execution_audit(
         "blockers": list(result.blockers),
         "inputs": {
             "run_plan_sha256": _sha256(run_plan_path),
-            "sealed_case_manifest_sha256": _sha256(
-                sealed_case_manifest_path
-            ),
+            "sealed_case_manifest_sha256": sealed_manifest_sha256,
             "execution_records_sha256": _sha256(execution_records_path),
             "deterministic_baseline_sha256": _sha256(
                 deterministic_baseline_path
