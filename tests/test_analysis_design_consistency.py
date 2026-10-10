@@ -117,3 +117,64 @@ def test_repair_arm_must_reuse_mapping_raw_response() -> None:
 
     assert not result.consistent
     assert any("same raw response" in item for item in result.blockers)
+
+
+def test_sample_size_family_size_rule_must_follow_frozen_model_count() -> None:
+    core, template, sample, execution = _documents()
+    mutated = deepcopy(sample)
+    mutated["sample_size_method"]["paired_secondary_planning"][
+        "family_size_rule"
+    ] = "six_strategy_contrasts_total"
+
+    result = assess_analysis_design_consistency(
+        core,
+        template,
+        mutated,
+        execution,
+    )
+
+    assert not result.consistent
+    assert any(
+        "six contrasts per model" in item for item in result.blockers
+    )
+
+
+def test_sample_size_method_cannot_freeze_static_per_comparison_alpha() -> None:
+    core, template, sample, execution = _documents()
+    mutated = deepcopy(sample)
+    mutated["sample_size_method"]["paired_secondary_planning"][
+        "per_comparison_planning_alpha"
+    ] = 0.05 / 6.0
+
+    result = assess_analysis_design_consistency(
+        core,
+        template,
+        mutated,
+        execution,
+    )
+
+    assert not result.consistent
+    assert any(
+        "must not freeze a static per-comparison alpha" in item
+        for item in result.blockers
+    )
+
+
+def test_sample_size_dynamic_planning_policy_cannot_drift() -> None:
+    core, template, sample, execution = _documents()
+    mutated = deepcopy(sample)
+    mutated["sample_size_method"]["paired_secondary_planning"][
+        "planning_alpha_policy"
+    ] = "Bonferroni_upper_bound_for_Holm_family_static_6"
+
+    result = assess_analysis_design_consistency(
+        core,
+        template,
+        mutated,
+        execution,
+    )
+
+    assert not result.consistent
+    assert any(
+        "dynamic 0.05/(6M)" in item for item in result.blockers
+    )
