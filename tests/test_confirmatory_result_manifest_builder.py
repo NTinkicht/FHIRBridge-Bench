@@ -60,6 +60,7 @@ def _fixture(tmp_path: Path) -> dict[str, Path]:
                 "sealed_set": {
                     "bundle_id": "SEALED-001",
                     "bundle_sha256": _MODULE._sha256(bundle),
+                    "case_manifest_sha256": "c" * 64,
                     "case_count": 2,
                 },
                 "frozen_artifacts": {
@@ -107,6 +108,7 @@ def _fixture(tmp_path: Path) -> dict[str, Path]:
                 "source_hash_binding_verified": True,
                 "inputs": {
                     "run_plan_sha256": _MODULE._sha256(run_plan),
+                    "sealed_case_manifest_sha256": "c" * 64,
                     "execution_records_sha256": _MODULE._sha256(raw),
                     "deterministic_baseline_sha256": _MODULE._sha256(baseline),
                 },
