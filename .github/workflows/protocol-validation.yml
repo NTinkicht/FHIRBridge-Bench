@@ -129,6 +129,17 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      - name: Build provider-independent model artifact manifest
+        run: python models/build_provider_independent_manifest.py
+
+      - name: Archive provider-independent model artifact manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: provider-independent-model-artifacts-${{ github.run_id }}
+          path: models/generated/provider_independent_artifact_manifest.json
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Build clean-room Renderer B challenge package
         run: python renderer_validation/build_renderer_b_challenge.py
 
