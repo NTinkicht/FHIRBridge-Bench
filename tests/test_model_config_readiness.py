@@ -52,11 +52,10 @@ def _ready() -> dict:
     document["llm_models"] = [_model("M1"), _model("M2")]
     for index, strategy in enumerate(document["llm_strategies"], start=2):
         strategy["implementation_artifact"] = _artifact(str(index))
-        strategy["prompt_artifacts"] = [_artifact(str(index + 3))]
-        if strategy["strategy_id"] in {
-            "mapping_aware_llm",
-            "mapping_aware_plus_syntax_repair",
-        }:
+        if strategy["strategy_id"] == "direct_structured_llm":
+            strategy["prompt_artifacts"] = [_artifact("5")]
+        else:
+            strategy["prompt_artifacts"] = [_artifact("6")]
             strategy["mapping_context_artifacts"] = [_artifact("8")]
         if (
             strategy["strategy_id"]
@@ -216,5 +215,41 @@ def test_execution_policy_artifact_must_be_hash_pinned() -> None:
     assert not readiness.ready
     assert any(
         "global_execution_policy.policy_artifact" in blocker
+        for blocker in readiness.blockers
+    )
+
+
+def test_mapping_and_repair_prompts_must_be_identical() -> None:
+    document = _ready()
+    repair = next(
+        strategy
+        for strategy in document["llm_strategies"]
+        if strategy["strategy_id"] == "mapping_aware_plus_syntax_repair"
+    )
+    repair["prompt_artifacts"] = [_artifact("a")]
+
+    readiness = assess_model_prompt_freeze(document)
+
+    assert not readiness.ready
+    assert any(
+        "must use identical prompt artifacts" in blocker
+        for blocker in readiness.blockers
+    )
+
+
+def test_mapping_and_repair_context_must_be_identical() -> None:
+    document = _ready()
+    repair = next(
+        strategy
+        for strategy in document["llm_strategies"]
+        if strategy["strategy_id"] == "mapping_aware_plus_syntax_repair"
+    )
+    repair["mapping_context_artifacts"] = [_artifact("b")]
+
+    readiness = assess_model_prompt_freeze(document)
+
+    assert not readiness.ready
+    assert any(
+        "must use identical mapping context artifacts" in blocker
         for blocker in readiness.blockers
     )
