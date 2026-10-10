@@ -1,8 +1,8 @@
 import fhirbridge.schema_validation
 from fhirbridge.contract_review_assignment import build_contract_review_assignment
 
-_CONTRACT = "contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml"
-_CANDIDATES = "contracts/review/relationship_candidates_v0.1.yaml"
+_CONTRACT = "contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml"
+_CANDIDATES = "contracts/review/relationship_candidates_v0.2.yaml"
 
 
 def _assignment(stage: str = "blind") -> dict:
@@ -90,3 +90,22 @@ def test_invalid_review_stage_is_rejected() -> None:
         assert "blind" in str(exc)
     else:
         raise AssertionError("invalid review stage was accepted")
+
+
+def test_blind_assignment_targets_blind_v03_response_schema() -> None:
+    assignment = _assignment("blind")
+
+    assert assignment["contract"]["version"] == "0.3.0"
+    assert assignment["response_schema"] == (
+        "contracts/review/contract_review_blind_response.schema.json"
+    )
+    assert "ORDER_IDENTIFIER_MAPPING_001" in assignment["review_item_ids"]
+    assert "ORDER_REQUESTER_MAPPING_001" in assignment["review_item_ids"]
+
+
+def test_unblinded_assignment_targets_second_stage_schema() -> None:
+    assignment = _assignment("unblinded")
+
+    assert assignment["response_schema"] == (
+        "contracts/review/contract_review_unblinded_response.schema.json"
+    )
