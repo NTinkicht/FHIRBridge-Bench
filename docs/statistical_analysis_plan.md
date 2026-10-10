@@ -53,7 +53,10 @@ only structurally valid outputs. Structurally invalid outputs and runtime
 For every arm/model/direction, report the following mutually informative
 quantities together:
 
-- structural validity rate = structurally valid / attempted;
+- structural validity rate = VALID / attempted;
+- structural invalidity rate = INVALID / attempted;
+- measurement-failure rate = MEASUREMENT_FAILURE / attempted;
+- structural-policy-unresolved rate = POLICY_UNRESOLVED / attempted;
 - VFY = valid and faithful / attempted;
 - valid-and-unfaithful yield = valid and unfaithful / attempted;
 - valid-indeterminate yield = valid and runtime-indeterminate / attempted;
@@ -62,6 +65,10 @@ quantities together:
 
 This companion estimand prevents an intervention from appearing safer merely
 because it reduces the number of outputs that enter the VUR denominator.
+
+The reference endpoint implementation consumes the four frozen structural
+outcomes directly. `MEASUREMENT_FAILURE` and `POLICY_UNRESOLVED` are never
+coerced to either VALID or ordinary INVALID for VUR analysis.
 
 ## Instrument-validation gate
 
@@ -117,6 +124,7 @@ Repeated transformations derived from the same canonical patient/scenario must b
 For every arm/model/direction:
 
 - structural validity with Wilson 95% CI;
+- structural invalidity, measurement-failure, and policy-unresolved rates;
 - Valid-and-Faithful Yield (VFY) with Wilson 95% CI;
 - valid-and-unfaithful yield and valid-indeterminate yield;
 - VUR with 95% CI;
