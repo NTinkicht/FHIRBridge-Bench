@@ -113,7 +113,9 @@ def build_contract_review_assignment(
         "review_item_ids": list(expected_ids),
         "items": [combined[rule_id] for rule_id in expected_ids],
         "response_schema": (
-            "contracts/review/contract_review_response.schema.json"
+            "contracts/review/contract_review_blind_response.schema.json"
+            if stage == "blind"
+            else "contracts/review/contract_review_unblinded_response.schema.json"
         ),
         "human_decisions_included": False,
     }
