@@ -12,21 +12,35 @@
     "authorized",
     "blockers",
     "input_artifacts",
+    "instrument_component_sha256",
     "sealed_case_set"
   ],
   "properties": {
-    "schema_version": {"const": "0.1.0"},
-    "authorization_id": {"type": "string", "minLength": 1},
-    "created_at": {"type": "string", "format": "date-time"},
+    "schema_version": {
+      "const": "0.2.0"
+    },
+    "authorization_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "repository_commit": {
       "type": "string",
       "pattern": "^[0-9a-fA-F]{7,40}$"
     },
-    "authorized": {"type": "boolean"},
+    "authorized": {
+      "type": "boolean"
+    },
     "blockers": {
       "type": "array",
       "uniqueItems": true,
-      "items": {"type": "string", "minLength": 1}
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     },
     "input_artifacts": {
       "type": "object",
@@ -40,35 +54,94 @@
         "analysis_preregistration_sha256",
         "sample_size_preregistration_sha256",
         "model_prompt_configuration_sha256",
-        "pilot_acceptance_preregistration_sha256"
+        "pilot_acceptance_preregistration_sha256",
+        "instrument_component_manifest_sha256",
+        "sealed_case_manifest_sha256"
       ],
       "properties": {
-        "protocol_freeze_gates_sha256": {"$ref": "#/$defs/sha256"},
-        "tooling_manifest_sha256": {"$ref": "#/$defs/sha256"},
-        "freeze_manifest_sha256": {"$ref": "#/$defs/sha256"},
-        "reviewer_roster_sha256": {"$ref": "#/$defs/sha256"},
-        "case_assignment_manifest_sha256": {"$ref": "#/$defs/sha256"},
-        "analysis_preregistration_sha256": {"$ref": "#/$defs/sha256"},
-        "sample_size_preregistration_sha256": {"$ref": "#/$defs/sha256"},
-        "model_prompt_configuration_sha256": {"$ref": "#/$defs/sha256"},
-        "pilot_acceptance_preregistration_sha256": {"$ref": "#/$defs/sha256"}
+        "protocol_freeze_gates_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "tooling_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "freeze_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "reviewer_roster_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "case_assignment_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "analysis_preregistration_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "sample_size_preregistration_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "model_prompt_configuration_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "pilot_acceptance_preregistration_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "instrument_component_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "sealed_case_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
       }
     },
     "sealed_case_set": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["case_count", "canonical_case_ids_sha256"],
+      "required": [
+        "case_count",
+        "canonical_case_ids_sha256"
+      ],
       "properties": {
-        "case_count": {"type": "integer", "minimum": 1},
-        "canonical_case_ids_sha256": {"$ref": "#/$defs/sha256"}
+        "case_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "canonical_case_ids_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "instrument_component_sha256": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/sha256"
       }
     }
   },
   "allOf": [
     {
-      "if": {"properties": {"authorized": {"const": true}}},
-      "then": {"properties": {"blockers": {"maxItems": 0}}},
-      "else": {"properties": {"blockers": {"minItems": 1}}}
+      "if": {
+        "properties": {
+          "authorized": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "blockers": {
+            "maxItems": 0
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "blockers": {
+            "minItems": 1
+          }
+        }
+      }
     }
   ],
   "$defs": {
