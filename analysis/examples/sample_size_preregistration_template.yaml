@@ -23,7 +23,7 @@ paired_comparison_plans:
     comparison_id: "TO_BE_PILOT_DERIVED"
     p10: 0.0
     p01: 0.0
-    alpha: 0.05
+    alpha: 0.008333333333333333
     power: 0.8
     expected_pair_retention: 1.0
     independent_pair_row_n: 2
