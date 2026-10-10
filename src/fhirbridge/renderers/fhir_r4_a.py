@@ -18,7 +18,7 @@ from typing import Any
 from .base import RenderManifest, RenderResult, RenderWarning
 
 _RENDERER_ID = "fhir-r4-lab-renderer-a"
-_RENDERER_VERSION = "0.1.0-dev"
+_RENDERER_VERSION = "0.2.0-dev"
 
 _PATIENT_PROFILE = "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
 _OBSERVATION_PROFILE = (
@@ -28,6 +28,9 @@ _REPORT_PROFILE = (
     "http://hl7.org/fhir/us/core/StructureDefinition/us-core-diagnosticreport-lab"
 )
 _SPECIMEN_PROFILE = "http://hl7.org/fhir/StructureDefinition/Specimen"
+_SERVICEREQUEST_PROFILE = (
+    "http://hl7.org/fhir/us/core/StructureDefinition/us-core-servicerequest"
+)
 
 
 def _resource_id(fact_id: str) -> str:
@@ -257,6 +260,46 @@ def _specimen_resource(
     return resource
 
 
+def _order_resource(
+    fact: dict[str, Any],
+    resource_id: str,
+    *,
+    resource_ids: dict[str, tuple[str, str]],
+) -> dict[str, Any]:
+    attributes = fact.get("attributes", {})
+    resource: dict[str, Any] = {
+        "resourceType": "ServiceRequest",
+        "id": resource_id,
+        "meta": {"profile": [_SERVICEREQUEST_PROFILE]},
+        "status": attributes.get("lifecycle_status", "unknown"),
+        "intent": attributes.get("request_intent", "order"),
+        "code": _codeable_concept(fact.get("concept")),
+        "identifier": [_identifier(item) for item in fact.get("identifiers", [])],
+    }
+
+    subject_ref = fact.get("subject_ref")
+    if subject_ref in resource_ids:
+        subject_type, subject_id = resource_ids[subject_ref]
+        resource["subject"] = _reference(subject_type, subject_id)
+
+    temporal = fact.get("temporal")
+    if isinstance(temporal, dict) and temporal.get("recorded_at") is not None:
+        resource["authoredOn"] = temporal["recorded_at"]
+
+    requester = attributes.get("requester")
+    if isinstance(requester, dict):
+        requester_reference: dict[str, Any] = {"type": "Practitioner"}
+        requester_identifier = requester.get("identifier")
+        if isinstance(requester_identifier, dict) and requester_identifier.get("value"):
+            requester_reference["identifier"] = _identifier(requester_identifier)
+        if requester.get("display"):
+            requester_reference["display"] = str(requester["display"])
+        if len(requester_reference) > 1:
+            resource["requester"] = requester_reference
+
+    return resource
+
+
 def _report_resource(
     fact: dict[str, Any],
     resource_id: str,
@@ -312,6 +355,14 @@ def _report_resource(
     if specimen_refs:
         resource["specimen"] = specimen_refs
 
+    based_on_refs: list[dict[str, str]] = []
+    for target_fact_id in _find_relation(fact, "based_on_order"):
+        target = resource_ids.get(target_fact_id)
+        if target is not None:
+            based_on_refs.append(_reference(*target))
+    if based_on_refs:
+        resource["basedOn"] = based_on_refs
+
     return resource
 
 
@@ -341,6 +392,7 @@ class FhirR4LabRendererA:
             "diagnostic_report": "DiagnosticReport",
             "observation": "Observation",
             "specimen": "Specimen",
+            "order": "ServiceRequest",
         }
         for fact in graph.get("facts", []):
             resource_type = type_map.get(fact.get("fact_type"))
@@ -383,6 +435,12 @@ class FhirR4LabRendererA:
                 )
             elif resource_type == "DiagnosticReport":
                 resource = _report_resource(
+                    fact,
+                    resource_id,
+                    resource_ids=resource_ids,
+                )
+            elif resource_type == "ServiceRequest":
+                resource = _order_resource(
                     fact,
                     resource_id,
                     resource_ids=resource_ids,
