@@ -33,6 +33,12 @@ gates:
     blockers:
       - full_Common_NG_FRU_required_element_inventory_not_complete
       - second_independent_extraction_not_complete
+    evidence:
+      current_inventory: benchmark/lri_required_element_inventory.yaml
+      independent_extraction_protocol: docs/lri_required_element_extraction_protocol.md
+      extraction_schema: qualification/hl7v2/required_element_review/schema/required_element_extraction.schema.json
+      comparison_implementation: src/fhirbridge/lri_required_element_review.py
+      status: extraction_infrastructure_ready_reviewers_and_machine_bundle_pending
     completion_rule: >-
       Every required/conditional target element for the selected profile slice
       must be classified as SOURCE_FACT, PROFILE_CONSTANT, ENVELOPE, DERIVED,
