@@ -75,6 +75,8 @@ threshold_semantics:
 required_pilot_record:
   schema: expert_validation/schema/pilot_acceptance_preregistration.schema.json
   template: expert_validation/examples/pilot_acceptance_preregistration_template.yaml
+  builder: expert_validation/build_pilot_acceptance.py
+  deterministic_metric_builder: src/fhirbridge/pilot_record.py
   required_hashes:
     - pilot_case_manifest_sha256
     - pilot_adjudication_bundle_sha256
