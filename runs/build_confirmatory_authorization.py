@@ -108,6 +108,7 @@ def build_authorization_record(
     authorization_id: str,
     created_at: str,
     repository_commit: str | None = None,
+    repository_root: Path = Path("."),
 ) -> dict[str, Any]:
     paths = {
         "protocol_freeze_gates": protocol_gates_path,
@@ -133,7 +134,7 @@ def build_authorization_record(
 
     component_digests = hash_components_from_manifest(
         documents["instrument_component_manifest"],
-        repository_root=Path("."),
+        repository_root=repository_root,
     )
     component_hashes = {
         name: digest.sha256
@@ -236,6 +237,11 @@ def main() -> int:
     parser.add_argument("--authorization-id", required=True)
     parser.add_argument("--created-at", required=True)
     parser.add_argument("--repository-commit")
+    parser.add_argument(
+        "--repository-root",
+        type=Path,
+        default=Path("."),
+    )
     parser.add_argument("--output", type=Path, default=_DEFAULT_OUTPUT)
     args = parser.parse_args()
 
@@ -254,6 +260,7 @@ def main() -> int:
         authorization_id=args.authorization_id,
         created_at=args.created_at,
         repository_commit=args.repository_commit,
+        repository_root=args.repository_root,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
