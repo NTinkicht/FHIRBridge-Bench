@@ -85,6 +85,8 @@ def assess_confirmatory_result_manifest(
     raw = document.get("raw_execution_records")
     baseline = document.get("deterministic_baseline_outputs")
     audit = document.get("execution_audit")
+    structural = document.get("structural_validation_evidence")
+    semantic = document.get("semantic_verification_evidence")
     analysis = document.get("analysis_ready_dataset")
     _artifact_blockers(raw, label="raw_execution_records", blockers=blockers)
     _artifact_blockers(
@@ -93,6 +95,16 @@ def assess_confirmatory_result_manifest(
         blockers=blockers,
     )
     _artifact_blockers(audit, label="execution_audit", blockers=blockers)
+    _artifact_blockers(
+        structural,
+        label="structural_validation_evidence",
+        blockers=blockers,
+    )
+    _artifact_blockers(
+        semantic,
+        label="semantic_verification_evidence",
+        blockers=blockers,
+    )
     _artifact_blockers(
         analysis,
         label="analysis_ready_dataset",
@@ -106,6 +118,7 @@ def assess_confirmatory_result_manifest(
         expected_raw = case_count * model_count * 3
         expected_baseline = case_count
         expected_analysis_rows = case_count * model_count
+        expected_arm_outputs = case_count * (1 + 3 * model_count)
         if isinstance(raw, dict) and raw.get("record_count") != expected_raw:
             blockers.append(
                 "raw_execution_records.record_count does not equal 3*N*M"
@@ -123,6 +136,22 @@ def assess_confirmatory_result_manifest(
         ):
             blockers.append(
                 "analysis_ready_dataset.record_count does not equal N*M"
+            )
+        if (
+            isinstance(structural, dict)
+            and structural.get("record_count") != expected_arm_outputs
+        ):
+            blockers.append(
+                "structural_validation_evidence.record_count does not equal "
+                "total arm outputs"
+            )
+        if (
+            isinstance(semantic, dict)
+            and semantic.get("record_count") != expected_arm_outputs
+        ):
+            blockers.append(
+                "semantic_verification_evidence.record_count does not equal "
+                "total arm outputs"
             )
 
     expected_counts = run_plan.get("expected_execution_counts")
