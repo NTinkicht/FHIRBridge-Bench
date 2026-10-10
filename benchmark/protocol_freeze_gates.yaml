@@ -95,21 +95,24 @@ gates:
     category: statistical_analysis
     status: blocked
     blockers:
-      - structural_validity_warning_policies_not_fully_frozen
+      - hl7v2_structural_warning_alert_policy_pending_exact_profile
       - confirmatory_analysis_preregistration_not_locked
     evidence:
       unconditional_companion_estimand: docs/statistical_analysis_plan.md
       implementation: src/fhirbridge/endpoint_metrics.py
       structural_validity_policy: benchmark/structural_validity_policy.yaml
       structural_validity_implementation: src/fhirbridge/structural_validity_policy.py
+      fhir_warning_policy: benchmark/fhir_validator_warning_policy.yaml
+      fhir_warning_policy_status: frozen_for_pinned_offline_CLI_log_path
+      fhir_warning_policy_evidence_run_id: 38072689400
       statistical_reference_implementation: src/fhirbridge/analysis_statistics.py
       analysis_preregistration_schema: analysis/schema/analysis_preregistration.schema.json
       analysis_preregistration_template: analysis/examples/analysis_preregistration_template.yaml
       analysis_preregistration_readiness: src/fhirbridge/analysis_preregistration.py
       status: >-
         VFY and exact statistical procedures are preregistered and implemented;
-        target warning policies and the concrete comparison family/bootstrap seed
-        remain pre-freeze unresolved
+        the FHIR CLI warning policy is frozen, while the HL7 v2 warning/alert
+        policy and final model-specific comparison preregistration remain blocked
     completion_rule: >-
       Report VUR conditional on structural validity and an unconditional
       valid-and-faithful yield across all attempts, with the structural-validity
