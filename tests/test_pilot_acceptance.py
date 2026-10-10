@@ -200,3 +200,47 @@ def test_class_specific_abstentions_must_sum_to_total() -> None:
         "class-specific indeterminate counts do not sum" in blocker
         for blocker in readiness.blockers
     )
+
+
+def test_expert_indeterminate_cases_are_retained_outside_metric_denominator() -> None:
+    record = _template()
+    record["pilot_evidence"].update(
+        {
+            "case_count": 12,
+            "expert_major_error_positive_count": 4,
+            "expert_major_error_negative_count": 6,
+            "expert_major_error_indeterminate_count": 2,
+        }
+    )
+    record["metrics"].update(
+        {
+            "true_positive": 3,
+            "true_negative": 5,
+            "false_positive": 1,
+            "false_negative": 1,
+            "runtime_indeterminate_count": 0,
+            "runtime_indeterminate_expert_positive_count": 0,
+            "runtime_indeterminate_expert_negative_count": 0,
+        }
+    )
+    record["metrics"]["sensitivity"]["estimate"] = 0.75
+    record["metrics"]["specificity"]["estimate"] = 5 / 6
+    record["metrics"]["ppv"]["estimate"] = 0.75
+    record["metrics"]["npv"]["estimate"] = 5 / 6
+    record["metrics"]["accuracy"]["estimate"] = 0.8
+    record["metrics"]["runtime_indeterminate_rate"]["estimate"] = 0.0
+
+    readiness = assess_pilot_acceptance_preregistration(record)
+
+    assert not any(
+        "positive/negative/indeterminate counts do not sum" in blocker
+        for blocker in readiness.blockers
+    )
+    assert not any(
+        "confusion counts do not sum to determinate case count" in blocker
+        for blocker in readiness.blockers
+    )
+    assert not any(
+        "accuracy estimate does not match frozen count semantics" in blocker
+        for blocker in readiness.blockers
+    )
