@@ -99,7 +99,8 @@
       "additionalProperties": false,
       "required": [
         "case_count",
-        "canonical_case_ids_sha256"
+        "canonical_case_ids_sha256",
+        "manifest_file_sha256"
       ],
       "properties": {
         "case_count": {
@@ -107,6 +108,9 @@
           "minimum": 1
         },
         "canonical_case_ids_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "manifest_file_sha256": {
           "$ref": "#/$defs/sha256"
         }
       }
