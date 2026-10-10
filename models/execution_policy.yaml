@@ -1,0 +1,73 @@
+execution_policy:
+  id: FHIRBRIDGE-MODEL-EXECUTION-001
+  version: 0.1.0
+  status: frozen_provider_independent
+  scope: confirmatory_LLM_arms
+  synthetic_data_only: true
+
+generation_attempt:
+  logical_generation_attempts_per_case_arm_model: 1
+  hidden_reprompting: prohibited
+  silent_model_fallback: prohibited
+  silent_prompt_fallback: prohibited
+  automatic_parameter_relaxation: prohibited
+  context_truncation_without_recording: prohibited
+
+retry_policy:
+  maximum_attempts: 1
+  retry_on: []
+  rationale: >-
+    A retry can create a second stochastic sample when the provider does not
+    support a reproducible seed. Confirmatory execution therefore records the
+    first provider/transport failure as a measurement failure rather than
+    silently replacing it with another generation.
+
+timeout:
+  seconds: 120
+  timeout_outcome: MEASUREMENT_FAILURE
+  no_retry_after_timeout: true
+
+provider_failure_outcomes:
+  transport_error: MEASUREMENT_FAILURE
+  rate_limit: MEASUREMENT_FAILURE
+  provider_5xx: MEASUREMENT_FAILURE
+  timeout: MEASUREMENT_FAILURE
+  authentication_or_configuration_error: MEASUREMENT_FAILURE
+
+model_output_outcomes:
+  empty_successful_response: STRUCTURAL_INVALID_CANDIDATE
+  refusal_or_non_HL7_text: STRUCTURAL_INVALID_CANDIDATE
+  malformed_HL7_text: STRUCTURAL_INVALID_CANDIDATE
+  semantic_verdict: determined_downstream_only
+
+strategy_postprocessing:
+  direct_structured_llm:
+    syntax_repair: prohibited
+  mapping_aware_llm:
+    syntax_repair: prohibited
+  mapping_aware_plus_syntax_repair:
+    syntax_repair: deterministic_allowlisted_only
+    semantic_field_rewrite: prohibited
+
+model_specific_freeze_requirements:
+  - provider
+  - model_id
+  - model_revision_or_snapshot
+  - temperature
+  - top_p
+  - max_output_tokens
+  - seed_policy
+  - seed_when_supported
+  - structured_output_mode
+
+recording_requirements:
+  - case_id
+  - model_key
+  - strategy_id
+  - request_started_at
+  - request_completed_at_or_failure_at
+  - provider_request_id_when_available
+  - attempt_number
+  - outcome_class
+  - raw_response_sha256_when_response_exists
+  - normalized_response_sha256_when_postprocessing_applies
