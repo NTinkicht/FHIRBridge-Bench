@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/pilot_sample_size_inputs.schema.json",
+  "title": "FHIRBridge Pilot-Derived Sample Size Inputs",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "expected_vur",
+    "valid_determinate_retention",
+    "mean_cluster_size",
+    "icc",
+    "target_half_width",
+    "paired_comparisons"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "expected_vur": {"$ref": "#/$defs/probability"},
+    "valid_determinate_retention": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 1
+    },
+    "mean_cluster_size": {
+      "type": "number",
+      "minimum": 1
+    },
+    "icc": {"$ref": "#/$defs/probability"},
+    "target_half_width": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 1
+    },
+    "paired_comparisons": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {"$ref": "#/$defs/pairedInput"}
+    }
+  },
+  "$defs": {
+    "probability": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "pairedInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comparison_id",
+        "p10",
+        "p01",
+        "expected_pair_retention"
+      ],
+      "properties": {
+        "comparison_id": {"type": "string", "minLength": 1},
+        "p10": {"$ref": "#/$defs/probability"},
+        "p01": {"$ref": "#/$defs/probability"},
+        "expected_pair_retention": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  }
+}
