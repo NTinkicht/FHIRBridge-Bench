@@ -38,6 +38,31 @@ The transformation-level semantic result is tri-state: `FAITHFUL`,
   automated population-level VUR analysis to exploratory rather than silently
   changing the scoring policy.
 
+## Unconditional companion estimand
+
+VUR intentionally conditions on structural validity, so it must not be reported
+alone. The protocol also preregisters **Valid-and-Faithful Yield (VFY)**:
+
+> VFY = number of attempted transformations that are structurally valid and
+> semantically `FAITHFUL` / number of attempted transformations.
+
+The denominator is **all attempted transformations** in the analysis set, not
+only structurally valid outputs. Structurally invalid outputs and runtime
+`INDETERMINATE` outputs therefore do not count as faithful successes.
+
+For every arm/model/direction, report the following mutually informative
+quantities together:
+
+- structural validity rate = structurally valid / attempted;
+- VFY = valid and faithful / attempted;
+- valid-and-unfaithful yield = valid and unfaithful / attempted;
+- valid-indeterminate yield = valid and runtime-indeterminate / attempted;
+- VUR among structurally valid determinate outputs, with its existing
+  indeterminate sensitivity bounds.
+
+This companion estimand prevents an intervention from appearing safer merely
+because it reduces the number of outputs that enter the VUR denominator.
+
 ## Instrument-validation gate
 
 The main LLM analysis is confirmatory only if the semantic verifier meets pre-registered acceptance thresholds on the sealed expert-validation set.
@@ -92,6 +117,8 @@ Repeated transformations derived from the same canonical patient/scenario must b
 For every arm/model/direction:
 
 - structural validity with 95% CI;
+- Valid-and-Faithful Yield (VFY) with 95% CI;
+- valid-and-unfaithful yield and valid-indeterminate yield;
 - VUR with 95% CI;
 - fabrication rate;
 - omission rate;
@@ -212,7 +239,7 @@ Before confirmatory model runs, archive/tag:
 - frozen contract versions;
 - frozen verifier commit;
 - model/prompt configurations;
-- primary endpoint definition;
+- primary endpoint definition and unconditional VFY companion estimand;
 - primary threshold/margin;
 - exact statistical tests;
 - multiplicity procedure;
