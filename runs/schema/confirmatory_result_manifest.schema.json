@@ -18,29 +18,48 @@
     "analysis_ready_dataset"
   ],
   "properties": {
-    "schema_version": {"const": "0.1.0"},
-    "result_manifest_id": {"type": "string", "minLength": 1},
-    "status": {"enum": ["incomplete_template", "execution_complete_audited"]},
-    "created_at": {"type": ["string", "null"], "format": "date-time"},
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "result_manifest_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "incomplete_template",
+        "execution_complete_audited"
+      ]
+    },
+    "created_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
     "repository_commit": {
       "type": "string",
       "pattern": "^[0-9a-fA-F]{7,40}$"
     },
-    "run_plan_sha256": {"$ref": "#/$defs/sha256"},
-    "sealed_bundle_sha256": {"$ref": "#/$defs/sha256"},
-    "raw_execution_records": {"$ref": "#/$defs/artifactCounted"},
-    "deterministic_baseline_outputs": {"$ref": "#/$defs/artifactCounted"},
-    "execution_audit": {
-      "allOf": [
-        {"$ref": "#/$defs/artifact"},
-        {
-          "type": "object",
-          "required": ["complete"],
-          "properties": {"complete": {"const": true}}
-        }
-      ]
+    "run_plan_sha256": {
+      "$ref": "#/$defs/sha256"
     },
-    "analysis_ready_dataset": {"$ref": "#/$defs/artifactCounted"}
+    "sealed_bundle_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "raw_execution_records": {
+      "$ref": "#/$defs/artifactCounted"
+    },
+    "deterministic_baseline_outputs": {
+      "$ref": "#/$defs/artifactCounted"
+    },
+    "execution_audit": {
+      "$ref": "#/$defs/auditArtifact"
+    },
+    "analysis_ready_dataset": {
+      "$ref": "#/$defs/artifactCounted"
+    }
   },
   "$defs": {
     "sha256": {
@@ -50,20 +69,61 @@
     "artifact": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path_or_ref", "sha256"],
+      "required": [
+        "path_or_ref",
+        "sha256"
+      ],
       "properties": {
-        "path_or_ref": {"type": "string", "minLength": 1},
-        "sha256": {"$ref": "#/$defs/sha256"}
+        "path_or_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
       }
     },
     "artifactCounted": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path_or_ref", "sha256", "record_count"],
+      "required": [
+        "path_or_ref",
+        "sha256",
+        "record_count"
+      ],
       "properties": {
-        "path_or_ref": {"type": "string", "minLength": 1},
-        "sha256": {"$ref": "#/$defs/sha256"},
-        "record_count": {"type": "integer", "minimum": 1}
+        "path_or_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "record_count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "auditArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path_or_ref",
+        "sha256",
+        "complete"
+      ],
+      "properties": {
+        "path_or_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "complete": {
+          "const": true
+        }
       }
     }
   }
