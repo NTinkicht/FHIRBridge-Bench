@@ -14,7 +14,7 @@ from fhirbridge.verifier.model import LiftedFact
 from .base import LiftResult, LiftWarning
 
 _LIFTER_ID = "hl7v251-lri-oru-lifter"
-_LIFTER_VERSION = "0.3.0-dev"
+_LIFTER_VERSION = "0.4.0-dev"
 
 
 def _unescape(value: str) -> str:
@@ -138,6 +138,84 @@ def _identifier_from_ei(value: str) -> dict[str, Any] | None:
     }
 
 
+def _order_identifier_from_ei(value: str) -> dict[str, Any] | None:
+    parts = _components(value)
+    if not parts or not parts[0]:
+        return None
+    return {
+        "system": parts[1] if len(parts) > 1 and parts[1] else None,
+        "value": parts[0],
+        "type": "order",
+    }
+
+
+def _requester_from_xcn(value: str) -> dict[str, Any] | None:
+    if not value:
+        return None
+    identifier_value = _component(value, 1)
+    family = _component(value, 2)
+    given = _component(value, 3)
+    assigning_authority = _component(value, 9)
+
+    requester: dict[str, Any] = {}
+    if identifier_value is not None:
+        requester["identifiers"] = [
+            {
+                "system": assigning_authority,
+                "value": identifier_value,
+                "type": "provider",
+            }
+        ]
+    display_parts = [part for part in (given, family) if part]
+    if display_parts:
+        requester["display"] = " ".join(display_parts)
+    return requester or None
+
+
+def _merge_identifiers(*identifiers: dict[str, Any] | None) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    seen: set[tuple[Any, Any, Any]] = set()
+    for identifier in identifiers:
+        if not isinstance(identifier, dict):
+            continue
+        key = (
+            identifier.get("system"),
+            identifier.get("value"),
+            identifier.get("type"),
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(identifier)
+    return result
+
+
+def _merge_requesters(*requesters: dict[str, Any] | None) -> dict[str, Any] | None:
+    identifiers: list[dict[str, Any]] = []
+    seen: set[tuple[Any, Any]] = set()
+    displays: list[str] = []
+    for requester in requesters:
+        if not isinstance(requester, dict):
+            continue
+        for identifier in requester.get("identifiers", []):
+            if not isinstance(identifier, dict):
+                continue
+            key = (identifier.get("system"), identifier.get("value"))
+            if key in seen:
+                continue
+            seen.add(key)
+            identifiers.append(identifier)
+        display = requester.get("display")
+        if isinstance(display, str) and display and display not in displays:
+            displays.append(display)
+    if not identifiers and not displays:
+        return None
+    result: dict[str, Any] = {"identifiers": identifiers}
+    if displays:
+        result["display"] = " | ".join(displays)
+    return result
+
+
 def _unit(value: str) -> dict[str, Any] | None:
     if not value:
         return None
@@ -229,6 +307,7 @@ def _report_fact(
     report_id: str,
     observation_ids: list[str],
     specimen_ids: list[str],
+    order_id: str | None = None,
 ) -> LiftedFact:
     lifted_id = report_id
     relationships = [
@@ -237,6 +316,8 @@ def _report_fact(
     relationships.extend(
         ("has_specimen", specimen_id) for specimen_id in specimen_ids
     )
+    if order_id is not None:
+        relationships.append(("based_on_order", order_id))
     effective = _ts_to_iso(_field(obr, 7))
     issued = _ts_to_iso(_field(obr, 22))
     payload = {
@@ -268,6 +349,66 @@ def _report_fact(
         subject_ref=patient_id,
         semantic_payload=payload,
         target_paths=(path,),
+        relationships=tuple(relationships),
+    )
+
+
+def _order_fact(
+    orc: list[str] | None,
+    obr: list[str],
+    *,
+    orc_path: str | None,
+    obr_path: str,
+    patient_id: str,
+    report_id: str,
+    lifted_id: str,
+) -> LiftedFact | None:
+    orc_identifier = (
+        _order_identifier_from_ei(_field(orc, 3)) if orc is not None else None
+    )
+    obr_identifier = _order_identifier_from_ei(_field(obr, 3))
+    identifiers = _merge_identifiers(orc_identifier, obr_identifier)
+
+    orc_requester = _requester_from_xcn(_field(orc, 12)) if orc is not None else None
+    obr_requester = _requester_from_xcn(_field(obr, 16))
+    requester = _merge_requesters(orc_requester, obr_requester)
+
+    if not identifiers and requester is None and orc is None:
+        return None
+
+    relationships = [("has_report", report_id)]
+    target_paths = [obr_path]
+    if orc_path is not None:
+        target_paths.insert(0, orc_path)
+
+    payload = {
+        "fact_type": "order",
+        "subject_ref": patient_id,
+        "encounter_ref": None,
+        "concept": _concept(_field(obr, 4)),
+        "value": None,
+        "unit": None,
+        "temporal": {
+            "effective_start": None,
+            "effective_end": None,
+            "recorded_at": None,
+            "precision": None,
+        },
+        "identifiers": identifiers,
+        "relations": [
+            {"relation_type": "has_report", "target_fact_id": report_id}
+        ],
+        "attributes": {
+            "order_control_observed": _field(orc, 1) if orc is not None else None,
+            "requester": requester,
+        },
+    }
+    return LiftedFact(
+        lifted_fact_id=lifted_id,
+        fact_type="order",
+        subject_ref=patient_id,
+        semantic_payload=payload,
+        target_paths=tuple(target_paths),
         relationships=tuple(relationships),
     )
 
@@ -436,6 +577,7 @@ class Hl7V251OruLifter:
 
         patient = _patient_fact(pid_items[0][1], f"PID[{pid_items[0][0]}]")
         facts: list[LiftedFact] = [patient]
+        all_orders: list[LiftedFact] = []
         all_observations: list[LiftedFact] = []
         all_specimens: list[LiftedFact] = []
 
@@ -447,6 +589,24 @@ class Hl7V251OruLifter:
                 else len(segments)
             )
             report_id = f"v2::report::{group_number}"
+            previous_obr_index = (
+                obr_positions[group_number - 2] if group_number > 1 else pid_items[0][0]
+            )
+            preceding_orc: tuple[int, list[str]] | None = next(
+                (
+                    (index, segments[index])
+                    for index in range(obr_index - 1, previous_obr_index, -1)
+                    if segments[index][0] == "ORC"
+                ),
+                None,
+            )
+            order_id = (
+                f"v2::order::{group_number}"
+                if preceding_orc is not None
+                or _field(obr, 3)
+                or _field(obr, 16)
+                else None
+            )
             group_segments = [
                 (index, segments[index])
                 for index in range(obr_index + 1, next_obr_index)
@@ -545,8 +705,24 @@ class Hl7V251OruLifter:
                 report_id=report_id,
                 observation_ids=observation_ids,
                 specimen_ids=specimen_ids,
+                order_id=order_id,
             )
             facts.append(report)
+
+            if order_id is not None:
+                orc_index = preceding_orc[0] if preceding_orc is not None else None
+                orc_segment = preceding_orc[1] if preceding_orc is not None else None
+                order = _order_fact(
+                    orc_segment,
+                    obr,
+                    orc_path=f"ORC[{orc_index}]" if orc_index is not None else None,
+                    obr_path=f"OBR[{obr_index}]",
+                    patient_id=patient.lifted_fact_id,
+                    report_id=report_id,
+                    lifted_id=order_id,
+                )
+                if order is not None:
+                    all_orders.append(order)
 
             group_observations = [
                 _observation_fact(
@@ -583,10 +759,11 @@ class Hl7V251OruLifter:
                     )
                 )
 
+        facts.extend(all_orders)
         facts.extend(all_specimens)
         facts.extend(all_observations)
 
-        known = {"MSH", "PID", "OBR", "OBX", "SPM"}
+        known = {"MSH", "PID", "ORC", "OBR", "OBX", "SPM"}
         for index, segment in enumerate(segments):
             if segment[0] not in known:
                 warnings.append(
@@ -609,6 +786,7 @@ class Hl7V251OruLifter:
                 "message_type": message_type,
                 "version": version,
                 "observation_count": len(all_observations),
+                "order_count": len(all_orders),
                 "report_count": len(obr_items),
                 "specimen_count": len(all_specimens),
                 "semantic_verdict_emitted": False,
