@@ -31,6 +31,12 @@ def _ready() -> dict:
     record["record_id"] = "SAMPLE-SIZE-001"
     record["status"] = "preregistered"
     record["created_at"] = "2026-10-20T14:00:00Z"
+    record["frozen_method"].update(
+        {
+            "sample_size_method_sha256": "a" * 64,
+            "core_confirmatory_design_sha256": "b" * 64,
+        }
+    )
     record["pilot_evidence"].update(
         {
             "pilot_case_manifest_sha256": "1" * 64,
@@ -191,3 +197,16 @@ def test_zero_pilot_hash_blocks_sample_size_freeze() -> None:
 
     assert not readiness.ready
     assert any("pilot_analysis_sha256" in item for item in readiness.blockers)
+
+
+def test_zero_method_hash_blocks_sample_size_freeze() -> None:
+    record = deepcopy(_ready())
+    record["frozen_method"]["sample_size_method_sha256"] = "0" * 64
+
+    readiness = assess_sample_size_preregistration(record)
+
+    assert not readiness.ready
+    assert any(
+        "sample_size_method_sha256" in item
+        for item in readiness.blockers
+    )
