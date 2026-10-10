@@ -65,6 +65,12 @@ def assess_analysis_design_consistency(
     else:
         if paired.get("multiplicity_method") != "Holm":
             blockers.append("core multiplicity method is not Holm")
+        if paired.get("family_size_rule") != (
+            "six_strategy_contrasts_times_number_of_frozen_LLM_models"
+        ):
+            blockers.append(
+                "core paired family-size rule is not six contrasts per model"
+            )
         base_comparisons = paired.get("base_comparisons", [])
         if not isinstance(base_comparisons, list):
             blockers.append("base_comparisons must be a list")
@@ -160,6 +166,26 @@ def assess_analysis_design_consistency(
         else:
             if secondary.get("multiplicity_test_method") != "Holm":
                 blockers.append("sample-size multiplicity method is not Holm")
+            if secondary.get("family_size_rule") != (
+                "six_strategy_contrasts_times_number_of_frozen_LLM_models"
+            ):
+                blockers.append(
+                    "sample-size family-size rule is not six contrasts per model"
+                )
+            if secondary.get("planning_alpha_policy") != (
+                "Bonferroni_upper_bound_for_Holm_family_dynamic_6M"
+            ):
+                blockers.append(
+                    "sample-size planning alpha policy is not dynamic 0.05/(6M)"
+                )
+            if secondary.get("familywise_alpha") != 0.05:
+                blockers.append("sample-size familywise alpha is not 0.05")
+            if secondary.get("power") != 0.80:
+                blockers.append("sample-size planning power is not 0.80")
+            if "per_comparison_planning_alpha" in secondary:
+                blockers.append(
+                    "sample-size method must not freeze a static per-comparison alpha"
+                )
             if secondary.get("confirmatory_test") != (
                 "two_sided_exact_binomial_McNemar"
             ):
