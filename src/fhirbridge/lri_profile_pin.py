@@ -28,6 +28,32 @@ class LriAcquisitionMetadata:
                 raise ValueError(f"{field_name} must be a non-empty string")
 
 
+def _assert_target_reference_signals(
+    inspection: ProfileArchiveInspection,
+) -> None:
+    signals = inspection.target_reference_signals
+    expected_name = signals.get("selected_profile_name")
+    observed_identifier = inspection.selected_message.identifier
+    problems: list[str] = []
+
+    if observed_identifier != expected_name:
+        problems.append(
+            "selected ORU message identifier does not match "
+            f"{expected_name!r}: observed {observed_identifier!r}"
+        )
+    if signals.get("selected_profile_name_observed") is not True:
+        problems.append("selected profile name token was not observed")
+    if signals.get("all_required_component_oid_signals_observed") is not True:
+        missing = signals.get("missing_required_component_oids")
+        problems.append(f"required component OID signal(s) missing: {missing}")
+
+    if problems:
+        raise ValueError(
+            "archive cannot generate an LRI Edition 5 pin candidate: "
+            + "; ".join(problems)
+        )
+
+
 def build_lri_profile_pin_candidate(
     inspection: ProfileArchiveInspection,
     acquisition: LriAcquisitionMetadata,
@@ -38,6 +64,8 @@ def build_lri_profile_pin_candidate(
     false. A cryptographically inspected archive cannot prove by itself that it
     is the publication named in the protocol.
     """
+
+    _assert_target_reference_signals(inspection)
 
     files = {
         item.name: item
@@ -78,6 +106,7 @@ def build_lri_profile_pin_candidate(
             "profile_xml_message_structure": inspection.identity.message_structure,
             "selected_message_identifier": inspection.selected_message.identifier,
             "profile_identity_guard_passed": True,
+            "target_reference_signal_guard_passed": True,
             "edition_5_evidence_checked": False,
             "errata_2024dec_evidence_checked": False,
             "independent_profile_provenance_reviewed": False,
