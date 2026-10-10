@@ -275,13 +275,15 @@ gates:
       confirmatory_run_plan_builder: runs/build_confirmatory_run_plan.py
       confirmatory_execution_audit: src/fhirbridge/confirmatory_execution_audit.py
       confirmatory_result_manifest: runs/schema/confirmatory_result_manifest.schema.json
-      freeze_manifest_schema_version: "0.5.0"
+      freeze_manifest_schema_version: "0.7.0"
       reviewer_roster_manifest_binding: required_and_sha256_pinned
       case_assignment_manifest_binding: required_and_sha256_pinned
       analysis_preregistration_binding: required_and_sha256_pinned
       sample_size_preregistration_binding: required_and_sha256_pinned
       model_prompt_configuration_binding: required_and_sha256_pinned
       confirmatory_authorization: src/fhirbridge/confirmatory_authorization.py
+      authorization_recomputes_component_digests: true
+      authorization_binds_sealed_case_manifest_file_hash: true
       confirmatory_run_plan_schema: runs/schema/confirmatory_run_plan.schema.json
       confirmatory_run_plan_readiness: src/fhirbridge/confirmatory_run_plan.py
       execution_sequence: freeze_then_authorize_then_hash_run_plan_then_open_sealed_set
