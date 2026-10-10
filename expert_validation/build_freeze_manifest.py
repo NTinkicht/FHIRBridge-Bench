@@ -22,6 +22,9 @@ from fhirbridge.model_config_readiness import assess_model_prompt_freeze
 from fhirbridge.pilot_acceptance import (
     assess_pilot_acceptance_preregistration,
 )
+from fhirbridge.primary_vur_hypothesis import (
+    assess_primary_vur_hypothesis,
+)
 from fhirbridge.sample_size_readiness import assess_sample_size_preregistration
 from fhirbridge.sealed_case_manifest import sealed_case_ids
 from fhirbridge.tooling_manifest import assess_freeze_readiness
@@ -196,6 +199,7 @@ def build_freeze_manifest(
     instrument_component_manifest_path: Path,
     reviewer_roster_path: Path,
     case_assignment_path: Path,
+    primary_vur_hypothesis_path: Path,
     analysis_preregistration_path: Path,
     sample_size_path: Path,
     model_config_path: Path,
@@ -235,6 +239,14 @@ def build_freeze_manifest(
         raise ValueError(
             "case assignment manifest is not ready: "
             + "; ".join(assignment_readiness.blockers)
+        )
+
+    primary_hypothesis = _load(primary_vur_hypothesis_path)
+    hypothesis_readiness = assess_primary_vur_hypothesis(primary_hypothesis)
+    if not hypothesis_readiness.ready:
+        raise ValueError(
+            "primary hypothesis is not ready: "
+            + "; ".join(hypothesis_readiness.blockers)
         )
 
     analysis = _load(analysis_preregistration_path)
@@ -289,7 +301,7 @@ def build_freeze_manifest(
         component_manifest["instrument_component_manifest"]["version"]
     )
     result = {
-        "schema_version": "0.7.0",
+        "schema_version": "0.8.0",
         "manifest_id": manifest_id,
         "freeze_timestamp": freeze_timestamp,
         "protocol_version": protocol_version,
@@ -313,6 +325,12 @@ def build_freeze_manifest(
             artifact_id="sealed-expert-case-assignments",
             version=str(assignments["schema_version"]),
             path=case_assignment_path,
+            repository_root=repository_root,
+        ),
+        "primary_vur_hypothesis": _artifact(
+            artifact_id="primary-vur-hypothesis-preregistration",
+            version=str(primary_hypothesis["schema_version"]),
+            path=primary_vur_hypothesis_path,
             repository_root=repository_root,
         ),
         "analysis_preregistration": _artifact(
@@ -380,6 +398,7 @@ def main() -> int:
     parser.add_argument("--instrument-component-manifest", type=Path, required=True)
     parser.add_argument("--reviewer-roster", type=Path, required=True)
     parser.add_argument("--case-assignments", type=Path, required=True)
+    parser.add_argument("--primary-vur-hypothesis", type=Path, required=True)
     parser.add_argument("--analysis-preregistration", type=Path, required=True)
     parser.add_argument("--sample-size", type=Path, required=True)
     parser.add_argument("--model-config", type=Path, required=True)
@@ -402,6 +421,7 @@ def main() -> int:
         instrument_component_manifest_path=args.instrument_component_manifest,
         reviewer_roster_path=args.reviewer_roster,
         case_assignment_path=args.case_assignments,
+        primary_vur_hypothesis_path=args.primary_vur_hypothesis,
         analysis_preregistration_path=args.analysis_preregistration,
         sample_size_path=args.sample_size,
         model_config_path=args.model_config,
