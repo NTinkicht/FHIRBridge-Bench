@@ -4,7 +4,7 @@ import fhirbridge.renderers
 import fhirbridge.schema_validation
 import fhirbridge.verifier
 
-_CONTRACT_PATH = "contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml"
+_CONTRACT_PATH = "contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml"
 
 
 def _round_trip(template_id: str, seed: int):
@@ -143,7 +143,7 @@ def test_bundle_full_urls_are_valid_absolute_urls() -> None:
     assert all(not url.startswith("urn:uuid:fb-") for url in full_urls)
 
 
-def test_patient_identifier_types_use_v2_0203_coding() -> None:
+def test_patient_identifier_types_do_not_assert_invalid_pi_coding() -> None:
     _, rendered, _, _ = _round_trip("LAB-010", 9008)
     patient = next(
         entry["resource"]
@@ -151,16 +151,18 @@ def test_patient_identifier_types_use_v2_0203_coding() -> None:
         if entry["resource"]["resourceType"] == "Patient"
     )
 
-    codings = [
-        identifier["type"]["coding"][0]
+    by_text = {
+        identifier["type"]["text"]: identifier["type"]
         for identifier in patient["identifier"]
         if "type" in identifier
+    }
+    assert by_text["MR"]["coding"] == [
+        {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "MR",
+        }
     ]
-    assert {coding["code"] for coding in codings} == {"MR", "PI"}
-    assert all(
-        coding["system"] == "http://terminology.hl7.org/CodeSystem/v2-0203"
-        for coding in codings
-    )
+    assert by_text["PI"] == {"text": "PI"}
 
 
 def test_nonstandard_identifier_labels_are_not_rendered_as_uncoded_fhir_types() -> None:
