@@ -79,7 +79,9 @@ identity_verification:
   profile_xml_message_type: unresolved
   profile_xml_event_type: unresolved
   profile_xml_message_structure: unresolved
+  selected_message_identifier: unresolved
   profile_identity_guard_passed: false
+  target_reference_signal_guard_passed: false
   edition_5_evidence_checked: false
   errata_2024dec_evidence_checked: false
   independent_profile_provenance_reviewed: false
@@ -142,9 +144,11 @@ freeze_gate:
     - identity_verification.profile_xml_message_type
     - identity_verification.profile_xml_event_type
     - identity_verification.profile_xml_message_structure
+    - identity_verification.selected_message_identifier
     - qualification.qualification_report_sha256
   required_true_paths:
     - identity_verification.profile_identity_guard_passed
+    - identity_verification.target_reference_signal_guard_passed
     - identity_verification.edition_5_evidence_checked
     - identity_verification.errata_2024dec_evidence_checked
     - identity_verification.independent_profile_provenance_reviewed
