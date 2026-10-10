@@ -18,11 +18,12 @@
     "execution_audit",
     "structural_validation_evidence",
     "semantic_verification_evidence",
+    "analysis_dataset_build",
     "analysis_ready_dataset"
   ],
   "properties": {
     "schema_version": {
-      "const": "0.2.0"
+      "const": "0.3.0"
     },
     "result_manifest_id": {
       "type": "string",
@@ -70,6 +71,9 @@
       "$ref": "#/$defs/artifactCounted"
     },
     "execution_schema_validation": {
+      "$ref": "#/$defs/auditArtifact"
+    },
+    "analysis_dataset_build": {
       "$ref": "#/$defs/auditArtifact"
     }
   },
