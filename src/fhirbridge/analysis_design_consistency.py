@@ -141,6 +141,20 @@ def assess_analysis_design_consistency(
     if not isinstance(paired_analysis, dict):
         blockers.append("core paired_analysis is missing")
         paired_analysis = {}
+    else:
+        if paired_analysis.get("cluster_id_field") != "analysis_cluster_id":
+            blockers.append(
+                "core cluster_id_field is not frozen to analysis_cluster_id"
+            )
+        if paired_analysis.get("cluster_id_source") != (
+            "runs/schema/sealed_case_manifest.schema.json"
+        ):
+            blockers.append(
+                "core cluster_id_source is not the sealed case manifest"
+            )
+        freeze_rule = paired_analysis.get("cluster_id_freeze_rule")
+        if not isinstance(freeze_rule, str) or not freeze_rule.strip():
+            blockers.append("core cluster_id_freeze_rule is missing")
 
     core_bootstrap = paired_analysis.get("bootstrap")
     template_bootstrap = preregistration_template.get("bootstrap")
