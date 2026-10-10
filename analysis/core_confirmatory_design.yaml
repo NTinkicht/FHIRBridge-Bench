@@ -64,6 +64,7 @@ analysis_design:
     mcnemar:
       method: exact_binomial
       sidedness: two_sided
+      scope: model_specific_only
     bootstrap:
       method: paired_cluster_percentile
       confidence_level: 0.95
