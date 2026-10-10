@@ -80,6 +80,18 @@ def finalize_precedence_policy(
         "reviewer_count": len(review["reviewers"]),
         "initial_agreement": readiness.initial_agreement,
         "adjudicated_decision": review["adjudication"]["decision"],
+        "blind_assignment_id": review["blind_stage_evidence"][
+            "assignment_id"
+        ],
+        "reviewer_a_response_sha256": review["blind_stage_evidence"][
+            "reviewer_a_response_sha256"
+        ],
+        "reviewer_b_response_sha256": review["blind_stage_evidence"][
+            "reviewer_b_response_sha256"
+        ],
+        "other_reviewer_decisions_hidden_initially": review[
+            "blind_stage_evidence"
+        ]["other_reviewer_decisions_hidden_initially"],
     }
     return frozen
 
