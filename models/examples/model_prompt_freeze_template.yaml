@@ -34,7 +34,7 @@ llm_models:
     max_output_tokens: 1
     seed_policy: provider_does_not_support_seed
     seed: null
-    structured_output_mode: "TO_BE_FROZEN"
+    structured_output_mode: "plain_text_hl7_message"
 llm_strategies:
   - strategy_id: direct_structured_llm
     generation_source: provider_call
