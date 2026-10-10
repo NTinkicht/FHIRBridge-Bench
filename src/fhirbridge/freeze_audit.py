@@ -107,6 +107,9 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
             "analysis_preregistration": manifest.get(
                 "analysis_preregistration"
             ),
+            "sample_size_preregistration": manifest.get(
+                "sample_size_preregistration"
+            ),
             "model_prompt_configuration": manifest.get(
                 "model_prompt_configuration"
             ),
