@@ -280,11 +280,15 @@ gates:
       reviewer_roster_readiness: src/fhirbridge/expert_roles.py
       case_assignment_schema: expert_validation/schema/case_assignment_manifest.schema.json
       case_assignment_readiness: src/fhirbridge/expert_assignments.py
+      sealed_case_manifest_schema: runs/schema/sealed_case_manifest.schema.json
+      sealed_case_manifest_readiness: src/fhirbridge/sealed_case_manifest.py
       confirmatory_authorization_schema: runs/schema/confirmatory_authorization_record.schema.json
       confirmatory_authorization_builder: runs/build_confirmatory_authorization.py
       confirmatory_run_plan_builder: runs/build_confirmatory_run_plan.py
       confirmatory_execution_audit: src/fhirbridge/confirmatory_execution_audit.py
+      confirmatory_execution_audit_cli: runs/audit_confirmatory_execution.py
       confirmatory_result_manifest: runs/schema/confirmatory_result_manifest.schema.json
+      confirmatory_result_manifest_builder: runs/build_confirmatory_result_manifest.py
       freeze_manifest_schema_version: "0.7.0"
       final_freeze_manifest_builder: expert_validation/build_freeze_manifest.py
       reviewer_roster_manifest_binding: required_and_sha256_pinned
@@ -295,6 +299,9 @@ gates:
       confirmatory_authorization: src/fhirbridge/confirmatory_authorization.py
       authorization_recomputes_component_digests: true
       authorization_binds_sealed_case_manifest_file_hash: true
+      sealed_case_manifest_is_single_case_identity_source: true
+      execution_records_bind_per_case_frozen_source_hash: true
+      result_manifest_recomputes_artifact_hashes_and_counts: true
       confirmatory_run_plan_schema: runs/schema/confirmatory_run_plan.schema.json
       confirmatory_run_plan_readiness: src/fhirbridge/confirmatory_run_plan.py
       execution_sequence: freeze_then_authorize_then_hash_run_plan_then_open_sealed_set
