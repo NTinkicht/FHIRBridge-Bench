@@ -124,6 +124,9 @@ def _fixture(tmp_path: Path) -> dict[str, Path]:
                 "frozen_artifacts": {
                     "model_prompt_configuration_sha256": _MODEL_FREEZE_HASH,
                     "deterministic_baseline_renderer_sha256": "d" * 64,
+                    "deterministic_baseline_execution_schema_sha256": (
+                        _MODULE._sha256(_MODULE._BASELINE_SCHEMA)
+                    ),
                 },
                 "sealed_set": {"case_count": 2},
                 "model_keys": ["M1"],
@@ -321,6 +324,30 @@ def test_execution_audit_cli_rejects_wrong_baseline_renderer_hash(
     _write_jsonl(paths["baseline"], records)
 
     with pytest.raises(ValueError, match="baseline renderer hash"):
+        _MODULE.build_execution_audit(
+            run_plan_path=paths["run_plan"],
+            sealed_case_manifest_path=paths["manifest"],
+            execution_records_path=paths["executions"],
+            deterministic_baseline_path=paths["baseline"],
+        )
+
+
+def test_execution_audit_cli_rejects_baseline_schema_drift(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    run_plan = yaml.safe_load(
+        paths["run_plan"].read_text(encoding="utf-8")
+    )
+    run_plan["frozen_artifacts"][
+        "deterministic_baseline_execution_schema_sha256"
+    ] = "f" * 64
+    paths["run_plan"].write_text(
+        yaml.safe_dump(run_plan, sort_keys=False),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="schema bytes"):
         _MODULE.build_execution_audit(
             run_plan_path=paths["run_plan"],
             sealed_case_manifest_path=paths["manifest"],
