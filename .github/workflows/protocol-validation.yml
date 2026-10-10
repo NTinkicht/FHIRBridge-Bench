@@ -228,10 +228,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          java -jar qualification/fhir/validator_cli.jar             qualification/fhir/order-context/LAB-001-9491-order-context.json             -version 4.0.1             -ig hl7.fhir.us.core#9.0.0             -tx n/a             > qualification/fhir/order-context/validator.log 2>&1 || {
-              cat qualification/fhir/order-context/validator.log
+          for fixture in qualification/fhir/order-context/LAB-*-order-context.json; do
+            name="$(basename "${fixture}" .json)"
+            log="qualification/fhir/order-context/${name}.validator.log"
+            if ! java -jar qualification/fhir/validator_cli.jar \
+              "${fixture}" \
+              -version 4.0.1 \
+              -ig hl7.fhir.us.core#9.0.0 \
+              -tx n/a \
+              > "${log}" 2>&1; then
+              echo "::group::FHIR order-context validator output for ${name}"
+              cat "${log}"
+              echo "::endgroup::"
               exit 1
-            }
+            fi
+          done
 
       - name: Summarize FHIR qualification outcomes
         run: python qualification/fhir/summarize_validation.py qualification/fhir/results
