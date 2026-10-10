@@ -1,91 +1,154 @@
 profile_selection:
   id: FHIRBRIDGE-LRI-PROFILE-SELECTION-001
-  version: 0.1.0
+  version: 0.2.0
   status: selected_candidate_pending_machine_bundle
   selected_profile_name: LRI_NG_FRU_Profile_V3
-  selected_profile_oid: 2.16.840.1.113883.9.195.3.25
   message: ORU^R01
   hl7_version: "2.5.1"
   implementation_guide_edition: "5"
   errata: 2024DEC
+  candidate_precoordinated_profile_oid:
+    value: 2.16.840.1.113883.9.195.3.25
+    evidence_pages: [152, 167]
+    verification_status: pdf_supported_machine_bundle_pending
+
+publication_identifier_conflict:
+  status: unresolved_pending_machine_bundle
+  section_7_4_3_page_152:
+    profile_name: LRI_NG_FRU_Profile_V3
+    printed_oid: 2.16.840.1.113883.9.195.3.25
+  table_9_2_page_167:
+    profile_name: LRI_NG_FRU_Profile_V3
+    printed_oid: 2.16.840.1.113883.9.195.3.25
+  lri_11_page_169:
+    profile_name: LRI_NG_FRU_Profile
+    printed_oid: 2.16.840.1.113883.9.195.3.3
+  disposition: >-
+    Do not emit either pre-coordinated OID in confirmatory MSH-21 until the
+    exact Edition 5 machine-readable bundle resolves the inconsistency. Use
+    the three component OIDs, which are consistent across the publication.
 
 components:
   - name: LRI_Common_Component_V3
     oid: 2.16.840.1.113883.9.195.3.22
     role: required_common
+    publication_pages: [152, 166, 167, 169]
+    verification_status: pdf_verified_machine_bundle_pending
   - name: LRI_NG_Component_R1
     oid: 2.16.840.1.113883.9.13
     role: selected_identifier_component
+    publication_pages: [152, 167, 169]
+    verification_status: pdf_verified_machine_bundle_pending
   - name: LAB_FRU_Component
     oid: 2.16.840.1.113883.9.83
     role: selected_filler_order_component
+    publication_pages: [152, 167, 169]
+    verification_status: pdf_verified_machine_bundle_pending
 
 rationale:
   identifier_component: >-
     The first confirmatory benchmark uses synthetic identifier namespaces and
-    does not require ISO OID assigning authorities for every LRI identifier
-    field. Selecting the NG component avoids manufacturing OID semantics that
-    are not present in the source facts.
+    does not claim ISO OID assigning-authority semantics for every identifier.
+    Selecting the NG component avoids manufacturing global-identity semantics
+    that are not present in the source facts.
+  gu_counterargument: >-
+    GU would exercise namespace and assigning-authority fidelity more strongly,
+    but doing so in a synthetic benchmark would require authoring global OID
+    identity semantics that the source facts do not independently possess.
+    That would contaminate the fabrication construct the study is designed to
+    measure. A later extension may add a separately authored GU slice.
   filler_order_component: >-
     The benchmark can author one explicit source-grounded filler order
     identifier that is unique per laboratory order. FRU therefore avoids the
     additional composite identity semantics of FRN, where filler order number
-    and universal service identifier must jointly identify the order.
+    and universal service identifier jointly identify the order.
   scientific_scope: >-
     This is a bounded study-design choice for the initial general laboratory
     slice, not a claim that NG/FRU is preferable for production interfaces.
-  alternative_profiles_not_selected:
-    LRI_GU_FRU_Profile_V3: >-
-      Requires ISO OID-based globally unique identification semantics for the
-      listed identifier fields, which the current benchmark does not need.
-    LRI_GU_FRN_Profile_V3: >-
-      Adds both OID-based global identity and composite filler-order semantics
-      that are outside the minimal first-slice construct.
-    LRI_NG_FRN_Profile_V3: >-
-      Avoids OID assumptions but requires filler order number plus universal
-      service identifier to form order identity, adding a construct not needed
-      for the first slice.
 
 message_requirements:
   msh_21:
     usage: R
     cardinality: "1..*"
-    preferred_declaration:
-      - 2.16.840.1.113883.9.195.3.25
-    note: >-
-      The pre-coordinated profile OID represents the Common + NG + FRU
-      combination. Compatible optional components may be added only if the
-      benchmark scope explicitly requires them.
+    publication_page: 166
+    preferred_declaration_strategy: component_oids_until_machine_bundle
+    preferred_component_declaration:
+      - name: LRI_Common_Component_V3
+        oid: 2.16.840.1.113883.9.195.3.22
+      - name: LRI_NG_Component_R1
+        oid: 2.16.840.1.113883.9.13
+      - name: LAB_FRU_Component
+        oid: 2.16.840.1.113883.9.83
+    precoordinated_oid_declaration:
+      status: deferred_due_to_publication_internal_conflict
   order_context:
+    ORDER_OBSERVATION:
+      usage: R
+      cardinality: "1..*"
+      publication_page: 156
     ORC:
       usage: R
       cardinality: "1..1"
+      publication_page: 156
     OBR:
       usage: R
       cardinality: "1..1"
+      publication_page: 156
+    order_control:
+      ORC_1: "R [1..1]"
+      publication_page: 185
+      semantic_scoring_status: external_review_required
     filler_order_number:
       ORC_3: "R [1..1]"
       OBR_3: "R [1..1]"
       equality_constraint: ORC_3_equals_OBR_3
+      publication_pages: [185, 188, 189]
     placer_order_number:
       ORC_2: "RE [0..1]"
       OBR_2: "RE [0..1]"
       equality_constraint_when_present: ORC_2_equals_OBR_2
+      publication_pages: [185, 188, 189]
     ordering_provider:
       ORC_12: "R [1..1]"
-      OBR_16: required_by_conformance_relationship_with_ORC_12
+      OBR_16: "R [1..1]"
+      equality_constraint: ORC_12_equals_OBR_16
+      publication_pages: [186, 188, 190]
 
 benchmark_source_requirements:
   - explicit_order_fact
+  - explicit_order_control_or_declared_source_grounded_derivation
   - unique_source_grounded_filler_order_identifier
   - source_grounded_ordering_provider
-  - FHIR_ServiceRequest_projection
+  - US_Core_ServiceRequest_projection
   - DiagnosticReport_basedOn_order_reference
-  - no_DiagnosticReport_identifier_repurposing_as_order_identifier
+  - explicit_single_canonical_order_identifier_semantics
+  - ServiceRequest_vs_DiagnosticReport_identifier_locus_independent_review
+
+scoring_boundary:
+  structural_gate_now:
+    - required_presence_of_ORDER_OBSERVATION
+    - required_presence_of_ORC
+    - required_presence_of_OBR
+    - required_presence_of_ORC_1
+    - required_presence_of_ORC_3
+    - required_presence_of_ORC_12
+    - required_presence_of_OBR_3
+    - required_presence_of_OBR_16
+    - ORC_2_equals_OBR_2_when_present
+    - ORC_3_equals_OBR_3
+    - ORC_12_equals_OBR_16
+  semantic_endpoint_after_independent_review:
+    - order_control_value_equivalence
+    - placer_order_identifier_value_equivalence
+    - filler_order_identifier_value_equivalence
+    - ordering_provider_identity_equivalence
+    - identifier_target_locus_equivalence_class
+    - DiagnosticReport_basedOn_to_order_linkage
 
 freeze_requirements:
   - acquire_machine_readable_LRI_NG_FRU_Profile_V3_bundle
   - verify_bundle_lineage_to_Edition5_2024DEC
+  - resolve_precoordinated_msh21_oid_conflict
   - record_exact_profile_and_companion_artifact_hashes
   - pass_local_NIST_reference_message_qualification
   - pass_structural_negative_controls

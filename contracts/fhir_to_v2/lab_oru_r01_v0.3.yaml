@@ -1,0 +1,638 @@
+contract:
+  id: F2V-LAB-ORU-R01-001
+  version: 0.3.0
+  status: draft
+  freeze_status: not_frozen
+  supersedes: 0.2.0
+  clinical_domain: laboratory_results
+  study_role: primary_stress_direction
+  evidence_ledger: docs/field_mapping_audit_lab_oru_r01.md
+
+source:
+  standard: HL7_FHIR
+  release: R4
+  implementation_guide: US_Core
+  implementation_guide_version: 9.0.0
+  profiles:
+    - http://hl7.org/fhir/us/core/StructureDefinition/us-core-diagnosticreport-lab
+    - http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-lab
+    - http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient
+    - http://hl7.org/fhir/StructureDefinition/Specimen
+    - http://hl7.org/fhir/us/core/StructureDefinition/us-core-servicerequest
+
+target:
+  standard: HL7_v2
+  version: 2.5.1
+  implementation_guide: Laboratory_Results_Interface
+  implementation_guide_edition: 5
+  errata: 2024DEC
+  message: ORU^R01
+  realm: US
+  selected_profile_candidate: LRI_NG_FRU_Profile_V3
+  profile_selection_record: benchmark/lri_profile_selection.yaml
+  exact_machine_profile_status: pending_acquisition_and_qualification
+
+scope:
+  included:
+    - general_laboratory_reporting
+    - chemistry_style_results
+    - hematology_style_results
+    - atomic_results
+    - simple_panels
+  deferred:
+    - microbiology_susceptibility
+    - clinical_genomics
+    - newborn_dried_bloodspot_screening
+    - public_health_specific_extensions
+    - unreviewed_local_fhir_extensions
+    - unrestricted_free_text_reports
+
+projectability_classes:
+  - MUST_PRESERVE
+  - MAY_TRANSFORM
+  - MAY_LOSE
+  - MUST_NOT_INFER
+  - INDETERMINATE
+
+allowed_operations:
+  - COPY
+  - NORMALIZE
+  - CODE_TRANSLATE
+  - UNIT_CONVERT
+  - AGGREGATE
+  - DECOMPOSE
+  - DERIVE_DECLARED
+  - DROP_DECLARED
+
+precedence:
+  description: >-
+    Error classification is resolved at canonical-fact level. A grounded fact
+    attached to the wrong patient/report/observation is MISATTRIBUTION rather
+    than a double-counted OMISSION plus FABRICATION pair.
+  order:
+    - MISATTRIBUTION
+    - CORRUPTION
+    - OMISSION
+    - FABRICATION
+
+rules:
+  - rule_id: PATIENT_IDENTIFIER_001
+    canonical_fact: patient.identifier
+    projectability: MUST_PRESERVE
+    source_paths: [Patient.identifier]
+    target_paths: [PID-3]
+    allowed_operations: [COPY, NORMALIZE]
+    equivalence:
+      type: identifier
+      preserve_value: true
+      namespace_change_requires_declared_rule: true
+    failure_types: [OMISSION, CORRUPTION, MISATTRIBUTION]
+    severity_default: S3
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-pid-to-patient.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: PATIENT_NAME_001
+    canonical_fact: patient.name
+    projectability: MAY_TRANSFORM
+    source_paths: [Patient.name]
+    target_paths: [PID-5]
+    allowed_operations: [COPY, NORMALIZE, DECOMPOSE]
+    equivalence:
+      type: human_name
+      preserve_family: true
+      preserve_given: true
+      order_insensitive_components: [given]
+    failure_types: [OMISSION, CORRUPTION]
+    severity_default: S2
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-pid-to-patient.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: PATIENT_BIRTHDATE_001
+    canonical_fact: patient.birthDate
+    projectability: MUST_PRESERVE
+    source_paths: [Patient.birthDate]
+    target_paths: [PID-7]
+    allowed_operations: [COPY, NORMALIZE]
+    equivalence:
+      type: date
+      precision_policy: preserve_source_precision
+    failure_types: [OMISSION, CORRUPTION]
+    severity_default: S2
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-pid-to-patient.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: REPORT_CODE_001
+    canonical_fact: report.code
+    projectability: MUST_PRESERVE
+    source_paths: [DiagnosticReport.code]
+    target_paths: [OBR-4]
+    allowed_operations: [COPY, CODE_TRANSLATE]
+    equivalence:
+      type: coded_concept
+      accepted_equivalence:
+        - exact_code_system_pair
+        - approved_concept_map_equivalent
+    failure_types: [OMISSION, CORRUPTION]
+    severity_default: S2
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obr-to-diagnosticreport.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: REPORT_EFFECTIVE_TIME_001
+    canonical_fact: report.effective
+    projectability: MAY_TRANSFORM
+    source_paths:
+      - DiagnosticReport.effectiveDateTime
+      - DiagnosticReport.effectivePeriod
+    target_paths:
+      - OBR-7
+      - OBR-8
+    allowed_operations: [COPY, NORMALIZE, DECOMPOSE]
+    equivalence:
+      type: temporal_interval
+      date_time_to_start_allowed: true
+      period_start_to_obr7: true
+      period_end_to_obr8: true
+      preserve_instant_or_interval_semantics: true
+    failure_types: [OMISSION, CORRUPTION]
+    severity_default: S2
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obr-to-diagnosticreport.html
+      - https://hl7.org/fhir/us/core/STU9/StructureDefinition-us-core-diagnosticreport-lab.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: REPORT_ISSUED_TIME_001
+    canonical_fact: report.issued
+    projectability: MUST_PRESERVE
+    applies_when:
+      source_present: true
+      source_status_in: [partial, preliminary, final, amended, corrected, appended]
+    source_paths: [DiagnosticReport.issued]
+    target_paths: [OBR-22]
+    allowed_operations: [COPY, NORMALIZE]
+    equivalence:
+      type: instant
+      preserve_instant: true
+      timezone_normalization_allowed: true
+    failure_types: [OMISSION, CORRUPTION]
+    severity_default: S2
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obr-to-diagnosticreport.html
+      - https://hl7.org/fhir/us/core/STU9/StructureDefinition-us-core-diagnosticreport-lab.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: REPORT_STATUS_001
+    canonical_fact: report.status
+    projectability: MAY_TRANSFORM
+    source_paths: [DiagnosticReport.status]
+    target_paths: [OBR-25]
+    allowed_operations: [CODE_TRANSLATE]
+    equivalence:
+      type: code_map
+      mapping_source: contract_status_map
+    failure_types: [OMISSION, CORRUPTION]
+    severity_default: S2
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obr-to-diagnosticreport.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: OBSERVATION_CODE_001
+    canonical_fact: observation.code
+    projectability: MUST_PRESERVE
+    source_paths: [Observation.code]
+    target_paths: [OBX-3]
+    allowed_operations: [COPY, CODE_TRANSLATE]
+    equivalence:
+      type: coded_concept
+      accepted_equivalence:
+        - exact_code_system_pair
+        - approved_concept_map_equivalent
+    failure_types: [OMISSION, CORRUPTION, MISATTRIBUTION]
+    severity_default: S2
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obx-to-observation.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: OBSERVATION_VALUE_001
+    canonical_fact: observation.value
+    projectability: MUST_PRESERVE
+    source_paths:
+      - Observation.value[x]
+      - Observation.component.value[x]
+    target_paths: [OBX-5]
+    allowed_operations: [COPY, NORMALIZE, UNIT_CONVERT]
+    equivalence:
+      type: typed_value
+      value_type_must_match_semantics: true
+      numeric_tolerance: exact_unless_declared
+      coded_values_require_semantic_equivalence: true
+    failure_types: [OMISSION, CORRUPTION, MISATTRIBUTION]
+    severity_default: S3
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obx-to-observation.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: OBSERVATION_UNIT_001
+    canonical_fact: observation.unit
+    projectability: MAY_TRANSFORM
+    source_paths:
+      - Observation.valueQuantity.unit
+      - Observation.valueQuantity.code
+      - Observation.valueQuantity.system
+      - Observation.component.valueQuantity
+    target_paths: [OBX-6]
+    allowed_operations: [COPY, NORMALIZE, UNIT_CONVERT]
+    equivalence:
+      type: ucum_quantity
+      require_value_unit_joint_equivalence: true
+    failure_types: [OMISSION, CORRUPTION]
+    severity_default: S3
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obx-to-observation.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: OBSERVATION_REFERENCE_RANGE_001
+    canonical_fact: observation.referenceRange
+    projectability: MAY_TRANSFORM
+    source_paths:
+      - Observation.referenceRange
+      - Observation.component.referenceRange
+    target_paths: [OBX-7]
+    allowed_operations: [COPY, NORMALIZE]
+    equivalence:
+      type: reference_range
+      preserve_bounds_when_structured: true
+    failure_types: [OMISSION, CORRUPTION]
+    severity_default: S2
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obx-to-observation.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: OBSERVATION_INTERPRETATION_001
+    canonical_fact: observation.interpretation
+    projectability: MAY_TRANSFORM
+    source_paths: [Observation.interpretation]
+    target_paths: [OBX-8]
+    allowed_operations: [COPY, CODE_TRANSLATE]
+    equivalence:
+      type: coded_concept
+      mapping_source: contract_interpretation_map
+    failure_types: [OMISSION, CORRUPTION]
+    severity_default: S2
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obx-to-observation.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: OBSERVATION_STATUS_001
+    canonical_fact: observation.status
+    projectability: MAY_TRANSFORM
+    source_paths: [Observation.status]
+    target_paths: [OBX-11]
+    allowed_operations: [CODE_TRANSLATE]
+    equivalence:
+      type: code_map
+      mapping_source: contract_observation_status_map
+    failure_types: [OMISSION, CORRUPTION]
+    severity_default: S2
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obx-to-observation.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: OBSERVATION_EFFECTIVE_TIME_001
+    canonical_fact: observation.effective
+    projectability: MAY_TRANSFORM
+    source_paths:
+      - Observation.effectiveDateTime
+      - Observation.effectivePeriod
+    target_paths:
+      - OBX-14
+    allowed_operations: [COPY, NORMALIZE]
+    equivalence:
+      type: observation_time
+      date_time_mapping_supported: true
+      period_mapping_requires_profile_review: true
+    failure_types: [OMISSION, CORRUPTION]
+    severity_default: S2
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obx-to-observation.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: SPECIMEN_IDENTIFIER_001
+    canonical_fact: specimen.identifier
+    projectability: MUST_PRESERVE
+    applies_when:
+      specimen_present: true
+    source_paths: [Specimen.identifier]
+    target_paths: [SPM-2]
+    allowed_operations: [COPY, NORMALIZE]
+    equivalence:
+      type: identifier
+      preserve_value: true
+      preserve_assigning_authority_when_available: true
+    failure_types: [OMISSION, CORRUPTION, MISATTRIBUTION]
+    severity_default: S3
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-spm-to-specimen.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: SPECIMEN_TYPE_001
+    canonical_fact: specimen.type
+    projectability: MAY_TRANSFORM
+    applies_when:
+      specimen_present: true
+      source_present: true
+    source_paths: [Specimen.type]
+    target_paths: [SPM-4]
+    allowed_operations: [COPY, CODE_TRANSLATE]
+    equivalence:
+      type: coded_concept
+      accepted_equivalence:
+        - exact_code_system_pair
+        - approved_concept_map_equivalent
+    failure_types: [OMISSION, CORRUPTION]
+    severity_default: S2
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-spm-to-specimen.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: SPECIMEN_COLLECTION_METHOD_001
+    canonical_fact: specimen.collection.method
+    projectability: MAY_TRANSFORM
+    applies_when:
+      specimen_present: true
+      source_present: true
+    source_paths: [Specimen.collection.method]
+    target_paths: [SPM-7]
+    allowed_operations: [COPY, CODE_TRANSLATE]
+    equivalence:
+      type: coded_concept
+      accepted_equivalence:
+        - exact_code_system_pair
+        - approved_concept_map_equivalent
+    failure_types: [OMISSION, CORRUPTION]
+    severity_default: S1
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-spm-to-specimen.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: SPECIMEN_COLLECTION_QUANTITY_001
+    canonical_fact: specimen.collection.quantity
+    projectability: MAY_TRANSFORM
+    applies_when:
+      specimen_present: true
+      source_present: true
+    source_paths: [Specimen.collection.quantity]
+    target_paths: [SPM-12]
+    allowed_operations: [COPY, NORMALIZE, UNIT_CONVERT]
+    equivalence:
+      type: ucum_quantity
+      require_value_unit_joint_equivalence: true
+    failure_types: [OMISSION, CORRUPTION]
+    severity_default: S1
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-spm-to-specimen.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: SPECIMEN_COLLECTION_TIME_001
+    canonical_fact: specimen.collection.time
+    projectability: MAY_TRANSFORM
+    applies_when:
+      specimen_present: true
+      source_present: true
+    source_paths:
+      - Specimen.collection.collectedDateTime
+      - Specimen.collection.collectedPeriod
+    target_paths: [SPM-17]
+    allowed_operations: [COPY, NORMALIZE, DECOMPOSE]
+    equivalence:
+      type: temporal_interval
+      preserve_instant_or_interval_semantics: true
+    failure_types: [OMISSION, CORRUPTION]
+    severity_default: S2
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-spm-to-specimen.html
+    expert_review_required: true
+    status: draft
+
+  - rule_id: FREE_TEXT_INFERENCE_001
+    canonical_fact: ungrounded_clinical_assertion
+    projectability: MUST_NOT_INFER
+    source_paths:
+      - DiagnosticReport.presentedForm
+      - DiagnosticReport.conclusion
+      - Observation.note
+    target_paths:
+      - NTE
+      - OBX-5
+    allowed_operations: []
+    equivalence:
+      type: source_grounding_required
+    failure_types: [FABRICATION]
+    severity_default: S2
+    expert_review_required: true
+    status: draft
+
+  - rule_id: ORDER_IDENTIFIER_MAPPING_001
+    canonical_fact: order.identifier
+    projectability: INDETERMINATE
+    source_paths:
+      - ServiceRequest.identifier
+      - DiagnosticReport.identifier
+    target_paths:
+      - ORC-3
+      - OBR-3
+    allowed_operations: [COPY, NORMALIZE]
+    equivalence:
+      type: identifier_locus_requires_review
+      note: >-
+        The source-grounding invariant is separable from the unresolved question
+        of whether the filler identifier should originate from ServiceRequest,
+        DiagnosticReport, or an explicitly shared source identifier.
+    failure_types: [FABRICATION, OMISSION, CORRUPTION]
+    severity_default: S3
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-orc-to-servicerequest.html
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obr-to-diagnosticreport.html
+    expert_review_required: true
+    prompt_exposure: EXPERT_DECISION
+    status: indeterminate
+
+  - rule_id: ORDER_REQUESTER_MAPPING_001
+    canonical_fact: order.requester
+    projectability: INDETERMINATE
+    source_paths:
+      - ServiceRequest.requester
+    target_paths:
+      - ORC-12
+      - OBR-16
+    allowed_operations: [COPY, NORMALIZE, DECOMPOSE]
+    equivalence:
+      type: actor_identity_requires_review
+      note: >-
+        Structural requiredness is established independently, but actor identity
+        equivalence across FHIR Reference and HL7 v2 XCN remains outside the
+        primary endpoint until external review.
+    failure_types: [FABRICATION, OMISSION, CORRUPTION, MISATTRIBUTION]
+    severity_default: S3
+    evidence:
+      - benchmark/lri_order_context_evidence.yaml
+    expert_review_required: true
+    prompt_exposure: EXPERT_DECISION
+    status: indeterminate
+
+  - rule_id: ORDER_CODE_MAPPING_001
+    canonical_fact: order.code
+    projectability: INDETERMINATE
+    source_paths:
+      - ServiceRequest.code
+      - DiagnosticReport.code
+    target_paths:
+      - OBR-4
+    allowed_operations: [COPY, CODE_TRANSLATE]
+    equivalence:
+      type: ordered_test_vs_report_code_requires_review
+    failure_types: [OMISSION, CORRUPTION]
+    severity_default: S2
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obr-to-servicerequest.html
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obr-to-diagnosticreport.html
+    expert_review_required: true
+    prompt_exposure: EXPERT_DECISION
+    status: indeterminate
+
+  - rule_id: REPORT_BASEDON_ORDER_001
+    canonical_fact: report.basedOnOrder
+    projectability: INDETERMINATE
+    source_paths:
+      - DiagnosticReport.basedOn
+    target_paths:
+      - ORDER_OBSERVATION
+      - ORC
+      - OBR
+    allowed_operations: [COPY, NORMALIZE]
+    equivalence:
+      type: relationship_grouping_requires_review
+    failure_types: [OMISSION, MISATTRIBUTION]
+    severity_default: S3
+    evidence:
+      - https://hl7.org/fhir/us/core/STU9/StructureDefinition-us-core-diagnosticreport-lab.html
+    expert_review_required: true
+    prompt_exposure: EXPERT_DECISION
+    status: indeterminate
+
+grounding_guards:
+  - guard_id: ORDER_IDENTIFIER_SOURCE_GROUNDING_001
+    source_fact_type: order
+    source_field: identifiers.value
+    target_fact_type: order
+    target_field: identifiers.value
+    match_type: exact_scalar_membership
+    primary_endpoint_eligible: true
+    rationale: >-
+      Any order identifier value asserted in a grounded target order fact must
+      exist in an authored canonical order fact. This invariant does not decide
+      whether ServiceRequest.identifier, DiagnosticReport.identifier, ORC-3, or
+      OBR-3 is the unique correct representation; it only prevents structural
+      repair from inventing a business identifier.
+    evidence:
+      - benchmark/lri_order_context_evidence.yaml
+      - benchmark/lri_profile_selection.yaml
+    status: draft
+
+  - guard_id: ORDER_REQUESTER_IDENTIFIER_SOURCE_GROUNDING_001
+    source_fact_type: order
+    source_field: attributes.requester.identifiers.value
+    target_fact_type: order
+    target_field: attributes.requester.identifiers.value
+    match_type: exact_scalar_membership
+    primary_endpoint_eligible: true
+    rationale: >-
+      Any ordering-provider identifier asserted in a grounded target order fact
+      must exist in the authored canonical order context. The guard does not
+      decide whether a FHIR requester Reference and HL7 v2 XCN are fully
+      equivalent, nor which XCN components must be scored.
+    evidence:
+      - benchmark/lri_order_context_evidence.yaml
+    status: draft
+
+indeterminate_candidates:
+  - candidate_id: REPORT_IDENTIFIER_MAPPING
+    reason: >-
+      DiagnosticReport identifiers and v2 placer/filler/order identifiers can
+      represent different business identifiers. Exact permitted loci require
+      profile-level review before a preservation rule is frozen.
+
+  - candidate_id: ENCOUNTER_CONTEXT_MAPPING
+    reason: >-
+      Encounter information may not be uniformly required for all laboratory
+      result scenarios and must be scoped by profile/use case.
+
+  - candidate_id: PERFORMER_INTERPRETER_MAPPING
+    reason: >-
+      FHIR performer/resultsInterpreter references can target multiple actor
+      types; exact v2 representation must be reviewed against the LRI profile.
+
+  - candidate_id: PANEL_COMPONENT_TOPOLOGY
+    reason: >-
+      FHIR Observation components and panel/member relationships do not imply a
+      unique OBX serialization. Equivalence-class rules are required before
+      confirmatory scoring.
+
+  - candidate_id: FREE_TEXT_REPORT_REPRESENTATION
+    reason: >-
+      DiagnosticReport.presentedForm/conclusion and narrative results are
+      deferred from the atomic-result confirmatory core.
+
+validation_requirements:
+  - independent_lri_field_review
+  - external_expert_contract_review
+  - external_contract_agreement_study
+  - clean_room_renderer_review
+  - lifting_parser_validation
+  - order_grounding_guard_validation
+  - terminology_service_validation
+  - ucum_equivalence_tests
+  - seeded_fault_qualification
+  - blinded_expert_gold_validation
+  - contract_sensitivity_analysis
+
+notes:
+  - >-
+      This contract is a study instrument, not an HL7 implementation guide and
+      not a production interface specification.
+  - >-
+      Reverse rules are not inferred merely because a forward v2-to-FHIR map
+      exists; each remains subject to target-profile review.
+  - >-
+      Draft mappings marked expert_review_required must not be treated as
+      frozen truth in confirmatory experiments.
+  - >-
+      Any ambiguity discovered before freeze is moved to INDETERMINATE rather
+      than resolved by observing which output a model or converter produces.
+
+  - >-
+      Contract v0.3 introduces order-context candidates and a narrow
+      representation-independent grounding invariant. The new order mapping
+      rules remain INDETERMINATE and outside the primary equivalence endpoint
+      until blind external review and machine-profile qualification.
