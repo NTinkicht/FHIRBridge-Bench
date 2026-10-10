@@ -39,7 +39,8 @@ provider_failure_outcomes:
   timeout: MEASUREMENT_FAILURE
   authentication_or_configuration_error: MEASUREMENT_FAILURE
 
-derived_postprocessing_failure_outcomes:
+derived_arm_failure_outcomes:
+  mapping_source_failed: MEASUREMENT_FAILURE_UPSTREAM
   syntax_repair_exception: MEASUREMENT_FAILURE_POSTPROCESSING
 
 model_output_outcomes:
