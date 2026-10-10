@@ -34,6 +34,8 @@ def _placeholder(value: Any) -> bool:
 
 def assess_renderer_b_declaration(
     declaration: dict[str, Any],
+    *,
+    expected_clean_room_inputs: dict[str, Any] | None = None,
 ) -> RendererBSubmissionReadiness:
     """Check clean-room independence claims beyond JSON-schema shape."""
 
@@ -57,6 +59,49 @@ def assess_renderer_b_declaration(
     source_commit = implementation.get("source_commit")
     if isinstance(source_commit, str) and set(source_commit.lower()) <= {"0"}:
         blockers.append("implementation source_commit is still a zero placeholder")
+
+    clean_room_inputs = declaration.get("clean_room_inputs")
+    if not isinstance(clean_room_inputs, dict):
+        blockers.append("clean_room_inputs declaration is missing")
+        clean_room_inputs = {}
+
+    for field in (
+        "starting_commit",
+        "challenge_manifest_sha256",
+        "contract_sha256",
+    ):
+        value = clean_room_inputs.get(field)
+        if (
+            not isinstance(value, str)
+            or not value
+            or set(value.lower()) <= {"0"}
+        ):
+            blockers.append(
+                f"clean_room_inputs.{field} is missing or a zero placeholder"
+            )
+
+    if expected_clean_room_inputs is None:
+        blockers.append(
+            "expected clean-room input record was not supplied for comparison"
+        )
+    elif not isinstance(expected_clean_room_inputs, dict):
+        blockers.append("expected clean-room input record is malformed")
+    else:
+        expected_fields = (
+            "repository_full_name",
+            "branch",
+            "starting_commit",
+            "challenge_id",
+            "challenge_version",
+            "challenge_manifest_sha256",
+            "contract_path",
+            "contract_sha256",
+        )
+        for field in expected_fields:
+            if clean_room_inputs.get(field) != expected_clean_room_inputs.get(field):
+                blockers.append(
+                    f"clean_room_inputs.{field} does not match custodian handoff"
+                )
 
     contract = declaration.get("contract", {})
     if contract.get("contract_id") != _EXPECTED_CONTRACT_ID:
