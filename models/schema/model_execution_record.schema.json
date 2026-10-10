@@ -10,6 +10,8 @@
     "case_id",
     "model_key",
     "strategy_id",
+    "generation_source",
+    "source_execution_id",
     "attempt_number",
     "request_started_at",
     "request_finished_at",
@@ -20,10 +22,21 @@
     "provider_request_id"
   ],
   "properties": {
-    "schema_version": {"const": "0.1.0"},
-    "execution_id": {"type": "string", "minLength": 1},
-    "case_id": {"type": "string", "minLength": 1},
-    "model_key": {"type": "string", "minLength": 1},
+    "schema_version": {
+      "const": "0.2.0"
+    },
+    "execution_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_key": {
+      "type": "string",
+      "minLength": 1
+    },
     "strategy_id": {
       "enum": [
         "direct_structured_llm",
@@ -31,9 +44,24 @@
         "mapping_aware_plus_syntax_repair"
       ]
     },
-    "attempt_number": {"const": 1},
-    "request_started_at": {"type": "string", "format": "date-time"},
-    "request_finished_at": {"type": "string", "format": "date-time"},
+    "attempt_number": {
+      "oneOf": [
+        {
+          "const": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "request_started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "request_finished_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "outcome_class": {
       "enum": [
         "RESPONSE_RECEIVED",
@@ -41,29 +69,65 @@
         "MEASUREMENT_FAILURE_RATE_LIMIT",
         "MEASUREMENT_FAILURE_PROVIDER_5XX",
         "MEASUREMENT_FAILURE_TIMEOUT",
-        "MEASUREMENT_FAILURE_AUTH_OR_CONFIG"
+        "MEASUREMENT_FAILURE_AUTH_OR_CONFIG",
+        "MEASUREMENT_FAILURE_POSTPROCESSING"
       ]
     },
     "raw_response_sha256": {
       "oneOf": [
-        {"$ref": "#/$defs/sha256"},
-        {"type": "null"}
+        {
+          "$ref": "#/$defs/sha256"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "final_response_sha256": {
       "oneOf": [
-        {"$ref": "#/$defs/sha256"},
-        {"type": "null"}
+        {
+          "$ref": "#/$defs/sha256"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
-    "syntax_repair_applied": {"type": "boolean"},
+    "syntax_repair_applied": {
+      "type": "boolean"
+    },
     "syntax_repair_operations": {
       "type": "array",
       "uniqueItems": true,
-      "items": {"type": "string", "minLength": 1}
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     },
-    "provider_request_id": {"type": ["string", "null"]},
-    "error_summary": {"type": ["string", "null"]}
+    "provider_request_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "error_summary": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "generation_source": {
+      "enum": [
+        "provider_call",
+        "reuse_mapping_aware_raw_output"
+      ]
+    },
+    "source_execution_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
   },
   "$defs": {
     "sha256": {
@@ -75,20 +139,32 @@
     {
       "if": {
         "properties": {
-          "outcome_class": {"const": "RESPONSE_RECEIVED"}
+          "outcome_class": {
+            "const": "RESPONSE_RECEIVED"
+          }
         }
       },
       "then": {
         "properties": {
-          "raw_response_sha256": {"$ref": "#/$defs/sha256"},
-          "final_response_sha256": {"$ref": "#/$defs/sha256"}
+          "raw_response_sha256": {
+            "$ref": "#/$defs/sha256"
+          },
+          "final_response_sha256": {
+            "$ref": "#/$defs/sha256"
+          }
         }
       },
       "else": {
         "properties": {
-          "raw_response_sha256": {"type": "null"},
-          "final_response_sha256": {"type": "null"},
-          "syntax_repair_applied": {"const": false}
+          "raw_response_sha256": {
+            "type": "null"
+          },
+          "final_response_sha256": {
+            "type": "null"
+          },
+          "syntax_repair_applied": {
+            "const": false
+          }
         }
       }
     },
@@ -96,14 +172,75 @@
       "if": {
         "properties": {
           "strategy_id": {
-            "enum": ["direct_structured_llm", "mapping_aware_llm"]
+            "enum": [
+              "direct_structured_llm",
+              "mapping_aware_llm"
+            ]
           }
         }
       },
       "then": {
         "properties": {
-          "syntax_repair_applied": {"const": false},
-          "syntax_repair_operations": {"maxItems": 0}
+          "generation_source": {
+            "const": "provider_call"
+          },
+          "attempt_number": {
+            "const": 1
+          },
+          "source_execution_id": {
+            "type": "null"
+          },
+          "syntax_repair_applied": {
+            "const": false
+          },
+          "syntax_repair_operations": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "strategy_id": {
+            "const": "mapping_aware_plus_syntax_repair"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "generation_source": {
+            "const": "reuse_mapping_aware_raw_output"
+          },
+          "attempt_number": {
+            "type": "null"
+          },
+          "source_execution_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "provider_request_id": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "outcome_class": {
+            "const": "MEASUREMENT_FAILURE_POSTPROCESSING"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "strategy_id": {
+            "const": "mapping_aware_plus_syntax_repair"
+          },
+          "generation_source": {
+            "const": "reuse_mapping_aware_raw_output"
+          }
         }
       }
     }
