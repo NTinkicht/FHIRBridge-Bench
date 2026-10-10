@@ -1,4 +1,4 @@
-schema_version: "0.2.0"
+schema_version: "0.3.0"
 analysis_id: "ANALYSIS-TO-BE-ASSIGNED"
 status: incomplete_template
 created_at: null
@@ -9,6 +9,7 @@ frozen_inputs:
   structural_validity_policy_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
   statistical_analysis_plan_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
   model_prompt_configuration_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  sample_size_preregistration_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
 primary_estimand:
   name: VUR
   direction: FHIR_to_HL7v2
