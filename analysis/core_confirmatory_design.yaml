@@ -77,7 +77,7 @@ analysis_design:
       seed: 20261010
   unresolved_before_final_preregistration:
     - frozen_input_hashes
-    - pilot_derived_primary_margin
+    - pilot_derived_primary_vur_hypothesis_preregistration
     - pilot_derived_sample_size_justification
     - frozen_model_keys_for_expanding_model_specific_comparison_family
     - final_model_and_prompt_configuration_artifact_hashes
