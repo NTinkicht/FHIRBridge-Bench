@@ -167,7 +167,9 @@ gates:
       fhir_primary_family_count: 11
       fhir_order_context_external_validation: passed
       fhir_semantic_roundtrip: faithful_all_11_primary_families
-      target_v2_status: pending_exact_profile_and_independent_renderer
+      baseline_family_evidence_schema: models/schema/baseline_family_evidence.schema.json
+      baseline_qualification_aggregator: models/build_baseline_qualification.py
+      target_v2_status: deterministic_11_family_qualification_pipeline_ready_exact_profile_evidence_pending
     completion_rule: >-
       Before freezing a primary scenario family, at least one independently
       rendered output must be both structurally valid and semantically faithful
@@ -223,6 +225,8 @@ gates:
       schema: models/schema/model_prompt_freeze.schema.json
       incomplete_template: models/examples/model_prompt_freeze_template.yaml
       readiness_check: src/fhirbridge/model_config_readiness.py
+      baseline_family_evidence_schema: models/schema/baseline_family_evidence.schema.json
+      baseline_qualification_aggregator: models/build_baseline_qualification.py
       baseline_qualification_schema: models/schema/baseline_qualification.schema.json
       baseline_qualification_template: models/examples/baseline_qualification_template.yaml
       baseline_qualification_readiness: src/fhirbridge/baseline_qualification.py
