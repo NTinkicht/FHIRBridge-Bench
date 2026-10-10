@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/semantic_mapping_review_response.schema.json",
+  "title": "FHIRBridge External Semantic Mapping Candidate Review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "assignment_id",
+    "reviewer",
+    "item_reviews",
+    "attestation"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "assignment_id": {"const": "FHIRBRIDGE-SEMANTIC-MAPPING-REVIEW-001"},
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_id",
+        "review_date",
+        "expertise",
+        "conflicts_of_interest",
+        "prior_project_involvement"
+      ],
+      "properties": {
+        "reviewer_id": {"type": "string", "minLength": 1},
+        "review_date": {"type": "string", "format": "date"},
+        "expertise": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "conflicts_of_interest": {"type": "string"},
+        "prior_project_involvement": {"type": "string"}
+      }
+    },
+    "item_reviews": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/itemReview"}
+    },
+    "attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "independent_review",
+        "other_reviewer_decisions_hidden",
+        "renderer_outputs_not_used_as_correctness_evidence",
+        "exact_profile_absence_not_overridden_by_guessing"
+      ],
+      "properties": {
+        "independent_review": {"const": true},
+        "other_reviewer_decisions_hidden": {"const": true},
+        "renderer_outputs_not_used_as_correctness_evidence": {"const": true},
+        "exact_profile_absence_not_overridden_by_guessing": {"const": true}
+      }
+    }
+  },
+  "$defs": {
+    "itemReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "decision",
+        "profile_applicability",
+        "evidence_references",
+        "rationale",
+        "confidence"
+      ],
+      "properties": {
+        "candidate_id": {"type": "string", "minLength": 1},
+        "decision": {"enum": ["ACCEPT", "REJECT", "INDETERMINATE"]},
+        "profile_applicability": {
+          "enum": ["CONFIRMED", "NOT_APPLICABLE", "REQUIRES_EXACT_PROFILE"]
+        },
+        "evidence_references": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "rationale": {"type": "string", "minLength": 1},
+        "confidence": {"enum": ["HIGH", "MODERATE", "LOW"]}
+      }
+    }
+  }
+}
