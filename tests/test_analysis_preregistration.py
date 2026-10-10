@@ -117,7 +117,7 @@ def test_duplicate_unordered_comparison_pair_is_rejected() -> None:
 def test_same_arm_comparison_is_rejected() -> None:
     document = _ready()
     document["paired_comparisons"]["comparison_family"][0]["arm_b"] = (
-        "direct_structured_llm"
+        "deterministic_baseline"
     )
 
     readiness = assess_analysis_preregistration(document)
