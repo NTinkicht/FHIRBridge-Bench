@@ -104,6 +104,7 @@ def build_authorization_record(
     sample_size_path: Path,
     model_config_path: Path,
     pilot_acceptance_path: Path,
+    sealed_case_manifest_path: Path,
     sealed_case_ids_path: Path,
     authorization_id: str,
     created_at: str,
@@ -158,7 +159,7 @@ def build_authorization_record(
             "instrument_component_manifest": artifact_hashes[
                 "instrument_component_manifest"
             ],
-            "sealed_case_manifest": _sha256(sealed_case_ids_path),
+            "sealed_case_manifest": _sha256(sealed_case_manifest_path),
             "reviewer_roster": artifact_hashes["reviewer_roster"],
             "case_assignment_manifest": artifact_hashes[
                 "case_assignment_manifest"
@@ -204,13 +205,15 @@ def build_authorization_record(
                     "pilot_acceptance_preregistration",
                 )
             },
-            "sealed_case_manifest_sha256": _sha256(sealed_case_ids_path),
+            "sealed_case_manifest_sha256": _sha256(
+                sealed_case_manifest_path
+            ),
         },
         "instrument_component_sha256": component_hashes,
         "sealed_case_set": {
             "case_count": len(sealed_case_ids),
             "canonical_case_ids_sha256": _case_ids_sha256(sealed_case_ids),
-            "manifest_file_sha256": _sha256(sealed_case_ids_path),
+            "manifest_file_sha256": _sha256(sealed_case_manifest_path),
         },
     }
 
@@ -235,6 +238,7 @@ def main() -> int:
     parser.add_argument("--sample-size", type=Path, required=True)
     parser.add_argument("--model-config", type=Path, required=True)
     parser.add_argument("--pilot-acceptance", type=Path, required=True)
+    parser.add_argument("--sealed-case-manifest", type=Path, required=True)
     parser.add_argument("--sealed-case-ids", type=Path, required=True)
     parser.add_argument("--authorization-id", required=True)
     parser.add_argument("--created-at", required=True)
@@ -258,6 +262,7 @@ def main() -> int:
         sample_size_path=args.sample_size,
         model_config_path=args.model_config,
         pilot_acceptance_path=args.pilot_acceptance,
+        sealed_case_manifest_path=args.sealed_case_manifest,
         sealed_case_ids_path=args.sealed_case_ids,
         authorization_id=args.authorization_id,
         created_at=args.created_at,
