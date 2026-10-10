@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/semantic_evidence_record.schema.json",
+  "title": "FHIRBridge Semantic Verification Evidence Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "model_key",
+    "arm_id",
+    "source_input_sha256",
+    "semantic_verdict",
+    "verifier_evidence_sha256",
+    "evaluation_reason"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "case_id": {"type": "string", "minLength": 1},
+    "model_key": {"type": ["string", "null"]},
+    "arm_id": {
+      "enum": [
+        "deterministic_baseline",
+        "direct_structured_llm",
+        "mapping_aware_llm",
+        "mapping_aware_plus_syntax_repair"
+      ]
+    },
+    "source_input_sha256": {"$ref": "#/$defs/sha256"},
+    "semantic_verdict": {
+      "enum": ["FAITHFUL", "UNFAITHFUL", "INDETERMINATE"]
+    },
+    "verifier_evidence_sha256": {"$ref": "#/$defs/sha256"},
+    "evaluation_reason": {
+      "enum": [
+        "PRIMARY_SEMANTIC_EVALUATION",
+        "STRUCTURAL_NOT_VALID",
+        "VERIFIER_RUNTIME_INDETERMINATE"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"arm_id": {"const": "deterministic_baseline"}}
+      },
+      "then": {"properties": {"model_key": {"type": "null"}}},
+      "else": {"properties": {"model_key": {"type": "string", "minLength": 1}}}
+    },
+    {
+      "if": {
+        "properties": {
+          "evaluation_reason": {"const": "STRUCTURAL_NOT_VALID"}
+        }
+      },
+      "then": {
+        "properties": {"semantic_verdict": {"const": "INDETERMINATE"}}
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "evaluation_reason": {"const": "VERIFIER_RUNTIME_INDETERMINATE"}
+        }
+      },
+      "then": {
+        "properties": {"semantic_verdict": {"const": "INDETERMINATE"}}
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    }
+  }
+}
