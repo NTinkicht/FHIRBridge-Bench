@@ -15,6 +15,9 @@ import yaml
 
 from fhirbridge.confirmatory_run_plan import assess_confirmatory_run_plan
 from fhirbridge.model_config_readiness import assess_model_prompt_freeze
+from fhirbridge.sealed_case_manifest import (
+    sealed_case_ids as sealed_case_ids_from_manifest,
+)
 
 _AUTH_SCHEMA = Path(
     "runs/schema/confirmatory_authorization_record.schema.json"
@@ -61,29 +64,6 @@ def _repository_commit(explicit: str | None) -> str:
     return value.lower()
 
 
-def _load_case_ids(path: Path) -> set[str]:
-    text = path.read_text(encoding="utf-8")
-    value = (
-        json.loads(text)
-        if path.suffix.lower() == ".json"
-        else yaml.safe_load(text)
-    )
-    if isinstance(value, dict):
-        value = value.get("case_ids")
-    if not isinstance(value, list) or not value:
-        raise ValueError(
-            "sealed case ID file must be a non-empty list or {case_ids: [...]}"
-        )
-    result: set[str] = set()
-    for case_id in value:
-        if not isinstance(case_id, str) or not case_id:
-            raise ValueError("sealed case IDs must be non-empty strings")
-        if case_id in result:
-            raise ValueError(f"duplicate sealed case ID: {case_id}")
-        result.add(case_id)
-    return result
-
-
 def _case_ids_sha256(case_ids: set[str]) -> str:
     payload = json.dumps(
         sorted(case_ids),
@@ -105,7 +85,6 @@ def build_run_plan(
     pilot_acceptance_path: Path,
     sealed_bundle_path: Path,
     sealed_case_manifest_path: Path,
-    sealed_case_ids_path: Path,
     sealed_bundle_id: str,
     run_plan_id: str,
     created_at: str,
@@ -179,7 +158,8 @@ def build_run_plan(
     assert isinstance(models, list)
     model_keys = [str(item["model_key"]) for item in models]
 
-    case_ids = _load_case_ids(sealed_case_ids_path)
+    sealed_case_manifest = _load_document(sealed_case_manifest_path)
+    case_ids = sealed_case_ids_from_manifest(sealed_case_manifest)
     sealed_case_set = auth.get("sealed_case_set")
     if not isinstance(sealed_case_set, dict):
         raise ValueError("authorization record lacks sealed_case_set")
@@ -277,7 +257,6 @@ def main() -> int:
     parser.add_argument("--pilot-acceptance", type=Path, required=True)
     parser.add_argument("--sealed-bundle", type=Path, required=True)
     parser.add_argument("--sealed-case-manifest", type=Path, required=True)
-    parser.add_argument("--sealed-case-ids", type=Path, required=True)
     parser.add_argument("--sealed-bundle-id", required=True)
     parser.add_argument("--run-plan-id", required=True)
     parser.add_argument("--created-at", required=True)
@@ -296,7 +275,6 @@ def main() -> int:
         pilot_acceptance_path=args.pilot_acceptance,
         sealed_bundle_path=args.sealed_bundle,
         sealed_case_manifest_path=args.sealed_case_manifest,
-        sealed_case_ids_path=args.sealed_case_ids,
         sealed_bundle_id=args.sealed_bundle_id,
         run_plan_id=args.run_plan_id,
         created_at=args.created_at,
