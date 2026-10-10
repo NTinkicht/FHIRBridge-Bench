@@ -53,6 +53,14 @@ def _ready_manifest() -> dict:
         },
     ]
 
+    manifest["reviewer_roster"].update(
+        {
+            "version": "1.0.0",
+            "path_or_ref": "expert_validation/reviewer_roster.yaml",
+            "sha256": "9" * 64,
+        }
+    )
+
     manifest["sealed_set"].update(
         {
             "bundle_id": "SEALED-001",
@@ -212,3 +220,14 @@ def test_acceptance_gate_placeholder_reference_or_hash_blocks_opening() -> None:
     assert any("preregistration_ref" in blocker for blocker in report.blockers)
     assert any("preregistration_sha256" in blocker for blocker in report.blockers)
     assert any("policy summary" in blocker for blocker in report.blockers)
+
+
+def test_unfrozen_reviewer_roster_blocks_sealed_opening() -> None:
+    manifest = _ready_manifest()
+    manifest["reviewer_roster"]["version"] = "TO_BE_FROZEN"
+    manifest["reviewer_roster"]["sha256"] = "0" * 64
+
+    report = assess_presealed_freeze(manifest)
+
+    assert not report.ready_to_open_sealed_set
+    assert any("reviewer_roster" in blocker for blocker in report.blockers)
