@@ -1,4 +1,4 @@
-schema_version: "0.3.0"
+schema_version: "0.4.0"
 analysis_id: "ANALYSIS-TO-BE-ASSIGNED"
 status: incomplete_template
 created_at: null
@@ -18,27 +18,36 @@ primary_estimand:
 paired_comparisons:
   analysis_set_rule: both_arms_VALID_and_semantic_determinate_for_VUR
   cluster_id_field: "source_scenario_or_patient_id"
+  model_keys:
+    - "MODEL-TO-BE-FROZEN"
   comparison_family:
-    - comparison_id: BASELINE_vs_DIRECT
+    - comparison_id: "MODEL-TO-BE-FROZEN__BASELINE_vs_DIRECT"
+      model_key: "MODEL-TO-BE-FROZEN"
       arm_a: deterministic_baseline
       arm_b: direct_structured_llm
-    - comparison_id: BASELINE_vs_MAPPING
+    - comparison_id: "MODEL-TO-BE-FROZEN__BASELINE_vs_MAPPING"
+      model_key: "MODEL-TO-BE-FROZEN"
       arm_a: deterministic_baseline
       arm_b: mapping_aware_llm
-    - comparison_id: BASELINE_vs_REPAIR
+    - comparison_id: "MODEL-TO-BE-FROZEN__BASELINE_vs_REPAIR"
+      model_key: "MODEL-TO-BE-FROZEN"
       arm_a: deterministic_baseline
       arm_b: mapping_aware_plus_syntax_repair
-    - comparison_id: DIRECT_vs_MAPPING
+    - comparison_id: "MODEL-TO-BE-FROZEN__DIRECT_vs_MAPPING"
+      model_key: "MODEL-TO-BE-FROZEN"
       arm_a: direct_structured_llm
       arm_b: mapping_aware_llm
-    - comparison_id: DIRECT_vs_REPAIR
+    - comparison_id: "MODEL-TO-BE-FROZEN__DIRECT_vs_REPAIR"
+      model_key: "MODEL-TO-BE-FROZEN"
       arm_a: direct_structured_llm
       arm_b: mapping_aware_plus_syntax_repair
-    - comparison_id: MAPPING_vs_REPAIR
+    - comparison_id: "MODEL-TO-BE-FROZEN__MAPPING_vs_REPAIR"
+      model_key: "MODEL-TO-BE-FROZEN"
       arm_a: mapping_aware_llm
       arm_b: mapping_aware_plus_syntax_repair
 multiplicity:
   secondary_pairwise_method: Holm
+  comparison_family_size: 6
 bootstrap:
   method: paired_cluster_percentile
   iterations: 10000
@@ -47,6 +56,7 @@ bootstrap:
 mcnemar:
   method: exact_binomial
   sidedness: two_sided
+  scope: model_specific_only
 companion_estimand:
   name: VFY
   denominator: all_attempted_transformations
