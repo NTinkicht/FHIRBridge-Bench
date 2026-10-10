@@ -4,6 +4,9 @@ sample_size_method:
   status: method_preregistered_numeric_plan_pending_pilot
   source_sap: docs/statistical_analysis_plan.md
   implementation: src/fhirbridge/sample_size_planning.py
+  pilot_input_schema: analysis/schema/pilot_sample_size_inputs.schema.json
+  pilot_input_template: analysis/examples/pilot_sample_size_inputs_template.yaml
+  final_record_builder: analysis/build_sample_size_preregistration.py
   final_record_schema: analysis/schema/sample_size_preregistration.schema.json
   primary_VUR_precision:
     interval: Wilson_95_percent
