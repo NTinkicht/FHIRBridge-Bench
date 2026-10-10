@@ -101,6 +101,30 @@ def audit_warning_logs(
     )
 
 
+def audit_warning_log_directories(
+    log_directories: list[Path] | tuple[Path, ...],
+    policy_path: Path,
+) -> WarningAudit:
+    """Audit several validator-log directories as one evidence set."""
+
+    combined: list[WarningClassification] = []
+    counts: Counter[str] = Counter()
+    total = 0
+    unknown = 0
+    for directory in log_directories:
+        audit = audit_warning_logs(directory, policy_path)
+        total += audit.total_warnings
+        unknown += audit.unknown_warnings
+        counts.update(audit.category_counts)
+        combined.extend(audit.classifications)
+    return WarningAudit(
+        total_warnings=total,
+        unknown_warnings=unknown,
+        category_counts=dict(sorted(counts.items())),
+        classifications=tuple(combined),
+    )
+
+
 def audit_to_dict(audit: WarningAudit) -> dict[str, Any]:
     return {
         "total_warnings": audit.total_warnings,
