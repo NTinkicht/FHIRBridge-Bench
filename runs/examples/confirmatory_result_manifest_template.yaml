@@ -1,4 +1,4 @@
-schema_version: "0.2.0"
+schema_version: "0.3.0"
 result_manifest_id: "RESULTS-TO-BE-ASSIGNED"
 status: incomplete_template
 created_at: null
@@ -29,6 +29,10 @@ semantic_verification_evidence:
   path_or_ref: "TO_BE_FROZEN"
   sha256: "0000000000000000000000000000000000000000000000000000000000000000"
   record_count: 1
+analysis_dataset_build:
+  path_or_ref: "TO_BE_FROZEN"
+  sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  complete: true
 analysis_ready_dataset:
   path_or_ref: "TO_BE_FROZEN"
   sha256: "0000000000000000000000000000000000000000000000000000000000000000"
