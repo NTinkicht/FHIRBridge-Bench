@@ -143,26 +143,44 @@ def test_bundle_full_urls_are_valid_absolute_urls() -> None:
     assert all(not url.startswith("urn:uuid:fb-") for url in full_urls)
 
 
-def test_patient_identifier_types_do_not_assert_invalid_pi_coding() -> None:
-    _, rendered, _, _ = _round_trip("LAB-010", 9008)
+def test_patient_identifier_types_do_not_emit_unsupported_pi_annotation() -> None:
+    graph, rendered, _, _ = _round_trip("LAB-010", 9008)
     patient = next(
         entry["resource"]
         for entry in rendered.artifact["entry"]
         if entry["resource"]["resourceType"] == "Patient"
     )
-
-    by_text = {
-        identifier["type"]["text"]: identifier["type"]
-        for identifier in patient["identifier"]
-        if "type" in identifier
+    source_patient = next(
+        fact for fact in graph["facts"] if fact["fact_type"] == "patient_identity"
+    )
+    source_by_value = {
+        identifier["value"]: identifier
+        for identifier in source_patient["identifiers"]
     }
-    assert by_text["MR"]["coding"] == [
+    rendered_by_value = {
+        identifier["value"]: identifier
+        for identifier in patient["identifier"]
+    }
+
+    primary_value = next(
+        value for value, identifier in source_by_value.items()
+        if identifier["type"] == "MR"
+    )
+    secondary_value = next(
+        value for value, identifier in source_by_value.items()
+        if identifier["type"] == "PI"
+    )
+
+    assert rendered_by_value[primary_value]["type"]["coding"] == [
         {
             "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
             "code": "MR",
         }
     ]
-    assert by_text["PI"] == {"text": "PI"}
+    assert "type" not in rendered_by_value[secondary_value]
+    assert rendered_by_value[secondary_value]["system"] == (
+        "urn:fhirbridge:mrn:secondary"
+    )
 
 
 def test_nonstandard_identifier_labels_are_not_rendered_as_uncoded_fhir_types() -> None:
