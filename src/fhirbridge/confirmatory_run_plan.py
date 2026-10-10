@@ -97,6 +97,7 @@ def assess_confirmatory_run_plan(
         "pilot_acceptance_preregistration_sha256",
         "execution_record_schema_sha256",
         "deterministic_baseline_renderer_sha256",
+        "deterministic_baseline_execution_schema_sha256",
     ):
         value = frozen.get(key)
         if not _valid_sha256(value):
