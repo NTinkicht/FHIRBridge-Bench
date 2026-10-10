@@ -26,7 +26,7 @@ The implementer may use only the materials explicitly listed below during the cl
 1. Canonical fact schema under `canonical/schema/`.
 2. Canonical development examples under `canonical/examples/`.
 3. Scenario definitions under `benchmark/`.
-4. Projectability contract `contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml`.
+4. Projectability contract `contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml`.
 5. `docs/projectability_contract.md`.
 6. `docs/target_profiles.md`.
 7. `docs/field_mapping_audit_lab_oru_r01.md`.
@@ -45,9 +45,10 @@ python renderer_validation/build_renderer_b_challenge.py
 ```
 
 The package contains one deterministic canonical development graph for each
-`LAB-001` through `LAB-012`, plus a manifest with graph hashes. It
-explicitly contains **no Renderer A output, no target gold serialization, no
-verifier decisions, and no fault labels**. The package is therefore safe to
+`LAB-001` through `LAB-012`, plus a manifest with graph hashes. The v0.3
+challenge now includes one source-grounded canonical `order` fact per case and
+explicit report-to-order linkage. It explicitly contains **no Renderer A output,
+no target gold serialization, no verifier decisions, and no fault labels**. The package is therefore safe to
 share with the independent implementer without exposing the reference
 implementation.
 
@@ -57,7 +58,7 @@ serialization merely to maximize scenario coverage.
 
 ## Required outputs
 
-Renderer B should implement two independently authored projections for the currently frozen development slice:
+Renderer B should independently implement the currently reviewable projections below. Contract v0.3 remains a **draft synchronization point**, not frozen semantic truth:
 
 ### Canonical → FHIR R4
 
@@ -74,11 +75,13 @@ At minimum support the in-scope facts needed for:
 - effective/issued/collection times;
 - reference range;
 - interpretation;
-- report-to-result and specimen relationships supported by the current canonical graph.
+- report-to-result and specimen relationships supported by the current canonical graph;
+- source-grounded ServiceRequest order context;
+- `DiagnosticReport.basedOn` linkage to the originating ServiceRequest.
 
 ### Canonical → HL7 v2.5.1 ORU^R01
 
-At minimum support the currently scoped LRI-oriented fields represented by the contract:
+For the legacy/order-free development subset, support the currently scoped fields represented by the contract:
 
 - PID-3 patient identifier;
 - PID-5 patient name;
@@ -96,6 +99,8 @@ At minimum support the currently scoped LRI-oriented fields represented by the c
 - OBX-11 result status;
 - OBX-14 observation effective time;
 - current SPM identifier/type/collection fields covered by the contract.
+
+**Do not invent or silently infer the v0.3 Edition 5 order projection.** The challenge inputs contain order context so Renderer B can demonstrate explicit unsupported/fail-closed behavior. Until the exact Edition 5 machine-readable profile is acquired and the blind external review resolves the remaining order-locus questions, Renderer B must not claim a frozen mapping for MSH-21, ORC-1, ORC-3, ORC-12, OBR-3, OBR-16, or related datatype/binding constraints.
 
 The current development slice intentionally uses a single OBR group. Do not silently extend the scientific scope to multi-OBR or multi-specimen attribution unless that extension is separately reviewed and versioned.
 
@@ -120,6 +125,7 @@ Renderer B must:
 - emit deterministic output for a fixed input/version/configuration;
 - record renderer implementation/version metadata;
 - fail explicitly on unsupported/indeterminate facts instead of inventing mappings;
+- treat the current HL7 v2 order-context projection as unsupported until a synchronized contract/profile amendment explicitly releases it;
 - preserve synthetic identifiers and timestamps according to the contract;
 - never call the semantic verifier to decide how to render content.
 
