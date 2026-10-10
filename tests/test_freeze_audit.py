@@ -165,3 +165,50 @@ def test_preopening_amendment_is_visible_but_not_automatically_fatal() -> None:
 
     assert report.ready_to_open_sealed_set
     assert report.warnings == ("pre-opening amendment recorded: AMD-PRE-001",)
+
+
+def test_placeholder_manifest_bundle_and_repository_identity_block_opening() -> None:
+    manifest = _ready_manifest()
+    manifest["manifest_id"] = "FREEZE-TO-BE-ASSIGNED"
+    manifest["repository_commit"] = "0000000"
+    manifest["sealed_set"]["bundle_id"] = "SEALED-TO-BE-ASSIGNED"
+
+    report = assess_presealed_freeze(manifest)
+
+    assert not report.ready_to_open_sealed_set
+    assert any("manifest_id" in blocker for blocker in report.blockers)
+    assert any("repository_commit" in blocker for blocker in report.blockers)
+    assert any("bundle_id" in blocker for blocker in report.blockers)
+
+
+def test_measurement_critical_dependency_requires_frozen_hash_and_no_placeholders() -> None:
+    manifest = _ready_manifest()
+    terminology = next(
+        item
+        for item in manifest["dependencies"]
+        if item["purpose"] == "terminology"
+    )
+    terminology["version"] = "TO_BE_FROZEN"
+    terminology["source_or_ref"] = "TO_BE_FROZEN"
+    terminology["sha256"] = None
+
+    report = assess_presealed_freeze(manifest)
+
+    assert not report.ready_to_open_sealed_set
+    assert any("placeholder version" in blocker for blocker in report.blockers)
+    assert any("placeholder source" in blocker for blocker in report.blockers)
+    assert any("lacks a frozen SHA-256" in blocker for blocker in report.blockers)
+
+
+def test_acceptance_gate_placeholder_reference_or_hash_blocks_opening() -> None:
+    manifest = _ready_manifest()
+    manifest["acceptance_gate"]["preregistration_ref"] = "TO_BE_FROZEN"
+    manifest["acceptance_gate"]["preregistration_sha256"] = "0" * 64
+    manifest["acceptance_gate"]["gate_policy_summary"] = "TO_BE_FROZEN"
+
+    report = assess_presealed_freeze(manifest)
+
+    assert not report.ready_to_open_sealed_set
+    assert any("preregistration_ref" in blocker for blocker in report.blockers)
+    assert any("preregistration_sha256" in blocker for blocker in report.blockers)
+    assert any("policy summary" in blocker for blocker in report.blockers)
