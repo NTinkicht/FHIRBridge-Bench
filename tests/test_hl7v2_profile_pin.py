@@ -1,10 +1,13 @@
 from copy import deepcopy
+from pathlib import Path
 
 import pytest
 import yaml
 
+from fhirbridge.hl7v2_profile_bundle import compute_profile_bundle_manifest
 from fhirbridge.hl7v2_profile_pin import (
     assert_hl7_profile_pin_frozen,
+    assert_profile_bundle_matches_pin,
     assess_hl7_profile_pin,
 )
 
