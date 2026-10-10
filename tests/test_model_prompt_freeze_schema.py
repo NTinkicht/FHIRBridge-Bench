@@ -23,7 +23,7 @@ def test_model_prompt_freeze_template_is_schema_valid_but_nonassertive() -> None
 
     jsonschema.Draft202012Validator(_schema()).validate(document)
 
-    assert document["schema_version"] == "0.5.0"
+    assert document["schema_version"] == "0.6.0"
     policy = document["global_execution_policy"]
     assert policy["policy_id"] == "FHIRBRIDGE-MODEL-EXECUTION-001"
     assert policy["policy_version"] == "0.3.0"
@@ -155,6 +155,14 @@ def test_model_prompt_schema_requires_null_seed_when_unsupported() -> None:
     model = document["llm_models"][0]
     model["seed_policy"] = "provider_does_not_support_seed"
     model["seed"] = 123
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+def test_model_prompt_schema_requires_baseline_qualification_artifact() -> None:
+    document = _template()
+    del document["deterministic_baseline"]["qualification_artifact"]
 
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.Draft202012Validator(_schema()).validate(document)
