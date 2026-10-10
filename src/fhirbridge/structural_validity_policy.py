@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
+
+from .fhir_qualification import summarize_log
+from .fhir_warning_audit import audit_warning_log
 
 _OUTCOMES = frozenset(
     {"VALID", "INVALID", "MEASUREMENT_FAILURE", "POLICY_UNRESOLVED"}
@@ -87,6 +91,75 @@ def classify_nist_report(
             tuple(unresolved),
         )
     return StructuralValidityDecision("VALID", ())
+
+
+def classify_fhir_validator_log(
+    log_path: Path | None,
+    *,
+    warning_policy_path: Path,
+    validator_executed: bool = True,
+    package_loaded: bool = True,
+) -> StructuralValidityDecision:
+    """Classify the archived FHIR CLI log used by the benchmark pipeline."""
+
+    if not validator_executed:
+        return StructuralValidityDecision(
+            "MEASUREMENT_FAILURE",
+            ("validator_execution_failed",),
+        )
+    if not package_loaded:
+        return StructuralValidityDecision(
+            "MEASUREMENT_FAILURE",
+            ("fhir_package_load_failed",),
+        )
+    if not isinstance(log_path, Path) or not log_path.is_file():
+        return StructuralValidityDecision(
+            "MEASUREMENT_FAILURE",
+            ("fhir_validator_log_missing",),
+        )
+
+    try:
+        summary = summarize_log(log_path)
+        warning_audit = audit_warning_log(log_path, warning_policy_path)
+    except (OSError, ValueError):
+        return StructuralValidityDecision(
+            "MEASUREMENT_FAILURE",
+            ("fhir_validator_log_unparseable",),
+        )
+
+    errors = summary.get("errors")
+    warnings = summary.get("warnings")
+    if not isinstance(errors, int) or not isinstance(warnings, int):
+        return StructuralValidityDecision(
+            "MEASUREMENT_FAILURE",
+            ("fhir_validator_summary_counts_invalid",),
+        )
+    if errors > 0:
+        return StructuralValidityDecision(
+            "INVALID",
+            ("fhir_error_classification_present",),
+        )
+
+    # The validator summary count and the archived warning lines must agree.
+    # Otherwise the evidence is incomplete and cannot authorize a VALID state.
+    if warning_audit.total_warnings != warnings:
+        return StructuralValidityDecision(
+            "MEASUREMENT_FAILURE",
+            ("fhir_warning_evidence_count_mismatch",),
+        )
+    if warning_audit.unknown_warnings:
+        return StructuralValidityDecision(
+            "POLICY_UNRESOLVED",
+            ("fhir_unknown_warning_class_present",),
+        )
+
+    return StructuralValidityDecision(
+        "VALID",
+        tuple(
+            f"accepted_fhir_warning:{category_id}"
+            for category_id in sorted(warning_audit.category_counts)
+        ),
+    )
 
 
 def classify_fhir_operation_outcome(
