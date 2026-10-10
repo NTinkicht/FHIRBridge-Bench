@@ -30,7 +30,12 @@ _BLINDING_FLAGS = (
     "claimed_provenance_hidden",
     "other_reviewer_labels_hidden",
 )
-_PLACEHOLDER_TOKENS = ("TO_BE_FROZEN", "TO-BE-FROZEN", "TO_BE_ASSIGNED", "TO-BE-ASSIGNED")
+_PLACEHOLDER_TOKENS = (
+    "TO_BE_FROZEN",
+    "TO-BE-FROZEN",
+    "TO_BE_ASSIGNED",
+    "TO-BE-ASSIGNED",
+)
 
 
 @dataclass(frozen=True)
@@ -48,6 +53,10 @@ def _contains_placeholder(value: Any) -> bool:
         return False
     upper = value.upper()
     return any(token in upper for token in _PLACEHOLDER_TOKENS)
+
+
+def _zeroish_hex(value: Any) -> bool:
+    return isinstance(value, str) and bool(value) and set(value.lower()) <= {"0"}
 
 
 def _artifact_blockers(
@@ -77,12 +86,16 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
     blockers: list[str] = []
     warnings: list[str] = []
 
+    if _contains_placeholder(manifest.get("manifest_id")):
+        blockers.append("manifest_id is still a placeholder")
     if manifest.get("freeze_complete") is not True:
         blockers.append("freeze_complete is not true")
     if manifest.get("freeze_timestamp") is None:
         blockers.append("freeze_timestamp is not recorded")
     if _contains_placeholder(manifest.get("protocol_version")):
         blockers.append("protocol_version is still a placeholder")
+    if _zeroish_hex(manifest.get("repository_commit")):
+        blockers.append("repository_commit is still a zero placeholder")
 
     _artifact_blockers(manifest.get("instrument_components", {}), blockers)
 
@@ -98,9 +111,32 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
             + ", ".join(sorted(missing_dependencies))
         )
 
+    for dependency in manifest.get("dependencies", []):
+        if not isinstance(dependency, dict):
+            continue
+        purpose = dependency.get("purpose")
+        if purpose not in _REQUIRED_DEPENDENCY_PURPOSES:
+            continue
+        name = dependency.get("name", "unknown")
+        if _contains_placeholder(dependency.get("version")):
+            blockers.append(
+                f"measurement-critical dependency {name} has placeholder version"
+            )
+        if _contains_placeholder(dependency.get("source_or_ref")):
+            blockers.append(
+                f"measurement-critical dependency {name} has placeholder source"
+            )
+        digest = dependency.get("sha256")
+        if digest is None or _zeroish_hex(digest):
+            blockers.append(
+                f"measurement-critical dependency {name} lacks a frozen SHA-256"
+            )
+
     sealed_set = manifest.get("sealed_set", {})
     if sealed_set.get("split") != "sealed_test":
         blockers.append("confirmatory freeze manifest must identify split as sealed_test")
+    if _contains_placeholder(sealed_set.get("bundle_id")):
+        blockers.append("sealed-set bundle_id is still a placeholder")
     if sealed_set.get("case_count", 0) <= 0:
         blockers.append("sealed-set case_count must be positive before opening")
     if sealed_set.get("bundle_sha256") == _ZERO_SHA256:
@@ -136,8 +172,19 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
     acceptance_gate = manifest.get("acceptance_gate")
     if not isinstance(acceptance_gate, dict):
         blockers.append("pilot-derived acceptance gate has not been preregistered")
-    elif acceptance_gate.get("defined_before_sealed_opening") is not True:
-        blockers.append("acceptance gate is not attested as defined before sealed opening")
+    else:
+        if acceptance_gate.get("defined_before_sealed_opening") is not True:
+            blockers.append(
+                "acceptance gate is not attested as defined before sealed opening"
+            )
+        if _contains_placeholder(acceptance_gate.get("preregistration_ref")):
+            blockers.append("acceptance gate preregistration_ref is still a placeholder")
+        if _zeroish_hex(acceptance_gate.get("preregistration_sha256")):
+            blockers.append(
+                "acceptance gate preregistration_sha256 is still a zero placeholder"
+            )
+        if _contains_placeholder(acceptance_gate.get("gate_policy_summary")):
+            blockers.append("acceptance gate policy summary is still a placeholder")
 
     for amendment in manifest.get("post_freeze_amendments", []):
         if not isinstance(amendment, dict):
