@@ -37,6 +37,10 @@ class ModelExecutionRecord:
     execution_id: str
     case_id: str
     model_key: str
+    model_prompt_freeze_sha256: str
+    source_input_sha256: str
+    rendered_prompt_sha256: str | None
+    mapping_context_sha256: str | None
     strategy_id: str
     generation_source: str
     attempt_number: int | None
@@ -56,11 +60,25 @@ def _digest(value: str) -> str:
     return sha256(value.encode("utf-8")).hexdigest()
 
 
+def _require_sha256(value: str | None, *, label: str) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(character not in "0123456789abcdefABCDEF" for character in value)
+    ):
+        raise ValueError(f"{label} must be a 64-character SHA-256 hex digest")
+    return value.lower()
+
+
 def build_success_record(
     *,
     execution_id: str,
     case_id: str,
     model_key: str,
+    model_prompt_freeze_sha256: str,
+    source_input_sha256: str,
+    rendered_prompt_sha256: str | None,
+    mapping_context_sha256: str | None,
     strategy_output: StrategyOutput,
     request_started_at: str,
     request_finished_at: str,
@@ -69,6 +87,14 @@ def build_success_record(
 ) -> ModelExecutionRecord:
     """Build one immutable successful execution/derived-output record."""
 
+    freeze_hash = _require_sha256(
+        model_prompt_freeze_sha256,
+        label="model_prompt_freeze_sha256",
+    )
+    source_hash = _require_sha256(
+        source_input_sha256,
+        label="source_input_sha256",
+    )
     repair = strategy_output.syntax_repair
     repair_applied = bool(repair is not None and repair.changed)
     operations = repair.operations if repair is not None else ()
@@ -84,6 +110,21 @@ def build_success_record(
             )
         generation_source = "provider_call"
         attempt_number: int | None = 1
+        prompt_hash = _require_sha256(
+            rendered_prompt_sha256,
+            label="rendered_prompt_sha256",
+        )
+        if strategy_output.strategy_id == DIRECT_STRATEGY:
+            if mapping_context_sha256 is not None:
+                raise ValueError(
+                    "direct strategy cannot record mapping_context_sha256"
+                )
+            mapping_hash: str | None = None
+        else:
+            mapping_hash = _require_sha256(
+                mapping_context_sha256,
+                label="mapping_context_sha256",
+            )
     elif strategy_output.strategy_id == REPAIR_STRATEGY:
         if repair is None:
             raise ValueError("repair strategy must provide repair metadata")
@@ -101,14 +142,28 @@ def build_success_record(
             )
         generation_source = "reuse_mapping_aware_raw_output"
         attempt_number = None
+        if rendered_prompt_sha256 is not None:
+            raise ValueError(
+                "repair strategy must not record rendered_prompt_sha256 because "
+                "it does not make a provider call"
+            )
+        prompt_hash = None
+        mapping_hash = _require_sha256(
+            mapping_context_sha256,
+            label="mapping_context_sha256",
+        )
     else:
         raise ValueError(f"unsupported strategy_id: {strategy_output.strategy_id}")
 
     return ModelExecutionRecord(
-        schema_version="0.2.0",
+        schema_version="0.3.0",
         execution_id=execution_id,
         case_id=case_id,
         model_key=model_key,
+        model_prompt_freeze_sha256=freeze_hash,
+        source_input_sha256=source_hash,
+        rendered_prompt_sha256=prompt_hash,
+        mapping_context_sha256=mapping_hash,
         strategy_id=strategy_output.strategy_id,
         generation_source=generation_source,
         attempt_number=attempt_number,
@@ -130,6 +185,10 @@ def build_failure_record(
     execution_id: str,
     case_id: str,
     model_key: str,
+    model_prompt_freeze_sha256: str,
+    source_input_sha256: str,
+    rendered_prompt_sha256: str | None,
+    mapping_context_sha256: str | None,
     strategy_id: str,
     outcome_class: str,
     request_started_at: str,
@@ -140,6 +199,14 @@ def build_failure_record(
 ) -> ModelExecutionRecord:
     """Record one failed provider call or deterministic repair operation."""
 
+    freeze_hash = _require_sha256(
+        model_prompt_freeze_sha256,
+        label="model_prompt_freeze_sha256",
+    )
+    source_hash = _require_sha256(
+        source_input_sha256,
+        label="source_input_sha256",
+    )
     if strategy_id not in {DIRECT_STRATEGY, MAPPING_STRATEGY, REPAIR_STRATEGY}:
         raise ValueError(f"unsupported strategy_id: {strategy_id}")
     if not isinstance(error_summary, str) or not error_summary.strip():
@@ -156,6 +223,21 @@ def build_failure_record(
             )
         generation_source = "provider_call"
         attempt_number: int | None = 1
+        prompt_hash = _require_sha256(
+            rendered_prompt_sha256,
+            label="rendered_prompt_sha256",
+        )
+        if strategy_id == DIRECT_STRATEGY:
+            if mapping_context_sha256 is not None:
+                raise ValueError(
+                    "direct strategy cannot record mapping_context_sha256"
+                )
+            mapping_hash: str | None = None
+        else:
+            mapping_hash = _require_sha256(
+                mapping_context_sha256,
+                label="mapping_context_sha256",
+            )
     else:
         if outcome_class not in _REPAIR_FAILURES:
             raise ValueError(
@@ -171,12 +253,25 @@ def build_failure_record(
             )
         generation_source = "reuse_mapping_aware_raw_output"
         attempt_number = None
+        if rendered_prompt_sha256 is not None:
+            raise ValueError(
+                "repair failure cannot record rendered_prompt_sha256"
+            )
+        prompt_hash = None
+        mapping_hash = _require_sha256(
+            mapping_context_sha256,
+            label="mapping_context_sha256",
+        )
 
     return ModelExecutionRecord(
         schema_version="0.2.0",
         execution_id=execution_id,
         case_id=case_id,
         model_key=model_key,
+        model_prompt_freeze_sha256=freeze_hash,
+        source_input_sha256=source_hash,
+        rendered_prompt_sha256=prompt_hash,
+        mapping_context_sha256=mapping_hash,
         strategy_id=strategy_id,
         generation_source=generation_source,
         attempt_number=attempt_number,
