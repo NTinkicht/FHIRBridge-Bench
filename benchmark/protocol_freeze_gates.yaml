@@ -75,8 +75,11 @@ gates:
     category: statistical_analysis
     status: blocked
     blockers:
-      - unconditional_valid_and_faithful_yield_not_preregistered
       - structural_validity_classification_policy_not_fully_frozen
+    evidence:
+      unconditional_companion_estimand: docs/statistical_analysis_plan.md
+      implementation: src/fhirbridge/endpoint_metrics.py
+      status: VFY_preregistered_and_implemented
     completion_rule: >-
       Report VUR conditional on structural validity and an unconditional
       valid-and-faithful yield across all attempts, with the structural-validity
