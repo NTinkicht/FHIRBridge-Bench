@@ -124,6 +124,25 @@ def _fixture(tmp_path: Path) -> dict[str, Path]:
         encoding="utf-8",
     )
     paths["audit"] = audit
+
+    analysis_build = tmp_path / "analysis-dataset-build.json"
+    analysis_build.write_text(
+        json.dumps(
+            {
+                "schema_version": "0.1.0",
+                "run_plan_sha256": _MODULE._sha256(run_plan),
+                "structural_evidence_sha256": _MODULE._sha256(structural),
+                "semantic_evidence_sha256": _MODULE._sha256(semantic),
+                "analysis_dataset_sha256": _MODULE._sha256(analysis),
+                "analysis_row_count": 2,
+                "no_silent_exclusion_verified": True,
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    paths["analysis_build"] = analysis_build
     return paths
 
 
@@ -137,6 +156,7 @@ def _build(paths: dict[str, Path]) -> dict:
         execution_audit_path=paths["audit"],
         structural_validation_path=paths["structural"],
         semantic_verification_path=paths["semantic"],
+        analysis_dataset_build_path=paths["analysis_build"],
         analysis_ready_dataset_path=paths["analysis"],
         result_manifest_id="RESULTS-001",
         created_at="2026-10-21T10:00:00Z",
@@ -226,3 +246,20 @@ def test_result_manifest_builder_rejects_repository_commit_drift(
             created_at="2026-10-21T10:00:00Z",
             repository_commit="deadbee",
         )
+
+
+def test_result_manifest_builder_rejects_analysis_build_output_hash_drift(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    report = json.loads(
+        paths["analysis_build"].read_text(encoding="utf-8")
+    )
+    report["analysis_dataset_sha256"] = "f" * 64
+    paths["analysis_build"].write_text(
+        json.dumps(report, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="analysis dataset build output hash"):
+        _build(paths)
