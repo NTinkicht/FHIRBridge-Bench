@@ -149,6 +149,11 @@ Where the same source instance is processed by multiple strategies:
 - the bootstrap random seed must be frozen in the analysis manifest before any
   confirmatory model inference.
 
+The `analysis_cluster_id` is assigned in the sealed case manifest before
+confirmatory execution and is propagated unchanged into analysis rows. Cluster
+identity must not be reconstructed, merged, or split using model outputs,
+verifier outcomes, or expert labels.
+
 The paired analysis set is constructed before looking at strategy outcomes. For
 VUR comparisons, a source instance enters the paired binary comparison only when
 the corresponding transformations in both compared arms satisfy the frozen
