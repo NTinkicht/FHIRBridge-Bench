@@ -9,7 +9,7 @@ on:
   push:
     branches:
       - main
-      - protocol-v1
+  workflow_dispatch:
 
 permissions:
   contents: read
