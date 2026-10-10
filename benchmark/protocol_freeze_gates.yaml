@@ -67,12 +67,15 @@ gates:
     blockers:
       - report_status_map_external_review_and_Edition5_binding_check_pending
       - observation_status_map_external_review_and_Edition5_binding_check_pending
-      - specimen_code_binding_behavior_not_frozen
+      - specimen_binding_external_review_and_exact_profile_reconciliation_pending
     evidence:
       status_mapping_candidates: benchmark/status_mapping_candidates.yaml
+      specimen_binding_candidates: benchmark/specimen_binding_candidates.yaml
       renderer_a_status_policy: separate_OBR25_and_OBX11_unique_inverse_only
       lifter_status_policy: separate_v2_to_canonical_maps_no_shared_fallback
       primary_statuses_covered: [preliminary, final, corrected]
+      specimen_source_semantics: unambiguous_serum_plus_venipuncture
+      specimen_current_v2_coding: development_placeholders_prohibited_for_confirmatory_use
       freeze_status: external_review_and_exact_Edition5_binding_check_pending
     completion_rule: >-
       Renderer-internal convenience maps may not define confirmatory semantic
