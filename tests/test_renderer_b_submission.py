@@ -21,7 +21,7 @@ def _declaration() -> dict:
         },
         "contract": {
             "contract_id": "F2V-LAB-ORU-R01-001",
-            "contract_version": "0.2.0",
+            "contract_version": "0.3.0",
         },
         "standards_sources": [
             {
