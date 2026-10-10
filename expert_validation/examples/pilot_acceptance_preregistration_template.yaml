@@ -1,4 +1,4 @@
-schema_version: "0.2.0"
+schema_version: "0.3.0"
 record_id: "PILOT-GATE-TO-BE-ASSIGNED"
 status: incomplete_template
 created_at: null
@@ -19,6 +19,8 @@ metrics:
   false_positive: 0
   false_negative: 0
   runtime_indeterminate_count: 0
+  runtime_indeterminate_expert_positive_count: 0
+  runtime_indeterminate_expert_negative_count: 0
   runtime_indeterminate_rate:
     estimate: 0.0
     lower: 0.0
