@@ -77,6 +77,9 @@ gates:
     evidence:
       status_mapping_candidates: benchmark/status_mapping_candidates.yaml
       specimen_binding_candidates: benchmark/specimen_binding_candidates.yaml
+      external_review_response_schema: contracts/review/semantic_mapping_review_response.schema.json
+      external_review_packet_builder: contracts/review/build_semantic_mapping_packet.py
+      external_review_packet_status: automated_independent_review_handoff_ready
       renderer_a_status_policy: separate_OBR25_and_OBX11_unique_inverse_only
       lifter_status_policy: separate_v2_to_canonical_maps_no_shared_fallback
       primary_statuses_covered: [preliminary, final, corrected]
