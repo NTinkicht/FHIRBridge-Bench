@@ -195,3 +195,32 @@ binary sensitivity/PPV on determinate outputs and separately freezes a maximum
 runtime-indeterminate rate, evaluated using either its point estimate or the
 upper Wilson 95% confidence bound as preregistered. All-indeterminate verifier
 output cannot satisfy instrument qualification.
+
+## Confirmatory inference authorization
+
+Completing the freeze manifest is necessary but not sufficient to start model
+inference. The executable authorization layer in
+`src/fhirbridge/confirmatory_authorization.py` independently rechecks:
+
+- every protocol gate is passed and the protocol ledger is frozen;
+- the tooling manifest is frozen and all qualification flags pass;
+- the sealed-set freeze audit passes;
+- reviewer roster and exact sealed-case assignment coverage are ready;
+- analysis and sample-size preregistrations are ready;
+- model/prompt configuration is frozen;
+- the pilot-derived verifier acceptance gate is preregistered;
+- the actual governance artifact SHA-256 values match those pinned in the
+  freeze manifest.
+
+A successful authorization is followed by a pre-inference run plan conforming
+to `runs/schema/confirmatory_run_plan.schema.json`. The run plan is frozen
+while `sealed_set_opened=false` and `inference_started=false`, binds all
+critical artifact hashes, and deterministically records the expected provider
+call, derived-repair, deterministic-baseline, and total-arm output counts.
+
+The allowed order is therefore:
+
+**freeze → authorize → hash run plan → open sealed set → execute inference**.
+
+There is no supported path that starts confirmatory inference by bypassing these
+checks.
