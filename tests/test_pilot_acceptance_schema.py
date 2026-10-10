@@ -26,6 +26,7 @@ def test_incomplete_pilot_acceptance_template_is_schema_valid_but_not_a_claim() 
 
     jsonschema.Draft202012Validator(_schema()).validate(document)
 
+    assert document["schema_version"] == "0.2.0"
     assert document["status"] == "incomplete_template"
     assert document["created_at"] is None
 
@@ -41,6 +42,22 @@ def test_pilot_acceptance_schema_forbids_opened_sealed_set() -> None:
 def test_pilot_acceptance_schema_forbids_using_sealed_results_for_thresholds() -> None:
     document = _template()
     document["timing_attestation"]["sealed_results_used_to_choose_thresholds"] = True
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+def test_pilot_schema_requires_runtime_indeterminate_gate() -> None:
+    document = _template()
+    del document["acceptance_gate"]["maximum_runtime_indeterminate_rate"]
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+def test_pilot_schema_requires_runtime_indeterminate_metric() -> None:
+    document = _template()
+    del document["metrics"]["runtime_indeterminate_rate"]
 
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.Draft202012Validator(_schema()).validate(document)
