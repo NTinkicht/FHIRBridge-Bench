@@ -33,12 +33,12 @@ instrument_components:
   severity_policy:
     artifact_id: "severity-policy"
     version: "TO_BE_FROZEN"
-    path_or_ref: "benchmark/severity_policy_candidate.yaml"
+    path_or_ref: "benchmark/severity_policy_frozen.yaml"
     sha256: "0000000000000000000000000000000000000000000000000000000000000000"
   precedence_policy:
     artifact_id: "error-precedence-policy"
     version: "TO_BE_FROZEN"
-    path_or_ref: "benchmark/error_precedence_policy_candidate.yaml"
+    path_or_ref: "benchmark/error_precedence_policy_frozen.yaml"
     sha256: "0000000000000000000000000000000000000000000000000000000000000000"
 dependencies: []
 reviewer_roster:
