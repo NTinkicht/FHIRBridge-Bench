@@ -26,7 +26,7 @@ def test_incomplete_pilot_acceptance_template_is_schema_valid_but_not_a_claim() 
 
     jsonschema.Draft202012Validator(_schema()).validate(document)
 
-    assert document["schema_version"] == "0.4.0"
+    assert document["schema_version"] == "0.5.0"
     assert document["status"] == "incomplete_template"
     assert document["created_at"] is None
 
@@ -83,6 +83,14 @@ def test_pilot_schema_requires_class_specific_indeterminate_counts(
 def test_pilot_schema_requires_expert_indeterminate_count() -> None:
     document = _template()
     del document["pilot_evidence"]["expert_major_error_indeterminate_count"]
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+def test_pilot_schema_requires_verifier_result_bundle_hash() -> None:
+    document = _template()
+    del document["pilot_evidence"]["pilot_verifier_results_bundle_sha256"]
 
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.Draft202012Validator(_schema()).validate(document)
