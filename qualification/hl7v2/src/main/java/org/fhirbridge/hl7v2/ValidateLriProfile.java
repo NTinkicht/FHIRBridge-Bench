@@ -123,14 +123,26 @@ public final class ValidateLriProfile {
 
         SummaryCount errors = report.getErrorCounts();
         SummaryCount warnings = report.getWarningCounts();
+        SummaryCount alerts = report.getAlertCounts();
+        SummaryCount informational = report.getInformationalCounts();
         int errorTotal = total(errors);
         int warningTotal = total(warnings);
+        int alertTotal = total(alerts);
+        int informationalTotal = total(informational);
+
+        // Preserve the entry-level evidence before the compact summary. The
+        // Python qualification runner joins this report to the summary using
+        // line-delimited JSON and can therefore assert expected error loci.
+        System.out.println(NistReport.Companion.getNistGson().toJson(report));
 
         System.out.printf(
             "{\"status\":\"%s\","
                 + "\"errors\":{\"structure\":%d,\"value_set\":%d,\"content\":%d},"
                 + "\"warnings\":{\"structure\":%d,\"value_set\":%d,\"content\":%d},"
-                + "\"error_total\":%d,\"warning_total\":%d}%n",
+                + "\"alerts\":{\"structure\":%d,\"value_set\":%d,\"content\":%d},"
+                + "\"informational\":{\"structure\":%d,\"value_set\":%d,\"content\":%d},"
+                + "\"error_total\":%d,\"warning_total\":%d,"
+                + "\"alert_total\":%d,\"informational_total\":%d}%n",
             report.getStatus(),
             errors == null ? 0 : errors.getStructure(),
             errors == null ? 0 : errors.getValueset(),
@@ -138,8 +150,16 @@ public final class ValidateLriProfile {
             warnings == null ? 0 : warnings.getStructure(),
             warnings == null ? 0 : warnings.getValueset(),
             warnings == null ? 0 : warnings.getContent(),
+            alerts == null ? 0 : alerts.getStructure(),
+            alerts == null ? 0 : alerts.getValueset(),
+            alerts == null ? 0 : alerts.getContent(),
+            informational == null ? 0 : informational.getStructure(),
+            informational == null ? 0 : informational.getValueset(),
+            informational == null ? 0 : informational.getContent(),
             errorTotal,
-            warningTotal
+            warningTotal,
+            alertTotal,
+            informationalTotal
         );
 
         if (errorTotal != 0 && !reportOnly) {
