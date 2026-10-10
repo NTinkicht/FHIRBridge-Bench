@@ -9,19 +9,19 @@ from pathlib import Path
 from fhirbridge.contract_review_report import build_contract_review_pair_report
 from fhirbridge.schema_validation import load_yaml, require_valid_document
 
-_CONTRACT = Path("contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml")
-_CANDIDATES = Path("contracts/review/relationship_candidates_v0.1.yaml")
-_SCHEMA = Path("contracts/review/contract_review_response.schema.json")
+_CONTRACT = Path("contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml")
+_CANDIDATES = Path("contracts/review/relationship_candidates_v0.2.yaml")
+_SCHEMA = Path("contracts/review/contract_review_blind_response.schema.json")
 _DEFAULT_OUTPUT = Path(
-    "contracts/review/generated/contract-review-pair-report-v0.2.json"
+    "contracts/review/generated/contract-review-pair-report-v0.3-blind.json"
 )
 
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Validate two independent external contract-review responses and "
-            "write agreement/disagreement evidence without adjudicating them."
+            "Validate two independent blind Stage-1 contract-review responses "
+            "and write agreement/disagreement evidence without adjudicating them."
         )
     )
     parser.add_argument("reviewer_a", type=Path)
