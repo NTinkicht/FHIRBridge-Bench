@@ -118,7 +118,7 @@ def test_run_plan_rejects_older_execution_record_contract() -> None:
 
     assert not readiness.ready
     assert any(
-        "schema_version is not frozen to 0.2.0" in item
+        "schema_version is not frozen to 0.3.0" in item
         for item in readiness.blockers
     )
 
