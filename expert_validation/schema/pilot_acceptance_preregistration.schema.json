@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/pilot_acceptance_preregistration.schema.json",
+  "title": "FHIRBridge Pilot-Derived Instrument Acceptance Preregistration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_id",
+    "status",
+    "created_at",
+    "pilot_evidence",
+    "frozen_instrument",
+    "metrics",
+    "acceptance_gate",
+    "timing_attestation"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "record_id": {"type": "string", "minLength": 1},
+    "status": {
+      "enum": ["incomplete_template", "preregistered"]
+    },
+    "created_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "pilot_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pilot_case_manifest_sha256",
+        "pilot_adjudication_bundle_sha256",
+        "case_count",
+        "expert_major_error_positive_count",
+        "expert_major_error_negative_count"
+      ],
+      "properties": {
+        "pilot_case_manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "pilot_adjudication_bundle_sha256": {"$ref": "#/$defs/sha256"},
+        "case_count": {"type": "integer", "minimum": 1},
+        "expert_major_error_positive_count": {"type": "integer", "minimum": 1},
+        "expert_major_error_negative_count": {"type": "integer", "minimum": 1},
+        "sampling_enrichment_or_weighting_notes": {"type": ["string", "null"]}
+      }
+    },
+    "frozen_instrument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository_commit",
+        "verifier_sha256",
+        "projectability_contract_sha256"
+      ],
+      "properties": {
+        "repository_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{7,40}$"
+        },
+        "verifier_sha256": {"$ref": "#/$defs/sha256"},
+        "projectability_contract_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "true_positive",
+        "true_negative",
+        "false_positive",
+        "false_negative",
+        "sensitivity",
+        "specificity",
+        "ppv",
+        "npv",
+        "accuracy"
+      ],
+      "properties": {
+        "true_positive": {"type": "integer", "minimum": 0},
+        "true_negative": {"type": "integer", "minimum": 0},
+        "false_positive": {"type": "integer", "minimum": 0},
+        "false_negative": {"type": "integer", "minimum": 0},
+        "sensitivity": {"$ref": "#/$defs/metric"},
+        "specificity": {"$ref": "#/$defs/metric"},
+        "ppv": {"$ref": "#/$defs/metric"},
+        "npv": {"$ref": "#/$defs/metric"},
+        "accuracy": {"$ref": "#/$defs/metric"}
+      }
+    },
+    "acceptance_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimum_sensitivity",
+        "sensitivity_statistic",
+        "sensitivity_rationale",
+        "minimum_ppv",
+        "ppv_statistic",
+        "ppv_rationale"
+      ],
+      "properties": {
+        "minimum_sensitivity": {"type": "number", "minimum": 0, "maximum": 1},
+        "sensitivity_statistic": {
+          "enum": ["point_estimate", "lower_95_percent_confidence_bound"]
+        },
+        "sensitivity_rationale": {"type": "string", "minLength": 1},
+        "minimum_ppv": {"type": "number", "minimum": 0, "maximum": 1},
+        "ppv_statistic": {
+          "enum": ["point_estimate", "lower_95_percent_confidence_bound"]
+        },
+        "ppv_rationale": {"type": "string", "minLength": 1}
+      }
+    },
+    "timing_attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sealed_set_opened",
+        "thresholds_recorded_before_sealed_opening",
+        "sealed_results_used_to_choose_thresholds"
+      ],
+      "properties": {
+        "sealed_set_opened": {"const": false},
+        "thresholds_recorded_before_sealed_opening": {"const": true},
+        "sealed_results_used_to_choose_thresholds": {"const": false}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["estimate", "lower", "upper", "method"],
+      "properties": {
+        "estimate": {"type": "number", "minimum": 0, "maximum": 1},
+        "lower": {"type": "number", "minimum": 0, "maximum": 1},
+        "upper": {"type": "number", "minimum": 0, "maximum": 1},
+        "method": {"const": "Wilson_95_percent"}
+      }
+    }
+  }
+}
