@@ -60,6 +60,7 @@ def _provider(
         ),
         "raw_response_sha256": digest if success else None,
         "final_response_sha256": digest if success else None,
+        "error_summary": None if success else "Provider timeout.",
     }
 
 
@@ -88,6 +89,7 @@ def _repair_success(
         "outcome_class": "RESPONSE_RECEIVED",
         "raw_response_sha256": raw_digest,
         "final_response_sha256": final_digest,
+        "error_summary": None,
     }
 
 
@@ -114,6 +116,7 @@ def _repair_upstream_failure(
         "outcome_class": "MEASUREMENT_FAILURE_UPSTREAM",
         "raw_response_sha256": None,
         "final_response_sha256": None,
+        "error_summary": "Mapping-aware provider call failed upstream.",
     }
 
 
@@ -437,5 +440,84 @@ def test_zero_frozen_source_hash_is_rejected() -> None:
     assert not result.complete
     assert any(
         "C1: frozen source_input_sha256 is missing or invalid" in item
+        for item in result.blockers
+    )
+
+
+def test_unknown_outcome_class_blocks_execution_audit() -> None:
+    records = _records()
+    records[0]["outcome_class"] = "UNKNOWN_PROVIDER_STATE"
+
+    result = audit_confirmatory_execution(
+        _plan(),
+        records,
+        sealed_case_ids={"C1", "C2"},
+        deterministic_baseline_case_ids={"C1", "C2"},
+        expected_source_input_sha256=_SOURCE_HASHES,
+    )
+
+    assert not result.complete
+    assert any(
+        "unsupported outcome_class: UNKNOWN_PROVIDER_STATE" in item
+        for item in result.blockers
+    )
+
+
+def test_measurement_failure_cannot_carry_response_hashes() -> None:
+    records = _records()
+    failed = next(item for item in records if item["execution_id"] == "C2-D")
+    failed["raw_response_sha256"] = "f" * 64
+
+    result = audit_confirmatory_execution(
+        _plan(),
+        records,
+        sealed_case_ids={"C1", "C2"},
+        deterministic_baseline_case_ids={"C1", "C2"},
+        expected_source_input_sha256=_SOURCE_HASHES,
+    )
+
+    assert not result.complete
+    assert any(
+        "measurement failure must not carry response hashes" in item
+        for item in result.blockers
+    )
+
+
+def test_provider_strategy_cannot_use_repair_failure_class() -> None:
+    records = _records()
+    failed = next(item for item in records if item["execution_id"] == "C2-D")
+    failed["outcome_class"] = "MEASUREMENT_FAILURE_UPSTREAM"
+
+    result = audit_confirmatory_execution(
+        _plan(),
+        records,
+        sealed_case_ids={"C1", "C2"},
+        deterministic_baseline_case_ids={"C1", "C2"},
+        expected_source_input_sha256=_SOURCE_HASHES,
+    )
+
+    assert not result.complete
+    assert any(
+        "provider strategy cannot use repair failure class" in item
+        for item in result.blockers
+    )
+
+
+def test_repair_strategy_cannot_use_provider_failure_class() -> None:
+    records = _records()
+    failed = next(item for item in records if item["execution_id"] == "C2-R")
+    failed["outcome_class"] = "MEASUREMENT_FAILURE_TIMEOUT"
+
+    result = audit_confirmatory_execution(
+        _plan(),
+        records,
+        sealed_case_ids={"C1", "C2"},
+        deterministic_baseline_case_ids={"C1", "C2"},
+        expected_source_input_sha256=_SOURCE_HASHES,
+    )
+
+    assert not result.complete
+    assert any(
+        "repair strategy cannot use provider failure class" in item
         for item in result.blockers
     )
