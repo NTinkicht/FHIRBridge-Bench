@@ -5,10 +5,23 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
+import re
 from xml.etree import ElementTree
 
 _REQUIRED_FILES = ("PROFILE.xml",)
 _IGNORED_NONSCIENTIFIC_NAMES = frozenset({".DS_Store", "Thumbs.db"})
+_OID_PATTERN = re.compile(r"(?<![0-9])(?:[0-9]+\.){3,}[0-9]+(?![0-9])")
+_NAMED_TOKEN_PATTERN = re.compile(
+    r"\b(?:LRI|LAB)_[A-Za-z0-9_]+\b"
+)
+_TARGET_PROFILE_NAME = "LRI_NG_FRU_Profile_V3"
+_TARGET_COMPONENT_OIDS = (
+    "2.16.840.1.113883.9.195.3.22",
+    "2.16.840.1.113883.9.13",
+    "2.16.840.1.113883.9.83",
+)
+_PDF_CANDIDATE_PRECOORDINATED_OID = "2.16.840.1.113883.9.195.3.25"
+_PDF_CONFLICTING_PRECOORDINATED_OID = "2.16.840.1.113883.9.195.3.3"
 
 
 @dataclass(frozen=True)
@@ -93,6 +106,128 @@ def compute_profile_bundle_manifest(root: Path) -> ProfileBundleManifest:
         files=tuple(files),
         aggregate_sha256=aggregate.hexdigest(),
     )
+
+
+@dataclass(frozen=True)
+class ProfileReferenceOccurrence:
+    value: str
+    files: tuple[str, ...]
+    occurrence_count: int
+
+
+@dataclass(frozen=True)
+class ProfileReferenceInventory:
+    oids: tuple[ProfileReferenceOccurrence, ...]
+    named_tokens: tuple[ProfileReferenceOccurrence, ...]
+
+    def to_dict(self) -> dict[str, object]:
+        def rows(
+            values: tuple[ProfileReferenceOccurrence, ...],
+        ) -> list[dict[str, object]]:
+            return [
+                {
+                    "value": item.value,
+                    "files": list(item.files),
+                    "occurrence_count": item.occurrence_count,
+                }
+                for item in values
+            ]
+
+        return {
+            "oids": rows(self.oids),
+            "named_tokens": rows(self.named_tokens),
+        }
+
+
+def _reference_occurrences(
+    matches_by_file: dict[str, list[str]],
+) -> tuple[ProfileReferenceOccurrence, ...]:
+    files_by_value: dict[str, set[str]] = {}
+    counts: dict[str, int] = {}
+    for file_name, values in matches_by_file.items():
+        for value in values:
+            files_by_value.setdefault(value, set()).add(file_name)
+            counts[value] = counts.get(value, 0) + 1
+    return tuple(
+        ProfileReferenceOccurrence(
+            value=value,
+            files=tuple(sorted(files_by_value[value])),
+            occurrence_count=counts[value],
+        )
+        for value in sorted(files_by_value)
+    )
+
+
+def inspect_profile_reference_inventory(
+    root: Path,
+) -> ProfileReferenceInventory:
+    """Inventory profile-name tokens and OIDs across all XML companions.
+
+    This deliberately does not assume where a particular IGAMT version stores
+    profile/component identity. It records lexical evidence only. Provenance,
+    edition, errata and target-profile identity still require independent
+    review.
+    """
+
+    if not root.is_dir():
+        raise ValueError(f"profile bundle root is not a directory: {root}")
+
+    oid_matches: dict[str, list[str]] = {}
+    token_matches: dict[str, list[str]] = {}
+    for path in sorted(root.rglob("*.xml")):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(root).as_posix()
+        text = path.read_text(encoding="utf-8", errors="replace")
+        oids = _OID_PATTERN.findall(text)
+        tokens = _NAMED_TOKEN_PATTERN.findall(text)
+        if oids:
+            oid_matches[relative] = oids
+        if tokens:
+            token_matches[relative] = tokens
+
+    return ProfileReferenceInventory(
+        oids=_reference_occurrences(oid_matches),
+        named_tokens=_reference_occurrences(token_matches),
+    )
+
+
+def assess_lri_target_reference_signals(
+    inventory: ProfileReferenceInventory,
+) -> dict[str, object]:
+    """Report target identity signals without turning them into provenance."""
+
+    observed_oids = {item.value for item in inventory.oids}
+    observed_tokens = {item.value for item in inventory.named_tokens}
+    missing_components = sorted(
+        set(_TARGET_COMPONENT_OIDS) - observed_oids
+    )
+    return {
+        "selected_profile_name": _TARGET_PROFILE_NAME,
+        "selected_profile_name_observed": (
+            _TARGET_PROFILE_NAME in observed_tokens
+        ),
+        "required_component_oids": list(_TARGET_COMPONENT_OIDS),
+        "observed_required_component_oids": sorted(
+            set(_TARGET_COMPONENT_OIDS) & observed_oids
+        ),
+        "missing_required_component_oids": missing_components,
+        "all_required_component_oid_signals_observed": not missing_components,
+        "pdf_candidate_precoordinated_oid": (
+            _PDF_CANDIDATE_PRECOORDINATED_OID
+        ),
+        "pdf_candidate_precoordinated_oid_observed": (
+            _PDF_CANDIDATE_PRECOORDINATED_OID in observed_oids
+        ),
+        "pdf_conflicting_precoordinated_oid": (
+            _PDF_CONFLICTING_PRECOORDINATED_OID
+        ),
+        "pdf_conflicting_precoordinated_oid_observed": (
+            _PDF_CONFLICTING_PRECOORDINATED_OID in observed_oids
+        ),
+        "precoordinated_oid_required_for_acquisition_acceptance": False,
+        "provenance_conclusion": "not_established_by_lexical_signals",
+    }
 
 
 @dataclass(frozen=True)
