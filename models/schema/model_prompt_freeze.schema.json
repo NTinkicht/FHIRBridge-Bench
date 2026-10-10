@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/model_prompt_freeze.schema.json",
+  "title": "FHIRBridge Confirmatory Model and Prompt Freeze",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "config_id",
+    "status",
+    "created_at",
+    "sealed_set_opened",
+    "global_execution_policy",
+    "arms"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "config_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["incomplete_template", "frozen"]},
+    "created_at": {"type": ["string", "null"], "format": "date-time"},
+    "sealed_set_opened": {"const": false},
+    "global_execution_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "synthetic_data_only_for_hosted_models",
+        "silent_model_fallback",
+        "silent_prompt_fallback",
+        "retry_policy",
+        "timeout_seconds"
+      ],
+      "properties": {
+        "synthetic_data_only_for_hosted_models": {"const": true},
+        "silent_model_fallback": {"const": false},
+        "silent_prompt_fallback": {"const": false},
+        "retry_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["maximum_attempts", "retry_on"],
+          "properties": {
+            "maximum_attempts": {"type": "integer", "minimum": 1},
+            "retry_on": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "transport_error",
+                  "rate_limit",
+                  "provider_5xx",
+                  "timeout"
+                ]
+              }
+            }
+          }
+        },
+        "timeout_seconds": {"type": "integer", "minimum": 1}
+      }
+    },
+    "arms": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {"$ref": "#/$defs/arm"}
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path_or_ref", "sha256"],
+      "properties": {
+        "path_or_ref": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "llmConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "model_id",
+        "model_revision_or_snapshot",
+        "temperature",
+        "top_p",
+        "max_output_tokens",
+        "seed_policy",
+        "structured_output_mode"
+      ],
+      "properties": {
+        "provider": {"type": "string", "minLength": 1},
+        "model_id": {"type": "string", "minLength": 1},
+        "model_revision_or_snapshot": {"type": "string", "minLength": 1},
+        "temperature": {"type": "number", "minimum": 0},
+        "top_p": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+        "max_output_tokens": {"type": "integer", "minimum": 1},
+        "seed_policy": {
+          "enum": [
+            "fixed_supported_seed",
+            "provider_does_not_support_seed"
+          ]
+        },
+        "seed": {"type": ["integer", "null"], "minimum": 0},
+        "structured_output_mode": {"type": "string", "minLength": 1}
+      }
+    },
+    "arm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "arm_id",
+        "implementation_kind",
+        "implementation_artifact",
+        "prompt_artifacts",
+        "mapping_context_artifacts",
+        "syntax_repair"
+      ],
+      "properties": {
+        "arm_id": {
+          "enum": [
+            "deterministic_baseline",
+            "direct_structured_llm",
+            "mapping_aware_llm",
+            "mapping_aware_plus_syntax_repair"
+          ]
+        },
+        "implementation_kind": {
+          "enum": ["deterministic", "llm"]
+        },
+        "implementation_artifact": {"$ref": "#/$defs/artifact"},
+        "llm": {
+          "oneOf": [
+            {"$ref": "#/$defs/llmConfig"},
+            {"type": "null"}
+          ]
+        },
+        "prompt_artifacts": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/artifact"}
+        },
+        "mapping_context_artifacts": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/artifact"}
+        },
+        "syntax_repair": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "implementation_artifact"],
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "implementation_artifact": {
+              "oneOf": [
+                {"$ref": "#/$defs/artifact"},
+                {"type": "null"}
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
