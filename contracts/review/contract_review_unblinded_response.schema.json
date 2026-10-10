@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/contract_review_unblinded_response.schema.json",
+  "title": "FHIRBridge-Bench Proposal-Aware External Contract Review Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "review_stage",
+    "blind_response_sha256",
+    "reviewer_id",
+    "contract",
+    "rule_reviews",
+    "attestation"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.2.0"},
+    "review_stage": {"const": "unblinded"},
+    "blind_response_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "reviewer_id": {"type": "string", "minLength": 1},
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {"const": "F2V-LAB-ORU-R01-001"},
+        "version": {"const": "0.3.0"}
+      }
+    },
+    "rule_reviews": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/unblindedRuleReview"}
+    },
+    "attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "blind_response_locked_before_proposal_disclosure",
+        "blind_response_not_replaced"
+      ],
+      "properties": {
+        "blind_response_locked_before_proposal_disclosure": {"const": true},
+        "blind_response_not_replaced": {"const": true}
+      }
+    }
+  },
+  "$defs": {
+    "operation": {
+      "enum": [
+        "COPY",
+        "NORMALIZE",
+        "CODE_TRANSLATE",
+        "UNIT_CONVERT",
+        "AGGREGATE",
+        "DECOMPOSE",
+        "DERIVE_DECLARED",
+        "DROP_DECLARED"
+      ]
+    },
+    "unblindedRuleReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rule_id",
+        "target_locus_defensible",
+        "accepted_operations",
+        "rejected_operations",
+        "equivalence_adequate",
+        "severity_plausible",
+        "proposal_comment"
+      ],
+      "properties": {
+        "rule_id": {"type": "string", "minLength": 1},
+        "target_locus_defensible": {
+          "enum": ["YES", "NO", "PARTLY", "INDETERMINATE"]
+        },
+        "alternative_target_loci": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "accepted_operations": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/operation"},
+          "uniqueItems": true
+        },
+        "rejected_operations": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/operation"},
+          "uniqueItems": true
+        },
+        "equivalence_adequate": {
+          "enum": ["YES", "NO", "PARTLY", "INDETERMINATE"]
+        },
+        "severity_plausible": {
+          "enum": ["YES", "NO", "NOT_QUALIFIED"]
+        },
+        "proposal_comment": {"type": "string"}
+      }
+    }
+  }
+}
