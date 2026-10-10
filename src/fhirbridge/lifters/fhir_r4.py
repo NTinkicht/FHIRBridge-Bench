@@ -276,11 +276,13 @@ def _order_fact(
         requester_payload = {}
         identifier = requester.get("identifier")
         if isinstance(identifier, dict) and identifier.get("value") is not None:
-            requester_payload["identifier"] = {
-                "system": identifier.get("system"),
-                "value": identifier.get("value"),
-                "type": None,
-            }
+            requester_payload["identifiers"] = [
+                {
+                    "system": identifier.get("system"),
+                    "value": identifier.get("value"),
+                    "type": None,
+                }
+            ]
         if requester.get("display") is not None:
             requester_payload["display"] = requester.get("display")
         if not requester_payload:
