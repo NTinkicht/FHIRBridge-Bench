@@ -48,6 +48,19 @@ components:
       - canonical/schema/clinical_fact.schema.yaml
       - canonical/schema/clinical_fact_graph.schema.yaml
 
+  deterministic_baseline_renderer:
+    artifact_id: deterministic-fhir-to-hl7v2-baseline-renderer
+    paths:
+      - src/fhirbridge/renderers/__init__.py
+      - src/fhirbridge/renderers/base.py
+      - src/fhirbridge/renderers/fhir_r4_a.py
+      - src/fhirbridge/renderers/hl7v251_oru_a.py
+    note: >-
+      The full renderers package is frozen because importing the HL7 v2
+      renderer executes the package initializer, which imports both concrete
+      renderer modules. The FHIR renderer is not a baseline arm, but its
+      imported module bytes belong to the exact runtime code surface.
+
   severity_policy:
     artifact_id: severity-policy
     paths:
