@@ -13,6 +13,8 @@
     "instrument_components",
     "dependencies",
     "reviewer_roster",
+    "case_assignment_manifest",
+    "analysis_preregistration",
     "sealed_set",
     "blinding",
     "post_freeze_amendments"
@@ -20,7 +22,7 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "0.2.0"
+      "const": "0.3.0"
     },
     "manifest_id": {
       "type": "string",
@@ -304,6 +306,12 @@
       }
     },
     "reviewer_roster": {
+      "$ref": "#/$defs/frozenArtifact"
+    },
+    "case_assignment_manifest": {
+      "$ref": "#/$defs/frozenArtifact"
+    },
+    "analysis_preregistration": {
       "$ref": "#/$defs/frozenArtifact"
     }
   },
