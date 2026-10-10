@@ -302,6 +302,9 @@ jobs:
       - name: Summarize FHIR qualification outcomes
         run: python qualification/fhir/summarize_validation.py qualification/fhir/results
 
+      - name: Print FHIR qualification summary
+        run: cat qualification/fhir/results/qualification-summary.json
+
       - name: Freeze resolved FHIR package cache manifest
         if: always()
         shell: bash
