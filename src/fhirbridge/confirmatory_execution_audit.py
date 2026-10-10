@@ -25,6 +25,14 @@ class ConfirmatoryExecutionAudit:
     outcome_counts: dict[str, int]
 
 
+def _valid_sha256(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdefABCDEF" for character in value)
+    )
+
+
 def _record_key(record: dict[str, Any]) -> tuple[str, str, str]:
     case_id = record.get("case_id")
     model_key = record.get("model_key")
@@ -56,6 +64,19 @@ def audit_confirmatory_execution(
         sealed = {}
     if sealed.get("case_count") != len(sealed_case_ids):
         blockers.append("sealed case count does not match run plan")
+
+    frozen_artifacts = run_plan.get("frozen_artifacts")
+    if not isinstance(frozen_artifacts, dict):
+        blockers.append("run plan frozen_artifacts are missing")
+        frozen_artifacts = {}
+    expected_model_freeze_hash = frozen_artifacts.get(
+        "model_prompt_configuration_sha256"
+    )
+    if not _valid_sha256(expected_model_freeze_hash):
+        blockers.append(
+            "run plan model_prompt_configuration_sha256 is missing or invalid"
+        )
+        expected_model_freeze_hash = None
 
     model_keys_raw = run_plan.get("model_keys")
     if not isinstance(model_keys_raw, list) or not model_keys_raw:
@@ -98,6 +119,7 @@ def audit_confirmatory_execution(
     outcome_counts: Counter[str] = Counter()
     provider_calls = 0
     repair_count = 0
+    source_hash_by_case: dict[str, str] = {}
 
     for record in llm_records:
         if not isinstance(record, dict):
@@ -126,6 +148,41 @@ def audit_confirmatory_execution(
         else:
             execution_ids[execution_id] = key
 
+        if record.get("schema_version") != "0.3.0":
+            blockers.append(
+                "/".join(key) + ": execution record schema_version must be 0.3.0"
+            )
+
+        record_freeze_hash = record.get("model_prompt_freeze_sha256")
+        if not _valid_sha256(record_freeze_hash):
+            blockers.append(
+                "/".join(key) + ": model_prompt_freeze_sha256 is missing or invalid"
+            )
+        elif (
+            expected_model_freeze_hash is not None
+            and record_freeze_hash.lower()
+            != str(expected_model_freeze_hash).lower()
+        ):
+            blockers.append(
+                "/".join(key)
+                + ": model_prompt_freeze_sha256 does not match run plan"
+            )
+
+        source_hash = record.get("source_input_sha256")
+        if not _valid_sha256(source_hash):
+            blockers.append(
+                "/".join(key) + ": source_input_sha256 is missing or invalid"
+            )
+        else:
+            normalized_source_hash = str(source_hash).lower()
+            existing_source_hash = source_hash_by_case.get(key[0])
+            if existing_source_hash is None:
+                source_hash_by_case[key[0]] = normalized_source_hash
+            elif existing_source_hash != normalized_source_hash:
+                blockers.append(
+                    f"{key[0]}: source_input_sha256 differs across planned arms"
+                )
+
         outcome = record.get("outcome_class")
         if isinstance(outcome, str):
             outcome_counts[outcome] += 1
@@ -147,6 +204,25 @@ def audit_confirmatory_execution(
                 blockers.append(
                     "/".join(key) + ": provider strategy must not reference source_execution_id"
                 )
+            prompt_hash = record.get("rendered_prompt_sha256")
+            if not _valid_sha256(prompt_hash):
+                blockers.append(
+                    "/".join(key)
+                    + ": provider strategy rendered_prompt_sha256 is missing or invalid"
+                )
+            mapping_context_hash = record.get("mapping_context_sha256")
+            if strategy_id == _DIRECT:
+                if mapping_context_hash is not None:
+                    blockers.append(
+                        "/".join(key)
+                        + ": direct strategy must not record mapping_context_sha256"
+                    )
+            else:
+                if not _valid_sha256(mapping_context_hash):
+                    blockers.append(
+                        "/".join(key)
+                        + ": mapping strategy mapping_context_sha256 is missing or invalid"
+                    )
             provider_calls += 1
         elif strategy_id == _REPAIR:
             if generation_source != "reuse_mapping_aware_raw_output":
@@ -160,6 +236,16 @@ def audit_confirmatory_execution(
             if record.get("provider_request_id") is not None:
                 blockers.append(
                     "/".join(key) + ": repair strategy must not have provider_request_id"
+                )
+            if record.get("rendered_prompt_sha256") is not None:
+                blockers.append(
+                    "/".join(key)
+                    + ": repair strategy must not record rendered_prompt_sha256"
+                )
+            if not _valid_sha256(record.get("mapping_context_sha256")):
+                blockers.append(
+                    "/".join(key)
+                    + ": repair strategy mapping_context_sha256 is missing or invalid"
                 )
             repair_count += 1
         else:
@@ -187,6 +273,19 @@ def audit_confirmatory_execution(
             repair = by_key.get(repair_key)
             if mapping is None or repair is None:
                 continue
+
+            mapping_context_hash = mapping.get("mapping_context_sha256")
+            repair_context_hash = repair.get("mapping_context_sha256")
+            if (
+                _valid_sha256(mapping_context_hash)
+                and _valid_sha256(repair_context_hash)
+                and str(mapping_context_hash).lower()
+                != str(repair_context_hash).lower()
+            ):
+                blockers.append(
+                    f"{case_id}/{model_key}: repair mapping-context hash does not "
+                    "match mapping arm"
+                )
 
             mapping_execution_id = mapping.get("execution_id")
             if repair.get("source_execution_id") != mapping_execution_id:
