@@ -1,0 +1,202 @@
+inventory:
+  id: FHIRBRIDGE-LRI-REQUIRED-ELEMENT-INVENTORY-001
+  version: 0.1.0
+  status: incomplete
+  target_profile_candidate: LRI_NG_FRU_Profile_V3
+  target_components:
+    - LRI_Common_Component_V3
+    - LRI_NG_Component_R1
+    - LAB_FRU_Component
+  purpose: >-
+    Enumerate every load-bearing required or conditional element in the bounded
+    confirmatory ORU^R01 slice before protocol freeze. This file must not be
+    interpreted as complete while status is incomplete.
+
+authoritative_sources:
+  lri_edition5_2024dec:
+    publication_package_sha256: f26188eabed5b00045b111bd2c4ef29cbfdcbdfad38a4b61fd1547a9259835b2
+    implementation_guide_pdf_sha256: 375f02fd5453b06ff1c51841e703c943c3132134fca53a122f5ccfed743461b7
+    evidence_record: benchmark/lri_order_context_evidence.yaml
+  laboratory_value_set_companion_guide:
+    product: HL7_V2_Laboratory_Value_Set_Companion_Guide_Release_2_US_Realm
+    product_url: https://www.hl7.org/implement/standards/product_brief.cfm?product_id=413
+    role: terminology_binding_evidence
+    acquisition_status: exact_release_artifacts_not_yet_frozen
+  machine_readable_edition5_bundle:
+    status: not_acquired
+    profile_pin: benchmark/hl7v2_lri_profile_pin.yaml
+
+classification_vocabulary:
+  - SOURCE_FACT
+  - PROFILE_CONSTANT
+  - ENVELOPE
+  - DERIVED
+  - UNPROJECTABLE
+  - UNRESOLVED
+
+extraction_protocol:
+  reader_a:
+    role: primary_standards_extractor
+    status: in_progress
+  reader_b:
+    role: independent_second_standards_extractor
+    status: not_started
+    independence_requirements:
+      - must_not_copy_reader_a_classifications
+      - must_record_page_or_machine_artifact_evidence_independently
+  agreement_required: true
+  disagreement_policy: retain_both_then_adjudicate_or_mark_unresolved
+  machine_bundle_reconciliation_required: true
+
+verified_entries:
+  - element: ORDER_OBSERVATION
+    layer: message_structure
+    usage: R
+    cardinality: "1..*"
+    classification: ENVELOPE
+    edition5_pages: [156]
+    verification_status: pdf_verified
+  - element: ORC
+    layer: segment
+    usage: R
+    cardinality: "1..1"
+    classification: ENVELOPE
+    edition5_pages: [156]
+    verification_status: pdf_verified
+  - element: OBR
+    layer: segment
+    usage: R
+    cardinality: "1..1"
+    classification: ENVELOPE
+    edition5_pages: [156]
+    verification_status: pdf_verified
+  - element: MSH-21
+    layer: field
+    usage: R
+    cardinality: "1..*"
+    classification: PROFILE_CONSTANT
+    edition5_pages: [166, 167, 168, 169]
+    verification_status: pdf_verified_with_precoordinated_oid_conflict
+    note: >-
+      Use the three consistently published component OIDs pre-freeze; do not use
+      either conflicted pre-coordinated OID until the machine bundle resolves it.
+  - element: ORC-1
+    layer: field
+    usage: R
+    cardinality: "1..1"
+    classification: UNRESOLVED
+    edition5_pages: [185]
+    verification_status: presence_verified_value_semantics_unresolved
+    note: >-
+      Requiredness is established. The value must not be frozen to RE from a
+      historical Release 1 profile without Edition 5 evidence.
+  - element: ORC-2
+    layer: field
+    usage: RE
+    cardinality: "0..1"
+    classification: UNRESOLVED
+    edition5_pages: [185, 188]
+    verification_status: pdf_verified_mapping_unresolved
+  - element: ORC-3
+    layer: field
+    usage: R
+    cardinality: "1..1"
+    classification: SOURCE_FACT
+    edition5_pages: [185, 188]
+    verification_status: structural_requirement_verified_semantic_locus_under_review
+    source_design: canonical_order_identifier
+  - element: ORC-12
+    layer: field
+    usage: R
+    cardinality: "1..1"
+    classification: SOURCE_FACT
+    edition5_pages: [186, 188]
+    verification_status: structural_requirement_verified_semantic_locus_under_review
+    source_design: canonical_order_requester
+  - element: OBR-2
+    layer: field
+    usage: RE
+    cardinality: "0..1"
+    classification: UNRESOLVED
+    edition5_pages: [189]
+    verification_status: pdf_verified_mapping_unresolved
+  - element: OBR-3
+    layer: field
+    usage: R
+    cardinality: "1..1"
+    classification: SOURCE_FACT
+    edition5_pages: [189]
+    verification_status: structural_requirement_verified_semantic_locus_under_review
+    source_design: canonical_order_identifier
+  - element: OBR-4
+    layer: field
+    usage: R
+    cardinality: "1..1"
+    classification: UNRESOLVED
+    edition5_pages: [189]
+    verification_status: requiredness_verified_dual_FHIR_source_semantics_under_review
+    note: >-
+      ServiceRequest.code and DiagnosticReport.code create a deliberate review
+      question; do not assume one is the unique reverse source.
+  - element: OBR-16
+    layer: field
+    usage: R
+    cardinality: "1..1"
+    classification: SOURCE_FACT
+    edition5_pages: [190]
+    verification_status: structural_requirement_verified_semantic_locus_under_review
+    source_design: canonical_order_requester
+
+verified_co_constraints:
+  - constraint: ORC-2_equals_OBR-2_when_present
+    edition5_pages: [188]
+    role: structural_conformance
+  - constraint: ORC-3_equals_OBR-3
+    edition5_pages: [188]
+    role: structural_conformance
+  - constraint: ORC-12_equals_OBR-16
+    edition5_pages: [188, 190]
+    role: structural_conformance
+
+unresolved_inventory_domains:
+  - MSH_required_and_conditional_fields_beyond_MSH_21
+  - PID_required_and_conditional_fields
+  - PV1_or_other_patient_context_if_applicable
+  - ORC_fields_beyond_verified_order_subset
+  - OBR_fields_beyond_verified_order_subset
+  - TQ1_usage_and_required_fields_if_applicable
+  - OBX_required_and_conditional_fields
+  - NTE_usage_if_applicable
+  - SPM_segment_usage_cardinality_and_required_fields
+  - identifier_datatype_component_constraints_for_NG
+  - filler_order_datatype_component_constraints_for_FRU
+  - XCN_ordering_provider_component_constraints
+  - all_value_set_bindings_and_version_requirements
+  - conditional_predicates_and_X_usage_constraints
+  - maximum_lengths_and_namespace_constraints_relevant_to_synthetic_values
+
+specific_questions_from_hostile_review:
+  - question_id: OBX_23_24_PERFORMING_ORGANIZATION
+    status: unresolved
+    action: verify_requiredness_and_source_grounding_against_edition5
+  - question_id: HD_1_NAMESPACE_LENGTH
+    status: unresolved
+    action: verify_NG_identifier_datatype_limits_before_freezing_synthetic_namespaces
+  - question_id: SPM_4_SPECIMEN_TYPE
+    status: unresolved
+    action: verify_usage_coding_system_and_value_set_binding
+  - question_id: ORC_1_VALUE
+    status: unresolved
+    action: verify_Edition5_value_constraint_without_using_legacy_OrderControl_RE_as_truth
+
+completion_gate:
+  may_mark_complete_only_when:
+    - reader_a_full_Common_NG_FRU_slice_extraction_complete
+    - reader_b_independent_full_extraction_complete
+    - all_R_C_RE_X_elements_in_bounded_slice_inventory_present
+    - every_conditional_predicate_recorded
+    - every_coded_required_field_has_binding_source_recorded
+    - all_disagreements_adjudicated_or_marked_UNRESOLVED
+    - exact_machine_bundle_reconciled_without_silent_rule_changes
+    - zero_unresolved_inventory_domains
+  confirmatory_use_while_incomplete: prohibited
