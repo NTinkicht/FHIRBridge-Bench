@@ -18,6 +18,10 @@ sample_size_method:
     comparison_family: analysis/core_confirmatory_design.yaml
     planning_method: normal_approximation_for_McNemar_sample_size_only
     confirmatory_test: two_sided_exact_binomial_McNemar
+    familywise_alpha: 0.05
+    multiplicity_test_method: Holm
+    planning_alpha_policy: Bonferroni_upper_bound_for_Holm_family
+    per_comparison_planning_alpha: 0.008333333333333333
     discordant_probabilities:
       p10_source: pilot_only
       p01_source: pilot_only
@@ -26,8 +30,9 @@ sample_size_method:
     pair_retention:
       source: pilot_both_arms_valid_and_determinate_rate
   final_case_count_rule: >-
-    Use the maximum attempted case count required by the primary VUR precision
-    plan and every predeclared paired-comparison planning constraint.
+    Use the maximum independent source-cluster count required by the primary VUR
+    precision plan and every predeclared paired-comparison planning constraint.
+    Analysis-row requirements are never mislabeled as independent source cases.
   forbidden:
     - use_sealed_set_outcomes_for_sample_size
     - choose_case_count_after_confirmatory_outcomes
