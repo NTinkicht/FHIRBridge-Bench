@@ -120,7 +120,13 @@ gates:
     category: qualification
     status: blocked
     blockers:
-      - pilot_derived_acceptance_thresholds_not_preregistered
+      - pilot_acceptance_numeric_record_pending_pilot
+    evidence:
+      derivation_plan: benchmark/pilot_acceptance_plan.yaml
+      preregistration_schema: expert_validation/schema/pilot_acceptance_preregistration.schema.json
+      incomplete_template: expert_validation/examples/pilot_acceptance_preregistration_template.yaml
+      readiness_check: src/fhirbridge/pilot_acceptance.py
+      status: method_preregistered_numeric_thresholds_pending_pilot
     completion_rule: >-
       Instrument acceptance thresholds must be derived on the pilot partition
       and preregistered before opening the sealed set.
