@@ -127,6 +127,11 @@ def assess_model_prompt_freeze(
             label="deterministic_baseline.implementation_artifact",
             blockers=blockers,
         )
+        _artifact_blockers(
+            baseline.get("qualification_artifact"),
+            label="deterministic_baseline.qualification_artifact",
+            blockers=blockers,
+        )
 
     models = document.get("llm_models")
     if not isinstance(models, list) or not models:
