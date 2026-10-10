@@ -1,6 +1,6 @@
 # Clean-Room Reference Renderer Protocol
 
-Status: **Draft — Protocol v0.1**
+Status: **Draft — Protocol v0.2**
 
 ## Purpose
 
@@ -180,3 +180,24 @@ Issue #4 is complete only when:
 6. every unresolved semantic disagreement is either adjudicated or marked `INDETERMINATE`;
 7. external converters, if used, are clearly labeled differential comparators rather than truth;
 8. regression fixtures capture all resolved disagreement classes.
+
+
+## Current v0.3 synchronization status
+
+Contract `F2V-LAB-ORU-R01-001 v0.3.0` is the current clean-room
+synchronization point. It is still a draft instrument.
+
+The shared canonical development package includes explicit order facts and
+report-to-order relationships. This is permitted common input. It does not
+contain Renderer A output or implementation behavior.
+
+Until the exact Edition 5 machine-readable profile is acquired and the blind
+external contract review resolves the remaining order-locus questions:
+
+- FHIR order-context implementation may proceed from the shared v0.3 source-side
+  specification;
+- HL7 v2 order-context implementation must remain explicit unsupported/fail
+  closed rather than inventing MSH-21, ORC, OBR identifier/provider, datatype,
+  or binding semantics;
+- any later contract/profile amendment releasing those fields must be delivered
+  identically to Renderer A and Renderer B before differential comparison.
