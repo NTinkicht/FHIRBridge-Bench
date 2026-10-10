@@ -70,7 +70,8 @@
         "MEASUREMENT_FAILURE_PROVIDER_5XX",
         "MEASUREMENT_FAILURE_TIMEOUT",
         "MEASUREMENT_FAILURE_AUTH_OR_CONFIG",
-        "MEASUREMENT_FAILURE_POSTPROCESSING"
+        "MEASUREMENT_FAILURE_POSTPROCESSING",
+        "MEASUREMENT_FAILURE_UPSTREAM"
       ]
     },
     "raw_response_sha256": {
@@ -229,7 +230,10 @@
       "if": {
         "properties": {
           "outcome_class": {
-            "const": "MEASUREMENT_FAILURE_POSTPROCESSING"
+            "enum": [
+              "MEASUREMENT_FAILURE_POSTPROCESSING",
+              "MEASUREMENT_FAILURE_UPSTREAM"
+            ]
           }
         }
       },
