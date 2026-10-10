@@ -17,7 +17,7 @@ primary_estimand:
   semantic_condition: determinate_FAITHFUL_or_UNFAITHFUL
 paired_comparisons:
   analysis_set_rule: both_arms_VALID_and_semantic_determinate_for_VUR
-  cluster_id_field: "source_scenario_or_patient_id"
+  cluster_id_field: "analysis_cluster_id"
   model_keys:
     - "MODEL-TO-BE-FROZEN"
   comparison_family:
