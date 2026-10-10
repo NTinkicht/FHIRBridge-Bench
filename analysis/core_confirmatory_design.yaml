@@ -11,7 +11,8 @@ analysis_design:
       Every frozen LLM model family is evaluated under all three LLM strategy
       conditions. Model identity/configuration is not allowed to vary by
       strategy. The deterministic baseline is model-independent.
-    paired_row_identity: source_instance_x_model_key_for_LLM_comparisons
+    pairwise_test_unit: source_instance_within_one_frozen_model_family
+    global_summary_row_identity: source_instance_x_model_key
     clustering: source_scenario_or_patient_id
   core_arms:
     - arm_id: deterministic_baseline
@@ -29,8 +30,11 @@ analysis_design:
     name: VFY
     denominator: all_attempted_transformations
   paired_secondary_comparison_family:
+    unit: model_specific_strategy_contrast
     multiplicity_method: Holm
-    comparisons:
+    family_size_rule: six_strategy_contrasts_times_number_of_frozen_LLM_models
+    comparison_id_rule: MODEL_KEY_double_underscore_BASE_COMPARISON_ID
+    base_comparisons:
       - comparison_id: BASELINE_vs_DIRECT
         arm_a: deterministic_baseline
         arm_b: direct_structured_llm
@@ -50,6 +54,9 @@ analysis_design:
         arm_a: mapping_aware_llm
         arm_b: mapping_aware_plus_syntax_repair
   paired_analysis:
+    exact_McNemar_scope: one_model_family_per_test
+    pooled_multi_model_McNemar: prohibited
+    deterministic_baseline_reuse_across_model_specific_tests: permitted_with_familywise_multiplicity_control
     cluster_id_field: source_scenario_or_patient_id
     VUR_analysis_set_rule: both_arms_VALID_and_semantic_determinate_for_VUR
     VFY_analysis_set_rule: all_paired_attempted_transformations
@@ -66,4 +73,5 @@ analysis_design:
     - frozen_input_hashes
     - pilot_derived_primary_margin
     - pilot_derived_sample_size_justification
+    - frozen_model_keys_for_expanding_model_specific_comparison_family
     - final_model_and_prompt_configuration_artifact_hashes
