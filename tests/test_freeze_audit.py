@@ -332,3 +332,73 @@ def test_unfrozen_component_boundary_manifest_blocks_sealed_opening() -> None:
         "instrument_component_manifest" in blocker
         for blocker in report.blockers
     )
+
+
+def test_malformed_component_hash_blocks_opening() -> None:
+    manifest = _ready_manifest()
+    manifest["reviewer_roster"]["sha256"] = "not-a-sha256"
+
+    report = assess_presealed_freeze(manifest)
+
+    assert not report.ready_to_open_sealed_set
+    assert any(
+        "reviewer_roster lacks a frozen SHA-256" in blocker
+        for blocker in report.blockers
+    )
+
+
+def test_malformed_repository_commit_blocks_opening() -> None:
+    manifest = _ready_manifest()
+    manifest["repository_commit"] = "not-a-commit"
+
+    report = assess_presealed_freeze(manifest)
+
+    assert not report.ready_to_open_sealed_set
+    assert any(
+        "repository_commit is missing, malformed, or placeholder" == blocker
+        for blocker in report.blockers
+    )
+
+
+def test_malformed_critical_dependency_entry_blocks_opening() -> None:
+    manifest = _ready_manifest()
+    manifest["dependencies"].append("bad-dependency-entry")
+
+    report = assess_presealed_freeze(manifest)
+
+    assert not report.ready_to_open_sealed_set
+    assert "dependency entry is malformed" in report.blockers
+
+
+def test_duplicate_critical_dependency_purpose_blocks_opening() -> None:
+    manifest = _ready_manifest()
+    duplicate = dict(manifest["dependencies"][0])
+    duplicate["name"] = "duplicate-terminology"
+    duplicate["sha256"] = "c" * 64
+    manifest["dependencies"].append(duplicate)
+
+    report = assess_presealed_freeze(manifest)
+
+    assert not report.ready_to_open_sealed_set
+    assert any(
+        "duplicate measurement-critical dependency purpose" in blocker
+        for blocker in report.blockers
+    )
+
+
+def test_missing_artifact_identity_fields_block_opening() -> None:
+    manifest = _ready_manifest()
+    manifest["analysis_preregistration"]["artifact_id"] = ""
+    manifest["analysis_preregistration"]["path_or_ref"] = ""
+
+    report = assess_presealed_freeze(manifest)
+
+    assert not report.ready_to_open_sealed_set
+    assert any(
+        "analysis_preregistration lacks artifact_id" in blocker
+        for blocker in report.blockers
+    )
+    assert any(
+        "analysis_preregistration has missing/placeholder path_or_ref" in blocker
+        for blocker in report.blockers
+    )
