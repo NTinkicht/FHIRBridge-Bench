@@ -92,6 +92,7 @@ Severity is a separate axis from error type.
 The main analysis will prioritize a compact metric set:
 
 - Structural validity rate
+- Valid-and-Faithful Yield (unconditional companion estimand)
 - Valid-but-Unfaithful Rate (primary endpoint)
 - Fabrication rate
 - Required omission rate
