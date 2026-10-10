@@ -96,14 +96,20 @@ gates:
     status: blocked
     blockers:
       - structural_validity_warning_policies_not_fully_frozen
+      - confirmatory_analysis_preregistration_not_locked
     evidence:
       unconditional_companion_estimand: docs/statistical_analysis_plan.md
       implementation: src/fhirbridge/endpoint_metrics.py
       structural_validity_policy: benchmark/structural_validity_policy.yaml
       structural_validity_implementation: src/fhirbridge/structural_validity_policy.py
+      statistical_reference_implementation: src/fhirbridge/analysis_statistics.py
+      analysis_preregistration_schema: analysis/schema/analysis_preregistration.schema.json
+      analysis_preregistration_template: analysis/examples/analysis_preregistration_template.yaml
+      analysis_preregistration_readiness: src/fhirbridge/analysis_preregistration.py
       status: >-
-        VFY_preregistered_and_implemented; fail-closed validity states are
-        implemented; target warning policies remain pre-freeze unresolved
+        VFY and exact statistical procedures are preregistered and implemented;
+        target warning policies and the concrete comparison family/bootstrap seed
+        remain pre-freeze unresolved
     completion_rule: >-
       Report VUR conditional on structural validity and an unconditional
       valid-and-faithful yield across all attempts, with the structural-validity
