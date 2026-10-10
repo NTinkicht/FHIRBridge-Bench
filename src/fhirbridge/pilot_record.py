@@ -135,15 +135,21 @@ def build_pilot_acceptance_record(
     adjudication_bundle_sha256 = _canonical_sha256(
         sorted(adjudications, key=lambda item: item["case_id"])
     )
+    verifier_results_bundle_sha256 = _canonical_sha256(
+        sorted(verifier_results, key=lambda item: item["case_id"])
+    )
 
     return {
-        "schema_version": "0.4.0",
+        "schema_version": "0.5.0",
         "record_id": record_id,
         "status": "preregistered",
         "created_at": created_at,
         "pilot_evidence": {
             "pilot_case_manifest_sha256": pilot_case_manifest_sha256,
             "pilot_adjudication_bundle_sha256": adjudication_bundle_sha256,
+            "pilot_verifier_results_bundle_sha256": (
+                verifier_results_bundle_sha256
+            ),
             "case_count": len(case_ids),
             "expert_major_error_positive_count": positive_count,
             "expert_major_error_negative_count": negative_count,
