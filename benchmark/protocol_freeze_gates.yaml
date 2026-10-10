@@ -186,6 +186,12 @@ gates:
       preregistration_schema: expert_validation/schema/pilot_acceptance_preregistration.schema.json
       incomplete_template: expert_validation/examples/pilot_acceptance_preregistration_template.yaml
       readiness_check: src/fhirbridge/pilot_acceptance.py
+      deterministic_record_builder: src/fhirbridge/pilot_record.py
+      build_cli: expert_validation/build_pilot_acceptance.py
+      pilot_provenance_hashes:
+        - pilot_case_manifest_sha256
+        - pilot_adjudication_bundle_sha256
+        - pilot_verifier_results_bundle_sha256
       status: method_preregistered_numeric_thresholds_pending_pilot
     completion_rule: >-
       Instrument acceptance thresholds must be derived on the pilot partition
