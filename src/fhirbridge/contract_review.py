@@ -55,6 +55,25 @@ def _contract_key(response: dict[str, Any]) -> tuple[str, str]:
     return contract_id, version
 
 
+def review_rule_ids(response: dict[str, Any]) -> tuple[str, ...]:
+    """Return unique reviewed rule IDs without assuming a review stage."""
+
+    reviews = response.get("rule_reviews")
+    if not isinstance(reviews, list) or not reviews:
+        raise ValueError("rule_reviews must be a non-empty list")
+    observed: set[str] = set()
+    for item in reviews:
+        if not isinstance(item, dict):
+            raise ValueError("each rule review must be a mapping")
+        rule_id = item.get("rule_id")
+        if not isinstance(rule_id, str) or not rule_id:
+            raise ValueError("each rule review needs a non-empty rule_id")
+        if rule_id in observed:
+            raise ValueError(f"duplicate rule review: {rule_id}")
+        observed.add(rule_id)
+    return tuple(sorted(observed))
+
+
 def decisions_by_rule(response: dict[str, Any]) -> dict[str, str]:
     """Return original projectability decisions indexed by rule ID."""
 
@@ -85,6 +104,13 @@ def paired_review_summary(
     response_b: dict[str, Any],
 ) -> PairedReviewSummary:
     """Compare two independent reviews of the same contract rule set."""
+
+    stage_a = response_a.get("review_stage", "legacy")
+    stage_b = response_b.get("review_stage", "legacy")
+    if stage_a not in {"blind", "legacy"} or stage_b not in {"blind", "legacy"}:
+        raise ValueError(
+            "inter-rater agreement must use original blind-stage responses"
+        )
 
     contract_a = _contract_key(response_a)
     contract_b = _contract_key(response_b)
@@ -198,7 +224,7 @@ def validate_review_coverage(
     """Reject paired-but-incomplete reviews before agreement is calculated."""
 
     expected = set(expected_rule_ids)
-    observed = set(decisions_by_rule(response))
+    observed = set(review_rule_ids(response))
     if observed != expected:
         missing = sorted(expected - observed)
         unexpected = sorted(observed - expected)
@@ -297,6 +323,9 @@ def validate_complete_review_response(
         relationship_candidates=relationship_candidates,
     )
     validate_review_coverage(response, expected_rule_ids=expected)
+    stage = response.get("review_stage", "legacy")
+    if stage == "blind":
+        return
     validate_review_operations(
         response,
         contract,
