@@ -42,6 +42,10 @@ def _ready() -> dict:
     document["config_id"] = "MODEL-FREEZE-001"
     document["status"] = "frozen"
     document["created_at"] = "2026-10-20T13:00:00Z"
+    document["global_execution_policy"]["policy_artifact"] = {
+        "path_or_ref": "models/execution_policy.yaml",
+        "sha256": "e" * 64,
+    }
     document["deterministic_baseline"]["implementation_artifact"] = _artifact(
         "1"
     )
@@ -176,4 +180,41 @@ def test_silent_model_fallback_is_prohibited() -> None:
     assert not readiness.ready
     assert any(
         "silent model fallback" in blocker for blocker in readiness.blockers
+    )
+
+
+def test_retry_policy_must_match_frozen_one_attempt_policy() -> None:
+    document = _ready()
+    document["global_execution_policy"]["retry_policy"]["maximum_attempts"] = 2
+    document["global_execution_policy"]["retry_policy"]["retry_on"] = [
+        "transport_error"
+    ]
+
+    readiness = assess_model_prompt_freeze(document)
+
+    assert not readiness.ready
+    assert any("maximum_attempts must equal one" in blocker for blocker in readiness.blockers)
+    assert any("retry_on must be empty" in blocker for blocker in readiness.blockers)
+
+
+def test_timeout_must_match_frozen_120_seconds() -> None:
+    document = _ready()
+    document["global_execution_policy"]["timeout_seconds"] = 60
+
+    readiness = assess_model_prompt_freeze(document)
+
+    assert not readiness.ready
+    assert any("timeout_seconds must equal" in blocker for blocker in readiness.blockers)
+
+
+def test_execution_policy_artifact_must_be_hash_pinned() -> None:
+    document = _ready()
+    document["global_execution_policy"]["policy_artifact"]["sha256"] = "0" * 64
+
+    readiness = assess_model_prompt_freeze(document)
+
+    assert not readiness.ready
+    assert any(
+        "global_execution_policy.policy_artifact" in blocker
+        for blocker in readiness.blockers
     )
