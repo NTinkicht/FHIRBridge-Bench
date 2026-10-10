@@ -1,0 +1,60 @@
+analysis_design:
+  id: FHIRBRIDGE-CONFIRMATORY-DESIGN-001
+  version: 0.1.0
+  status: predeclared_before_confirmatory_inference
+  source_protocol: docs/research_protocol.md
+  primary_direction: FHIR_to_HL7v2
+  core_arms:
+    - arm_id: deterministic_baseline
+      role: standards_based_deterministic_reference
+    - arm_id: direct_structured_llm
+      role: direct_structured_generation
+    - arm_id: mapping_aware_llm
+      role: mapping_aware_generation
+    - arm_id: mapping_aware_plus_syntax_repair
+      role: mapping_aware_generation_plus_syntax_validator_repair
+  primary_estimand:
+    name: VUR
+    comparison_mode: arm_specific_estimation_and_preregistered_threshold_test
+  companion_estimand:
+    name: VFY
+    denominator: all_attempted_transformations
+  paired_secondary_comparison_family:
+    multiplicity_method: Holm
+    comparisons:
+      - comparison_id: BASELINE_vs_DIRECT
+        arm_a: deterministic_baseline
+        arm_b: direct_structured_llm
+      - comparison_id: BASELINE_vs_MAPPING
+        arm_a: deterministic_baseline
+        arm_b: mapping_aware_llm
+      - comparison_id: BASELINE_vs_REPAIR
+        arm_a: deterministic_baseline
+        arm_b: mapping_aware_plus_syntax_repair
+      - comparison_id: DIRECT_vs_MAPPING
+        arm_a: direct_structured_llm
+        arm_b: mapping_aware_llm
+      - comparison_id: DIRECT_vs_REPAIR
+        arm_a: direct_structured_llm
+        arm_b: mapping_aware_plus_syntax_repair
+      - comparison_id: MAPPING_vs_REPAIR
+        arm_a: mapping_aware_llm
+        arm_b: mapping_aware_plus_syntax_repair
+  paired_analysis:
+    cluster_id_field: source_scenario_or_patient_id
+    VUR_analysis_set_rule: both_arms_VALID_and_semantic_determinate_for_VUR
+    VFY_analysis_set_rule: all_paired_attempted_transformations
+    risk_difference: arm_a_minus_arm_b
+    mcnemar:
+      method: exact_binomial
+      sidedness: two_sided
+    bootstrap:
+      method: paired_cluster_percentile
+      confidence_level: 0.95
+      iterations: 10000
+      seed: 20261010
+  unresolved_before_final_preregistration:
+    - frozen_input_hashes
+    - pilot_derived_primary_margin
+    - pilot_derived_sample_size_justification
+    - final_model_and_prompt_configuration_artifact_hashes
