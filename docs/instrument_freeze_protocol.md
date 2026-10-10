@@ -99,6 +99,16 @@ After pilot calibration and before opening the sealed set, the preregistration m
 
 The freeze manifest records the preregistration reference and hash and attests whether the gate was defined before sealed opening.
 
+The threshold-setting procedure itself is now preregistered in
+`benchmark/pilot_acceptance_plan.yaml`. After pilot adjudication, the concrete
+numeric gate must be recorded in a schema-valid
+`pilot_acceptance_preregistration` record before any sealed case is opened.
+The record binds the pilot case/adjudication hashes, frozen verifier and
+contract hashes, Wilson 95% confidence intervals, selected sensitivity/PPV
+statistics, numeric thresholds, rationales, and an explicit attestation that no
+sealed results were used. The deliberately incomplete repository template is
+not freeze-ready.
+
 ## Automated pre-opening audit
 
 `src/fhirbridge/freeze_audit.py` implements a conservative readiness check after schema validation.
