@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/precedence_blind_response.schema.json",
+  "title": "FHIRBridge Independent Error-Precedence Review Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "assignment_id",
+    "reviewer",
+    "decision",
+    "rationale",
+    "attestation"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "assignment_id": {"const": "FHIRBRIDGE-PRECEDENCE-BLIND-001"},
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_id",
+        "review_date",
+        "expertise",
+        "conflicts_of_interest",
+        "prior_project_involvement"
+      ],
+      "properties": {
+        "reviewer_id": {"type": "string", "minLength": 1},
+        "review_date": {"type": "string", "format": "date"},
+        "expertise": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "conflicts_of_interest": {"type": "string"},
+        "prior_project_involvement": {"type": "string"}
+      }
+    },
+    "decision": {"enum": ["ACCEPT", "REJECT", "INDETERMINATE"]},
+    "rationale": {"type": "string", "minLength": 1},
+    "attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "independent_initial_decision",
+        "other_reviewer_decision_hidden",
+        "sealed_cases_not_used",
+        "renderer_outputs_not_used_as_correctness_evidence"
+      ],
+      "properties": {
+        "independent_initial_decision": {"const": true},
+        "other_reviewer_decision_hidden": {"const": true},
+        "sealed_cases_not_used": {"const": true},
+        "renderer_outputs_not_used_as_correctness_evidence": {"const": true}
+      }
+    }
+  }
+}
