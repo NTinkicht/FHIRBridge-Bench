@@ -13,12 +13,14 @@ gates:
     status: blocked
     blockers:
       - contract_v0_3_order_rules_not_frozen
-      - canonical_order_fact_not_yet_in_all_primary_scenarios
       - hl7v2_ORC_MSH21_OBR3_OBR16_not_yet_in_reference_path
-      - order_lifter_grounding_not_yet_qualified
+      - order_lifter_grounding_profile_qualification_pending
     evidence:
       fhir_order_context_prefreeze_qualification: qualification/fhir/results/order-context-prefreeze-qualification.json
-      fhir_order_context_status: implemented_and_external_validator_passed
+      primary_scenario_order_context: benchmark/scenarios/lab_core_v0.1.yaml
+      primary_generator: src/fhirbridge/canonical/lab.py::generate_primary_lab_scenario
+      fhir_order_context_status: implemented_and_external_validator_passed_all_11_primary_families
+      hl7v2_order_lifter_status: implemented_and_grounding_guard_unit_qualified
       hl7v2_order_context_status: blocked_pending_safe_ORC_control_and_profile_qualification
     completion_rule: >-
       Source-grounded order context must survive canonical -> FHIR -> HL7 v2
@@ -93,7 +95,12 @@ gates:
     category: benchmark_design
     status: blocked
     blockers:
-      - valid_and_faithful_existence_not_demonstrated_for_each_primary_family
+      - target_v2_valid_and_faithful_existence_not_demonstrated_for_each_primary_family
+    evidence:
+      fhir_primary_family_count: 11
+      fhir_order_context_external_validation: passed
+      fhir_semantic_roundtrip: faithful_all_11_primary_families
+      target_v2_status: pending_exact_profile_and_independent_renderer
     completion_rule: >-
       Before freezing a primary scenario family, at least one independently
       rendered output must be both structurally valid and semantically faithful
