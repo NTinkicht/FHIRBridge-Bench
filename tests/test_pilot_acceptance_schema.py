@@ -26,7 +26,7 @@ def test_incomplete_pilot_acceptance_template_is_schema_valid_but_not_a_claim() 
 
     jsonschema.Draft202012Validator(_schema()).validate(document)
 
-    assert document["schema_version"] == "0.2.0"
+    assert document["schema_version"] == "0.3.0"
     assert document["status"] == "incomplete_template"
     assert document["created_at"] is None
 
@@ -58,6 +58,23 @@ def test_pilot_schema_requires_runtime_indeterminate_gate() -> None:
 def test_pilot_schema_requires_runtime_indeterminate_metric() -> None:
     document = _template()
     del document["metrics"]["runtime_indeterminate_rate"]
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "runtime_indeterminate_expert_positive_count",
+        "runtime_indeterminate_expert_negative_count",
+    ],
+)
+def test_pilot_schema_requires_class_specific_indeterminate_counts(
+    field: str,
+) -> None:
+    document = _template()
+    del document["metrics"][field]
 
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.Draft202012Validator(_schema()).validate(document)
