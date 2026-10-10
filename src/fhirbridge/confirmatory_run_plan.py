@@ -30,6 +30,8 @@ def assess_confirmatory_run_plan(
 ) -> ConfirmatoryRunPlanReadiness:
     blockers: list[str] = []
 
+    if document.get("schema_version") != "0.3.0":
+        blockers.append("confirmatory run plan schema_version is not 0.3.0")
     if document.get("status") != "prepared_authorized":
         blockers.append("confirmatory run plan is not prepared_authorized")
     if document.get("created_at") is None:
@@ -51,9 +53,9 @@ def assess_confirmatory_run_plan(
             blockers.append("run authorization is not true")
         if _zeroish(authorization.get("record_sha256")):
             blockers.append("authorization record SHA-256 is still a zero placeholder")
-        if authorization.get("record_schema_version") != "0.1.0":
+        if authorization.get("record_schema_version") != "0.2.0":
             blockers.append(
-                "authorization record schema_version is not frozen to 0.1.0"
+                "authorization record schema_version is not frozen to 0.2.0"
             )
         schema_hash = authorization.get("record_schema_sha256")
         if (
