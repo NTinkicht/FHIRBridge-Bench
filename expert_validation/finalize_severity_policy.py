@@ -89,6 +89,18 @@ def finalize_severity_policy(
         "pre_adjudication_exact_agreement_rate": calibration[
             "pre_adjudication_agreement"
         ]["exact_agreement_rate"],
+        "blind_assignment_id": calibration["blind_stage_evidence"][
+            "assignment_id"
+        ],
+        "reviewer_a_response_sha256": calibration["blind_stage_evidence"][
+            "reviewer_a_response_sha256"
+        ],
+        "reviewer_b_response_sha256": calibration["blind_stage_evidence"][
+            "reviewer_b_response_sha256"
+        ],
+        "boundary_roles_hidden_initially": calibration[
+            "blind_stage_evidence"
+        ]["boundary_roles_hidden_initially"],
     }
 
     # Definitions are measurement anchors and must not be rewritten during
