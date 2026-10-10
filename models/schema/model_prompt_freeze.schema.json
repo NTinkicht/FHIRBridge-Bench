@@ -17,7 +17,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "0.3.0"
+      "const": "0.4.0"
     },
     "config_id": {
       "type": "string",
@@ -49,7 +49,7 @@
         "synthetic_data_only_for_hosted_models",
         "silent_model_fallback",
         "silent_prompt_fallback",
-        "logical_generation_attempts_per_case_arm_model",
+        "provider_generation_calls_per_case_model",
         "retry_policy",
         "timeout_seconds"
       ],
@@ -87,13 +87,30 @@
           "const": "FHIRBRIDGE-MODEL-EXECUTION-001"
         },
         "policy_version": {
-          "const": "0.1.0"
+          "const": "0.2.0"
         },
         "policy_artifact": {
           "$ref": "#/$defs/artifact"
         },
-        "logical_generation_attempts_per_case_arm_model": {
-          "const": 1
+        "provider_generation_calls_per_case_model": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "direct_structured_llm",
+            "mapping_aware_llm",
+            "mapping_aware_plus_syntax_repair"
+          ],
+          "properties": {
+            "direct_structured_llm": {
+              "const": 1
+            },
+            "mapping_aware_llm": {
+              "const": 1
+            },
+            "mapping_aware_plus_syntax_repair": {
+              "const": 0
+            }
+          }
         }
       }
     },
@@ -215,6 +232,7 @@
       "additionalProperties": false,
       "required": [
         "strategy_id",
+        "generation_source",
         "implementation_artifact",
         "prompt_artifacts",
         "mapping_context_artifacts",
@@ -266,8 +284,51 @@
               ]
             }
           }
+        },
+        "generation_source": {
+          "enum": [
+            "provider_call",
+            "reuse_mapping_aware_raw_output"
+          ]
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "strategy_id": {
+                "enum": [
+                  "direct_structured_llm",
+                  "mapping_aware_llm"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "generation_source": {
+                "const": "provider_call"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "strategy_id": {
+                "const": "mapping_aware_plus_syntax_repair"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "generation_source": {
+                "const": "reuse_mapping_aware_raw_output"
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }
