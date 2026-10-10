@@ -187,10 +187,11 @@ gates:
       reviewer_roster_readiness: src/fhirbridge/expert_roles.py
       case_assignment_schema: expert_validation/schema/case_assignment_manifest.schema.json
       case_assignment_readiness: src/fhirbridge/expert_assignments.py
-      freeze_manifest_schema_version: "0.3.0"
+      freeze_manifest_schema_version: "0.4.0"
       reviewer_roster_manifest_binding: required_and_sha256_pinned
       case_assignment_manifest_binding: required_and_sha256_pinned
       analysis_preregistration_binding: required_and_sha256_pinned
+      model_prompt_configuration_binding: required_and_sha256_pinned
       status: infrastructure_ready_actual_external_roster_and_sealed_bundle_pending
     completion_rule: >-
       The sealed-set manifest, reviewer roster, roles, blinding controls,
