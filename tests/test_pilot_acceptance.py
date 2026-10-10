@@ -47,6 +47,7 @@ def test_complete_pilot_gate_record_can_be_ready() -> None:
             "true_negative": 5,
             "false_positive": 1,
             "false_negative": 1,
+            "runtime_indeterminate_count": 0,
         }
     )
     for name, estimate, lower, upper in (
@@ -55,6 +56,7 @@ def test_complete_pilot_gate_record_can_be_ready() -> None:
         ("ppv", 0.75, 0.30, 0.95),
         ("npv", 5 / 6, 0.44, 0.97),
         ("accuracy", 0.8, 0.49, 0.94),
+        ("runtime_indeterminate_rate", 0.0, 0.0, 0.28),
     ):
         record["metrics"][name] = {
             "estimate": estimate,
@@ -70,6 +72,11 @@ def test_complete_pilot_gate_record_can_be_ready() -> None:
             "minimum_ppv": 0.7,
             "ppv_statistic": "point_estimate",
             "ppv_rationale": "Pilot-calibrated prespecified false-positive tolerance.",
+            "maximum_runtime_indeterminate_rate": 0.2,
+            "indeterminate_statistic": "point_estimate",
+            "indeterminate_rationale": (
+                "Pilot-calibrated prespecified unresolved-measurement ceiling."
+            ),
         }
     )
 
@@ -86,6 +93,44 @@ def test_confusion_counts_must_match_pilot_case_count() -> None:
     readiness = assess_pilot_acceptance_preregistration(record)
 
     assert any(
-        "confusion counts do not sum to case_count" in blocker
+        "confusion counts do not sum to determinate case count" in blocker
+        for blocker in readiness.blockers
+    )
+
+
+def test_pilot_gate_checks_indeterminate_rate_count_consistency() -> None:
+    record = _template()
+    record["pilot_evidence"]["case_count"] = 10
+    record["metrics"]["runtime_indeterminate_count"] = 2
+    record["metrics"]["runtime_indeterminate_rate"]["estimate"] = 0.1
+
+    readiness = assess_pilot_acceptance_preregistration(record)
+
+    assert any(
+        "runtime_indeterminate_rate estimate does not match" in blocker
+        for blocker in readiness.blockers
+    )
+
+
+def test_pilot_confusion_counts_exclude_indeterminate_cases() -> None:
+    record = _template()
+    record["pilot_evidence"]["case_count"] = 10
+    record["pilot_evidence"]["expert_major_error_positive_count"] = 4
+    record["pilot_evidence"]["expert_major_error_negative_count"] = 6
+    record["metrics"].update(
+        {
+            "true_positive": 3,
+            "true_negative": 4,
+            "false_positive": 1,
+            "false_negative": 0,
+            "runtime_indeterminate_count": 2,
+        }
+    )
+    record["metrics"]["runtime_indeterminate_rate"]["estimate"] = 0.2
+
+    readiness = assess_pilot_acceptance_preregistration(record)
+
+    assert not any(
+        "confusion counts do not sum to determinate case count" in blocker
         for blocker in readiness.blockers
     )
