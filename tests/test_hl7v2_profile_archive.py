@@ -79,3 +79,32 @@ def test_profile_archive_ignores_path_traversal_outside_selected_subtree(
     inspection = inspect_profile_archive(archive)
 
     assert [item.name for item in inspection.manifest.files] == ["PROFILE.xml"]
+
+
+def test_archive_inspection_carries_reference_inventory(tmp_path: Path) -> None:
+    archive = tmp_path / "profile-signals.zip"
+    profile = (
+        '<ConformanceProfile HL7Version="2.5.1"><Messages>'
+        '<Message ID="LRI_NG_FRU_Profile_V3" Type="ORU" Event="R01" '
+        'StructID="ORU_R01" OID="2.16.840.1.113883.9.195.3.25"/>'
+        '</Messages>'
+        '<Component OID="2.16.840.1.113883.9.195.3.22"/>'
+        '<Component OID="2.16.840.1.113883.9.13"/>'
+        '<Component OID="2.16.840.1.113883.9.83"/>'
+        '</ConformanceProfile>'
+    )
+    with ZipFile(archive, "w") as output:
+        output.writestr("bundle/PROFILE.xml", profile)
+
+    inspection = inspect_profile_archive(archive)
+
+    assert inspection.target_reference_signals[
+        "selected_profile_name_observed"
+    ] is True
+    assert inspection.target_reference_signals[
+        "all_required_component_oid_signals_observed"
+    ] is True
+    assert any(
+        item.value == "2.16.840.1.113883.9.195.3.25"
+        for item in inspection.reference_inventory.oids
+    )
