@@ -278,6 +278,9 @@ def test_run_plan_assembler_derives_counts_and_schema_bindings(
     assert plan["frozen_artifacts"][
         "deterministic_baseline_renderer_sha256"
     ] == "d" * 64
+    assert plan["frozen_artifacts"][
+        "deterministic_baseline_execution_schema_sha256"
+    ] == _MODULE._sha256(_MODULE._BASELINE_EXECUTION_SCHEMA)
 
 
 def test_run_plan_assembler_rejects_artifact_changed_after_authorization(
