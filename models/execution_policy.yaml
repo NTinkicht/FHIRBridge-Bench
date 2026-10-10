@@ -1,6 +1,6 @@
 execution_policy:
   id: FHIRBRIDGE-MODEL-EXECUTION-001
-  version: 0.2.0
+  version: 0.3.0
   status: frozen_provider_independent
   scope: confirmatory_LLM_arms
   synthetic_data_only: true
@@ -39,6 +39,9 @@ provider_failure_outcomes:
   timeout: MEASUREMENT_FAILURE
   authentication_or_configuration_error: MEASUREMENT_FAILURE
 
+derived_postprocessing_failure_outcomes:
+  syntax_repair_exception: MEASUREMENT_FAILURE_POSTPROCESSING
+
 model_output_outcomes:
   empty_successful_response: STRUCTURAL_INVALID_CANDIDATE
   refusal_or_non_HL7_text: STRUCTURAL_INVALID_CANDIDATE
@@ -52,7 +55,11 @@ strategy_postprocessing:
     syntax_repair: prohibited
   mapping_aware_plus_syntax_repair:
     provider_call: prohibited
+    provider_attempt_number: null
+    provider_request_id: null
+    source_execution_id: required_mapping_aware_llm_same_case_same_model
     raw_response_source: mapping_aware_llm_same_case_same_model
+    raw_response_hash_must_equal_source_mapping_hash: true
     syntax_repair: deterministic_allowlisted_only
     semantic_field_rewrite: prohibited
 
