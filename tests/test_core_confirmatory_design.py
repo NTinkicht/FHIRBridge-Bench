@@ -14,10 +14,22 @@ def test_analysis_preregistration_template_matches_predeclared_design() -> None:
     design = _yaml(_DESIGN)["analysis_design"]
     template = _yaml(_TEMPLATE)
 
-    design_pairs = design["paired_secondary_comparison_family"]["comparisons"]
+    base_pairs = design["paired_secondary_comparison_family"][
+        "base_comparisons"
+    ]
     template_pairs = template["paired_comparisons"]["comparison_family"]
+    model_key = template["paired_comparisons"]["model_keys"][0]
+    expected_pairs = [
+        {
+            "comparison_id": f"{model_key}__{item['comparison_id']}",
+            "model_key": model_key,
+            "arm_a": item["arm_a"],
+            "arm_b": item["arm_b"],
+        }
+        for item in base_pairs
+    ]
 
-    assert template_pairs == design_pairs
+    assert template_pairs == expected_pairs
     assert template["multiplicity"]["secondary_pairwise_method"] == (
         design["paired_secondary_comparison_family"]["multiplicity_method"]
     )
@@ -45,7 +57,9 @@ def test_analysis_preregistration_template_matches_predeclared_design() -> None:
 def test_core_design_contains_all_six_unordered_pairs_of_four_arms() -> None:
     design = _yaml(_DESIGN)["analysis_design"]
     arms = {item["arm_id"] for item in design["core_arms"]}
-    comparisons = design["paired_secondary_comparison_family"]["comparisons"]
+    comparisons = design["paired_secondary_comparison_family"][
+        "base_comparisons"
+    ]
 
     assert len(arms) == 4
     assert len(comparisons) == 6
