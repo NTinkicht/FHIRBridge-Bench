@@ -18,6 +18,9 @@ from fhirbridge.analysis_preregistration import (
     assess_analysis_preregistration,
 )
 from fhirbridge.model_config_readiness import assess_model_prompt_freeze
+from fhirbridge.primary_vur_hypothesis import (
+    assess_primary_vur_hypothesis,
+)
 from fhirbridge.sample_size_readiness import (
     assess_sample_size_preregistration,
 )
@@ -147,6 +150,7 @@ def assemble_analysis_preregistration(
     *,
     model_config: dict[str, Any],
     sample_size: dict[str, Any],
+    primary_hypothesis: dict[str, Any],
     core_design: dict[str, Any],
     repository_commit: str,
     analysis_id: str,
@@ -164,6 +168,15 @@ def assemble_analysis_preregistration(
         raise ValueError(
             "sample-size preregistration is not freeze-ready: "
             + "; ".join(sample_readiness.blockers)
+        )
+
+    hypothesis_readiness = assess_primary_vur_hypothesis(
+        primary_hypothesis
+    )
+    if not hypothesis_readiness.ready:
+        raise ValueError(
+            "primary VUR hypothesis is not freeze-ready: "
+            + "; ".join(hypothesis_readiness.blockers)
         )
 
     design = core_design.get("analysis_design")
@@ -190,6 +203,7 @@ def assemble_analysis_preregistration(
         "statistical_analysis_plan_sha256",
         "model_prompt_configuration_sha256",
         "sample_size_preregistration_sha256",
+        "primary_vur_hypothesis_sha256",
     }
     if set(input_hashes) != required_hashes:
         raise ValueError("input_hashes do not match required frozen inputs")
@@ -223,7 +237,7 @@ def assemble_analysis_preregistration(
         )
 
     result = {
-        "schema_version": "0.4.0",
+        "schema_version": "0.5.0",
         "analysis_id": analysis_id,
         "status": "preregistered",
         "created_at": created_at,
@@ -240,6 +254,24 @@ def assemble_analysis_preregistration(
             "direction": design["primary_direction"],
             "structural_condition": "VALID",
             "semantic_condition": "determinate_FAITHFUL_or_UNFAITHFUL",
+        },
+        "primary_hypothesis": {
+            "record_id": primary_hypothesis["record_id"],
+            "nontrivial_vur_threshold": primary_hypothesis[
+                "hypothesis"
+            ]["nontrivial_vur_threshold"],
+            "model_strategy_aggregation_policy": primary_hypothesis[
+                "target_population"
+            ]["model_strategy_aggregation_policy"],
+            "inference_method": primary_hypothesis["inference"]["method"],
+            "alpha": primary_hypothesis["inference"]["alpha"],
+            "sidedness": primary_hypothesis["inference"]["sidedness"],
+            "cluster_id_field": primary_hypothesis[
+                "target_population"
+            ]["cluster_id_field"],
+            "decision_rule": primary_hypothesis["inference"][
+                "decision_rule"
+            ],
         },
         "paired_comparisons": {
             "analysis_set_rule": paired_analysis["VUR_analysis_set_rule"],
@@ -269,16 +301,19 @@ def build_from_paths(
     *,
     model_config_path: Path,
     sample_size_path: Path,
+    primary_hypothesis_path: Path,
     analysis_id: str,
     created_at: str,
     repository_commit: str | None = None,
 ) -> dict[str, Any]:
     model_config = _load_yaml(model_config_path)
     sample_size = _load_yaml(sample_size_path)
+    primary_hypothesis = _load_yaml(primary_hypothesis_path)
     core_design = _load_yaml(_CORE_DESIGN)
     result = assemble_analysis_preregistration(
         model_config=model_config,
         sample_size=sample_size,
+        primary_hypothesis=primary_hypothesis,
         core_design=core_design,
         repository_commit=_repository_commit(repository_commit),
         analysis_id=analysis_id,
@@ -289,6 +324,9 @@ def build_from_paths(
             "statistical_analysis_plan_sha256": _sha256(_SAP),
             "model_prompt_configuration_sha256": _sha256(model_config_path),
             "sample_size_preregistration_sha256": _sha256(sample_size_path),
+            "primary_vur_hypothesis_sha256": _sha256(
+                primary_hypothesis_path
+            ),
         },
     )
 
@@ -301,6 +339,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-config", type=Path, required=True)
     parser.add_argument("--sample-size", type=Path, required=True)
+    parser.add_argument("--primary-hypothesis", type=Path, required=True)
     parser.add_argument("--analysis-id", required=True)
     parser.add_argument("--created-at", required=True)
     parser.add_argument("--repository-commit")
@@ -310,6 +349,7 @@ def main() -> int:
     result = build_from_paths(
         model_config_path=args.model_config,
         sample_size_path=args.sample_size,
+        primary_hypothesis_path=args.primary_hypothesis,
         analysis_id=args.analysis_id,
         created_at=args.created_at,
         repository_commit=args.repository_commit,
