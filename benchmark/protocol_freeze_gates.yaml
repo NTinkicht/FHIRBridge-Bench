@@ -172,21 +172,32 @@ gates:
     category: experimental_reproducibility
     status: blocked
     blockers:
-      - four_core_arm_implementations_not_frozen
+      - deterministic_baseline_order_path_and_final_arm_hashes_not_frozen
       - llm_provider_model_snapshot_not_frozen
-      - prompt_and_mapping_context_hashes_not_frozen
-      - syntax_repair_implementation_not_frozen
-      - execution_retry_timeout_seed_policy_not_frozen
+      - final_frozen_mapping_context_hash_not_available
+      - model_specific_seed_and_structured_output_policy_not_frozen
     evidence:
       schema: models/schema/model_prompt_freeze.schema.json
       incomplete_template: models/examples/model_prompt_freeze_template.yaml
       readiness_check: src/fhirbridge/model_config_readiness.py
+      provider_independent_execution_policy: models/execution_policy.yaml
+      direct_prompt_template: models/prompts/direct_structured_v0.1.txt
+      mapping_prompt_template: models/prompts/mapping_aware_v0.1.txt
+      strategy_implementation: src/fhirbridge/model_strategies.py
+      syntax_repair_implementation: src/fhirbridge/syntax_repair.py
+      mapping_context_builder: src/fhirbridge/mapping_context.py
+      provider_independent_hash_manifest_builder: models/build_provider_independent_manifest.py
+      provider_independent_status: frozen_and_CI_hashed
       core_arm_design: analysis/core_confirmatory_design.yaml
       fairness_policy: every_frozen_LLM_model_crossed_with_all_three_strategy_conditions_using_one_model_specific_decoding_configuration
       silent_model_fallback: prohibited
       silent_prompt_fallback: prohibited
       hosted_model_data_scope: synthetic_only
-      status: infrastructure_ready_actual_model_prompt_artifacts_pending
+      status: >-
+        provider-independent execution, prompts, strategy assembly and syntax
+        repair are frozen/CI-hashed; final model snapshots, model-specific
+        decoding/seed declarations, frozen mapping context, and final arm hashes
+        remain pending
     completion_rule: >-
       The deterministic baseline plus all frozen LLM model families and the
       three LLM strategy conditions must be frozen with cryptographic hashes for
