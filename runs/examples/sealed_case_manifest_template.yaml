@@ -1,0 +1,11 @@
+schema_version: "0.1.0"
+manifest_id: "SEALED-CASES-TO-BE-ASSIGNED"
+status: incomplete_template
+created_at: null
+split: sealed_test
+case_count: 1
+cases:
+  - case_id: "CASE-TO-BE-ASSIGNED"
+    scenario_family: "LAB-001"
+    source_input_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+    canonical_graph_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
