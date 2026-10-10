@@ -50,6 +50,11 @@ contract_default_severity_policy:
     provisional defaults for instrumentation. Blinded expert reviewers retain
     authority to assign case-level severity under the frozen rubric.
 
+expert_calibration:
+  status: pending
+  record_ref: null
+  record_sha256: null
+
 calibration_requirements:
   - two_primary_expert_reviewers_review_S2_S3_boundary_examples
   - adjudicator_reviews_disputed_anchor_examples
