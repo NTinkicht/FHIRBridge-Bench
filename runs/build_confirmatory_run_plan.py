@@ -168,7 +168,7 @@ def build_run_plan(
     case_count = len(case_ids)
     model_count = len(model_keys)
     result = {
-        "schema_version": "0.2.0",
+        "schema_version": "0.3.0",
         "run_plan_id": run_plan_id,
         "status": "prepared_authorized",
         "created_at": created_at,
@@ -178,7 +178,7 @@ def build_run_plan(
         "authorization": {
             "authorized": True,
             "record_sha256": _sha256(authorization_record_path),
-            "record_schema_version": "0.1.0",
+            "record_schema_version": "0.2.0",
             "record_schema_sha256": _sha256(_AUTH_SCHEMA),
         },
         "frozen_artifacts": {
