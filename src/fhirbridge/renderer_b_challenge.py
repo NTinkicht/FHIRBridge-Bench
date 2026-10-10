@@ -14,7 +14,7 @@ from typing import Any
 
 from .canonical import generate_lab_scenario
 
-_RENDERER_B_CHALLENGE_VERSION = "0.1.0"
+_RENDERER_B_CHALLENGE_VERSION = "0.2.0"
 _TEMPLATES = tuple(f"LAB-{index:03d}" for index in range(1, 13))
 _SEED_BASE = 15000
 
@@ -50,6 +50,7 @@ def build_renderer_b_challenge() -> tuple[RendererBChallengeCase, ...]:
             scenario_id,
             seed,
             partition="development",
+            include_order_context=True,
         )
         metadata = graph["scenario_metadata"]
         cases.append(
@@ -81,9 +82,14 @@ def challenge_manifest(
         "contains_target_gold_serialization": False,
         "contains_verifier_decisions": False,
         "contains_fault_labels": False,
+        "contains_order_context": True,
+        "hl7v2_order_projection_policy": (
+            "fail_closed_until_exact_edition5_machine_profile_and_external_review"
+        ),
         "contract": {
-            "path": "contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml",
-            "version": "0.2.0",
+            "path": "contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml",
+            "version": "0.3.0",
+            "freeze_status": "draft_not_frozen",
         },
         "cases": [
             {
