@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from fhirbridge.canonical import generate_lab_scenario
+from fhirbridge.canonical import generate_lab_scenario, generate_primary_lab_scenario
 from fhirbridge.schema_validation import validate_document
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -89,3 +89,47 @@ def test_ambiguity_fixture_is_excluded_from_primary_endpoint() -> None:
 def test_specimen_required_scenario_cannot_disable_specimen() -> None:
     with pytest.raises(ValueError, match="requires specimen context"):
         generate_lab_scenario("LAB-006", 54, include_specimen=False)
+
+
+def test_primary_generator_requires_order_context_for_all_primary_families() -> None:
+    for index in range(1, 12):
+        template_id = f"LAB-{index:03d}"
+        graph = generate_primary_lab_scenario(template_id, 11000 + index)
+
+        orders = [fact for fact in graph["facts"] if fact["fact_type"] == "order"]
+        reports = [
+            fact
+            for fact in graph["facts"]
+            if fact["fact_type"] == "diagnostic_report"
+        ]
+        assert len(orders) == 1, template_id
+        assert len(reports) == 1, template_id
+        assert any(
+            relation["relation_type"] == "based_on_order"
+            and relation["target_fact_id"] == orders[0]["fact_id"]
+            for relation in reports[0]["relations"]
+        ), template_id
+        assert "ORDER_IDENTIFIER_MAPPING_001" in graph[
+            "scenario_metadata"
+        ]["expected_rule_ids"]
+
+
+def test_primary_generator_rejects_nonprimary_ambiguity_family() -> None:
+    with pytest.raises(ValueError, match="not primary"):
+        generate_primary_lab_scenario("LAB-012", 12012)
+
+
+def test_scenario_spec_requires_order_context_in_all_primary_families() -> None:
+    scenario_doc = yaml.safe_load(
+        (ROOT / "benchmark/scenarios/lab_core_v0.1.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert scenario_doc["scenario_set"]["version"] == "0.2.0"
+    assert scenario_doc["scenario_set"]["contract"].endswith(
+        "lab_oru_r01_v0.3.yaml"
+    )
+    for family in scenario_doc["scenario_families"]:
+        if family["primary_endpoint_eligible"]:
+            assert "order_context" in family["required_fact_groups"], family["id"]
