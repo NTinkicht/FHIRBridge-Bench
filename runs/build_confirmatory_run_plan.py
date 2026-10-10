@@ -135,6 +135,31 @@ def build_run_plan(
     if not isinstance(frozen_sealed, dict):
         raise ValueError("freeze manifest lacks sealed_set binding")
 
+    frozen_components = freeze_manifest.get("instrument_components")
+    if not isinstance(frozen_components, dict):
+        raise ValueError("freeze manifest lacks instrument_components")
+    baseline_component = frozen_components.get(
+        "deterministic_baseline_renderer"
+    )
+    if not isinstance(baseline_component, dict):
+        raise ValueError(
+            "freeze manifest lacks deterministic_baseline_renderer component"
+        )
+    baseline_renderer_sha256 = baseline_component.get("sha256")
+    if (
+        not isinstance(baseline_renderer_sha256, str)
+        or len(baseline_renderer_sha256) != 64
+        or any(
+            ch not in "0123456789abcdefABCDEF"
+            for ch in baseline_renderer_sha256
+        )
+        or set(baseline_renderer_sha256.lower()) == {"0"}
+    ):
+        raise ValueError(
+            "frozen deterministic baseline renderer SHA-256 is invalid"
+        )
+    baseline_renderer_sha256 = baseline_renderer_sha256.lower()
+
     sealed_bundle_sha256 = _sha256(sealed_bundle_path)
     if frozen_sealed.get("bundle_id") != sealed_bundle_id:
         raise ValueError("sealed bundle ID does not match freeze manifest")
@@ -207,6 +232,9 @@ def build_run_plan(
                 pilot_acceptance_path
             ),
             "execution_record_schema_sha256": _sha256(_EXECUTION_SCHEMA),
+            "deterministic_baseline_renderer_sha256": (
+                baseline_renderer_sha256
+            ),
         },
         "execution_record_contract": {
             "schema_version": "0.3.0",
