@@ -196,7 +196,7 @@ def build_severity_adjudication_seed(
         )
 
     return {
-        "schema_version": "0.1.0",
+        "schema_version": "0.2.0",
         "calibration_id": "SEVERITY-CALIBRATION-TO-BE-ASSIGNED",
         "status": "incomplete_template",
         "created_at": None,
