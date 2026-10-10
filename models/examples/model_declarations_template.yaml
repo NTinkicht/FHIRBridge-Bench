@@ -1,0 +1,12 @@
+schema_version: "0.1.0"
+models:
+  - model_key: "MODEL-TO-BE-FROZEN"
+    provider: "TO_BE_FROZEN"
+    model_id: "TO_BE_FROZEN"
+    model_revision_or_snapshot: "TO_BE_FROZEN"
+    temperature: 0.0
+    top_p: 1.0
+    max_output_tokens: 4096
+    seed_policy: provider_does_not_support_seed
+    seed: null
+    structured_output_mode: plain_text_hl7_message
