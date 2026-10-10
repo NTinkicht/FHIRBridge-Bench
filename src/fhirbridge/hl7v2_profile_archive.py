@@ -17,6 +17,7 @@ from .hl7v2_profile_bundle import (
     inspect_profile_identity,
 )
 
+
 @dataclass(frozen=True)
 class ProfileArchiveInspection:
     archive_sha256: str
