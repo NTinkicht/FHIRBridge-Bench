@@ -4,6 +4,7 @@ import pytest
 
 from fhirbridge.fhir_warning_audit import (
     audit_to_dict,
+    audit_warning_log,
     audit_warning_log_directories,
     audit_warning_logs,
     load_warning_policy,
@@ -151,3 +152,24 @@ def test_warning_audit_fails_closed_on_unknown_order_context_warning(
     assert audit.total_warnings == 1
     assert audit.unknown_warnings == 1
     assert audit.classifications[0].category_id is None
+
+
+def test_single_log_warning_audit_does_not_scan_siblings(tmp_path: Path) -> None:
+    first = tmp_path / "LAB-001.log"
+    second = tmp_path / "LAB-002.log"
+    first.write_text(
+        (
+            "Warning @ Bundle.entry[0].resource: "
+            "Constraint failed: dom-6: narrative\n"
+        ),
+        encoding="utf-8",
+    )
+    second.write_text(
+        "Warning @ Observation: unexpected new warning\n",
+        encoding="utf-8",
+    )
+
+    audit = audit_warning_log(first, _POLICY)
+
+    assert audit.total_warnings == 1
+    assert audit.unknown_warnings == 0
