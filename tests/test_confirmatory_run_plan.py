@@ -135,3 +135,16 @@ def test_run_plan_rejects_missing_execution_binding() -> None:
         "required_bindings do not match" in item
         for item in readiness.blockers
     )
+
+
+def test_run_plan_requires_execution_schema_validation() -> None:
+    document = _ready()
+    document["execution_record_contract"]["schema_validation_required"] = False
+
+    readiness = assess_confirmatory_run_plan(document)
+
+    assert not readiness.ready
+    assert any(
+        "schema validation is not required" in item
+        for item in readiness.blockers
+    )
