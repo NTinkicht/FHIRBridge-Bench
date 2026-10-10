@@ -14,6 +14,23 @@ from .pilot_acceptance import assess_pilot_acceptance_preregistration
 from .sample_size_readiness import assess_sample_size_preregistration
 from .tooling_manifest import assess_freeze_readiness
 
+_REQUIRED_PROTOCOL_GATE_IDS = frozenset(
+    {
+        "order_context_end_to_end",
+        "required_element_inventory",
+        "external_contract_review",
+        "renderer_b_clean_room",
+        "status_and_code_maps",
+        "measurement_error_policy",
+        "primary_metric_definition",
+        "per_scenario_feasibility",
+        "pilot_acceptance_gate",
+        "sample_size_preregistration",
+        "model_prompt_configuration",
+        "sealed_expert_validation",
+    }
+)
+
 _REQUIRED_BOUND_HASHES = {
     "instrument_component_manifest": (
         "instrument_component_manifest",
@@ -74,6 +91,19 @@ def _protocol_blockers(document: dict[str, Any]) -> list[str]:
                 f"protocol gate still lists blocker items: {gate_id}"
             )
 
+    missing_gate_ids = _REQUIRED_PROTOCOL_GATE_IDS - seen_ids
+    unexpected_gate_ids = seen_ids - _REQUIRED_PROTOCOL_GATE_IDS
+    if missing_gate_ids:
+        blockers.append(
+            "protocol gate ledger is missing required gates: "
+            + ", ".join(sorted(missing_gate_ids))
+        )
+    if unexpected_gate_ids:
+        blockers.append(
+            "protocol gate ledger contains unexpected gates: "
+            + ", ".join(sorted(unexpected_gate_ids))
+        )
+
     policy = document.get("confirmatory_run_policy")
     if not isinstance(policy, dict):
         blockers.append("confirmatory_run_policy is missing")
@@ -112,11 +142,28 @@ def assess_confirmatory_authorization(
     actual_artifact_sha256: dict[str, str],
     actual_component_sha256: dict[str, str],
     sealed_case_ids: set[str],
+    actual_repository_commit: str,
 ) -> ConfirmatoryAuthorization:
     """Authorize confirmatory inference only when every frozen gate agrees."""
 
     blockers: list[str] = []
     blockers.extend(_protocol_blockers(protocol_gates))
+
+    frozen_repository_commit = freeze_manifest.get("repository_commit")
+    if (
+        not isinstance(actual_repository_commit, str)
+        or len(actual_repository_commit) < 7
+        or len(actual_repository_commit) > 40
+        or any(
+            ch not in "0123456789abcdefABCDEF"
+            for ch in actual_repository_commit
+        )
+    ):
+        blockers.append("actual repository commit is missing or malformed")
+    elif frozen_repository_commit != actual_repository_commit.lower():
+        blockers.append(
+            "actual repository commit does not match freeze manifest"
+        )
 
     tooling = assess_freeze_readiness(tooling_manifest)
     if not tooling.ready:
