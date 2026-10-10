@@ -116,8 +116,8 @@ Repeated transformations derived from the same canonical patient/scenario must b
 
 For every arm/model/direction:
 
-- structural validity with 95% CI;
-- Valid-and-Faithful Yield (VFY) with 95% CI;
+- structural validity with Wilson 95% CI;
+- Valid-and-Faithful Yield (VFY) with Wilson 95% CI;
 - valid-and-unfaithful yield and valid-indeterminate yield;
 - VUR with 95% CI;
 - fabrication rate;
@@ -131,9 +131,24 @@ For every arm/model/direction:
 
 Where the same source instance is processed by multiple strategies:
 
-- paired risk differences;
-- exact or asymptotic McNemar tests for paired binary outcomes;
-- paired bootstrap confidence intervals clustered by source scenario/patient.
+- paired absolute risk differences;
+- **two-sided exact McNemar tests** using the discordant-pair binomial
+  distribution for paired binary outcomes;
+- **paired cluster percentile-bootstrap 95% confidence intervals**, resampling
+  source patient/scenario clusters and retaining all paired rows within each
+  sampled cluster;
+- **10,000 bootstrap iterations** for confirmatory analyses;
+- the bootstrap random seed must be frozen in the analysis manifest before any
+  confirmatory model inference.
+
+The paired analysis set is constructed before looking at strategy outcomes. For
+VUR comparisons, a source instance enters the paired binary comparison only when
+the corresponding transformations in both compared arms satisfy the frozen
+structural-validity policy and have determinate semantic endpoint verdicts.
+Counts excluded because one or both arms are structurally invalid,
+measurement-failure, policy-unresolved, or semantic-indeterminate are reported
+by reason. VFY comparisons use all paired attempted transformations and
+therefore do not condition on structural validity.
 
 ### Mixed-effects modeling
 
@@ -147,7 +162,27 @@ Exact model form will be finalized after pilot inspection of design balance and 
 
 The primary endpoint has one pre-specified confirmatory hypothesis.
 
-Secondary pairwise strategy comparisons will use a family-wise correction such as Holm unless a hierarchical testing procedure is pre-registered instead.
+Secondary pairwise strategy comparisons will use the **Holm step-down
+family-wise correction** on the predeclared comparison family. A different
+hierarchical testing procedure may replace Holm only if it is fully
+preregistered before confirmatory inference; it cannot be selected after
+examining confirmatory p-values.
+
+### Reproducible statistical implementation
+
+The dependency-light reference implementation is
+`src/fhirbridge/analysis_statistics.py` and is covered by deterministic tests.
+It implements:
+
+- Wilson 95% intervals for binomial proportions;
+- paired absolute risk differences and discordant-pair counts;
+- two-sided exact McNemar p-values;
+- paired cluster percentile-bootstrap risk-difference intervals;
+- Holm-adjusted p-values in the original comparison order.
+
+The analysis code does not decide which rows belong to a comparison. Analysis
+set construction, cluster identifiers, comparison families, and bootstrap seed
+must be frozen in the run/analysis manifest before confirmatory inference.
 
 ### Effect size reporting
 
@@ -241,6 +276,6 @@ Before confirmatory model runs, archive/tag:
 - model/prompt configurations;
 - primary endpoint definition and unconditional VFY companion estimand;
 - primary threshold/margin;
-- exact statistical tests;
+- exact statistical tests, comparison-set rules, cluster definition, and bootstrap seed;
 - multiplicity procedure;
 - sample-size justification.
