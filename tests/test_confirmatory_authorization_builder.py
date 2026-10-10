@@ -67,6 +67,22 @@ def _paths(tmp_path: Path) -> dict[str, Path]:
         encoding="utf-8",
     )
     result["sealed_case_ids"] = case_ids
+
+    case_manifest = tmp_path / "sealed-case-manifest.json"
+    case_manifest.write_text(
+        json.dumps(
+            {
+                "cases": [
+                    {"case_id": "CASE-001"},
+                    {"case_id": "CASE-002"},
+                ]
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    result["sealed_case_manifest"] = case_manifest
     return result
 
 
@@ -88,6 +104,7 @@ def _build(
         sample_size_path=paths["sample_size"],
         model_config_path=paths["model_config"],
         pilot_acceptance_path=paths["pilot_acceptance"],
+        sealed_case_manifest_path=paths["sealed_case_manifest"],
         sealed_case_ids_path=paths["sealed_case_ids"],
         authorization_id=authorization_id,
         created_at="2026-10-20T16:00:00Z",
@@ -124,10 +141,10 @@ def test_authorization_builder_hashes_inputs_and_case_set(
         "instrument_component_manifest_sha256"
     ] == _MODULE._sha256(paths["instrument_component_manifest"])
     assert record["input_artifacts"]["sealed_case_manifest_sha256"] == (
-        _MODULE._sha256(paths["sealed_case_ids"])
+        _MODULE._sha256(paths["sealed_case_manifest"])
     )
     assert record["sealed_case_set"]["manifest_file_sha256"] == (
-        _MODULE._sha256(paths["sealed_case_ids"])
+        _MODULE._sha256(paths["sealed_case_manifest"])
     )
     assert set(record["instrument_component_sha256"]) == {"fixture_component"}
 
@@ -175,3 +192,24 @@ def test_case_id_loader_rejects_duplicates(tmp_path: Path) -> None:
         assert "duplicate sealed case ID" in str(exc)
     else:
         raise AssertionError("duplicate sealed case IDs must be rejected")
+
+
+def test_case_manifest_hash_is_independent_of_canonical_case_id_list(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    paths = _paths(tmp_path)
+    monkeypatch.setattr(
+        _MODULE,
+        "assess_confirmatory_authorization",
+        lambda **_: SimpleNamespace(authorized=True, blockers=()),
+    )
+
+    record = _build(paths)
+
+    assert record["input_artifacts"]["sealed_case_manifest_sha256"] != (
+        _MODULE._sha256(paths["sealed_case_ids"])
+    )
+    assert record["sealed_case_set"]["canonical_case_ids_sha256"] == (
+        _MODULE._case_ids_sha256({"CASE-001", "CASE-002"})
+    )
