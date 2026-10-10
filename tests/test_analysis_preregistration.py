@@ -34,6 +34,23 @@ def _ready() -> dict:
             "statistical_analysis_plan_sha256": "3" * 64,
             "model_prompt_configuration_sha256": "4" * 64,
             "sample_size_preregistration_sha256": "5" * 64,
+            "primary_vur_hypothesis_sha256": "6" * 64,
+        }
+    )
+    document["primary_hypothesis"].update(
+        {
+            "record_id": "PRIMARY-VUR-001",
+            "nontrivial_vur_threshold": 0.10,
+            "model_strategy_aggregation_policy": (
+                "Frozen cluster-aware aggregation across model/strategy rows."
+            ),
+            "inference_method": "cluster_aware_one_sided_threshold_test",
+            "alpha": 0.05,
+            "sidedness": "one_sided",
+            "cluster_id_field": "analysis_cluster_id",
+            "decision_rule": (
+                "Reject H0 only under the frozen method at alpha 0.05."
+            ),
         }
     )
     document["paired_comparisons"]["model_keys"] = ["M1"]
@@ -156,5 +173,31 @@ def test_sample_size_preregistration_hash_is_required() -> None:
     assert not readiness.ready
     assert any(
         "sample_size_preregistration_sha256" in item
+        for item in readiness.blockers
+    )
+
+
+def test_primary_vur_hypothesis_hash_is_required() -> None:
+    document = _ready()
+    document["frozen_inputs"]["primary_vur_hypothesis_sha256"] = "0" * 64
+
+    readiness = assess_analysis_preregistration(document)
+
+    assert not readiness.ready
+    assert any(
+        "primary_vur_hypothesis_sha256" in item
+        for item in readiness.blockers
+    )
+
+
+def test_primary_hypothesis_summary_cannot_remain_placeholder() -> None:
+    document = _ready()
+    document["primary_hypothesis"]["inference_method"] = "TO_BE_FROZEN"
+
+    readiness = assess_analysis_preregistration(document)
+
+    assert not readiness.ready
+    assert any(
+        "primary_hypothesis.inference_method" in item
         for item in readiness.blockers
     )
