@@ -227,3 +227,43 @@ def test_complete_review_response_accepts_full_explicit_review_set() -> None:
         contract,
         relationship_candidates=candidates,
     )
+
+
+def test_paired_agreement_rejects_unblinded_stage() -> None:
+    first = _response("R1", {"RULE": "MUST_PRESERVE"})
+    second = _response("R2", {"RULE": "MUST_PRESERVE"})
+    first["review_stage"] = "unblinded"
+    second["review_stage"] = "unblinded"
+
+    with pytest.raises(ValueError, match="blind-stage"):
+        paired_review_summary(first, second)
+
+
+def test_blind_v03_completeness_does_not_require_proposal_operations() -> None:
+    contract = load_yaml("contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml")
+    candidates = load_yaml("contracts/review/relationship_candidates_v0.2.yaml")
+    expected = expected_review_rule_ids(
+        contract,
+        relationship_candidates=candidates,
+    )
+    response = {
+        "review_stage": "blind",
+        "reviewer": {"reviewer_id": "R-BLIND"},
+        "contract": {
+            "id": "F2V-LAB-ORU-R01-001",
+            "version": "0.3.0",
+        },
+        "rule_reviews": [
+            {
+                "rule_id": rule_id,
+                "projectability_decision": "INDETERMINATE",
+            }
+            for rule_id in expected
+        ],
+    }
+
+    validate_complete_review_response(
+        response,
+        contract,
+        relationship_candidates=candidates,
+    )
