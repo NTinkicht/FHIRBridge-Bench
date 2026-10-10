@@ -17,15 +17,17 @@ def _artifact(seed: str) -> dict:
     }
 
 
-def _ready() -> dict:
-    document = _template()
-    document["config_id"] = "MODEL-FREEZE-001"
-    document["status"] = "frozen"
-    document["created_at"] = "2026-10-20T13:00:00Z"
-    shared_llm = {
-        "provider": "provider-x",
-        "model_id": "model-y",
-        "model_revision_or_snapshot": "snapshot-z",
+def _model(
+    key: str,
+    *,
+    provider: str = "provider-x",
+    model_id: str | None = None,
+) -> dict:
+    return {
+        "model_key": key,
+        "provider": provider,
+        "model_id": model_id or f"model-{key}",
+        "model_revision_or_snapshot": f"snapshot-{key}",
         "temperature": 0.0,
         "top_p": 1.0,
         "max_output_tokens": 4096,
@@ -33,19 +35,32 @@ def _ready() -> dict:
         "seed": 20261020,
         "structured_output_mode": "json_schema",
     }
-    for index, arm in enumerate(document["arms"], start=1):
-        arm["implementation_artifact"] = _artifact(str(index))
-        if arm["arm_id"] == "deterministic_baseline":
-            continue
-        arm["llm"] = dict(shared_llm)
-        arm["prompt_artifacts"] = [_artifact(str(index + 3))]
-        if arm["arm_id"] in {
+
+
+def _ready() -> dict:
+    document = _template()
+    document["config_id"] = "MODEL-FREEZE-001"
+    document["status"] = "frozen"
+    document["created_at"] = "2026-10-20T13:00:00Z"
+    document["deterministic_baseline"]["implementation_artifact"] = _artifact(
+        "1"
+    )
+    document["llm_models"] = [_model("M1"), _model("M2")]
+    for index, strategy in enumerate(document["llm_strategies"], start=2):
+        strategy["implementation_artifact"] = _artifact(str(index))
+        strategy["prompt_artifacts"] = [_artifact(str(index + 3))]
+        if strategy["strategy_id"] in {
             "mapping_aware_llm",
             "mapping_aware_plus_syntax_repair",
         }:
-            arm["mapping_context_artifacts"] = [_artifact("8")]
-        if arm["arm_id"] == "mapping_aware_plus_syntax_repair":
-            arm["syntax_repair"]["implementation_artifact"] = _artifact("9")
+            strategy["mapping_context_artifacts"] = [_artifact("8")]
+        if (
+            strategy["strategy_id"]
+            == "mapping_aware_plus_syntax_repair"
+        ):
+            strategy["syntax_repair"]["implementation_artifact"] = _artifact(
+                "9"
+            )
     return document
 
 
@@ -57,49 +72,73 @@ def test_repository_model_prompt_template_is_deliberately_not_ready() -> None:
     assert any("placeholder" in blocker for blocker in readiness.blockers)
 
 
-def test_complete_fair_model_prompt_freeze_can_be_ready() -> None:
+def test_complete_crossed_multi_model_freeze_can_be_ready() -> None:
     readiness = assess_model_prompt_freeze(_ready())
 
     assert readiness.ready
     assert readiness.blockers == ()
 
 
-def test_llm_strategy_arms_must_use_same_model_and_decoding() -> None:
+def test_multiple_distinct_model_families_are_supported() -> None:
     document = _ready()
-    mapping = next(
-        arm for arm in document["arms"]
-        if arm["arm_id"] == "mapping_aware_llm"
+    document["llm_models"].append(
+        _model("M3", provider="provider-y", model_id="another-family")
     )
-    mapping["llm"]["model_id"] = "different-model"
+
+    readiness = assess_model_prompt_freeze(document)
+
+    assert readiness.ready
+
+
+def test_duplicate_model_key_is_rejected() -> None:
+    document = _ready()
+    document["llm_models"].append(_model("M1", model_id="other"))
+
+    readiness = assess_model_prompt_freeze(document)
+
+    assert not readiness.ready
+    assert any("duplicate model_key" in blocker for blocker in readiness.blockers)
+
+
+def test_duplicate_provider_model_snapshot_identity_is_rejected() -> None:
+    document = _ready()
+    duplicate = dict(document["llm_models"][0])
+    duplicate["model_key"] = "M3"
+    document["llm_models"].append(duplicate)
 
     readiness = assess_model_prompt_freeze(document)
 
     assert not readiness.ready
     assert any(
-        "fairness-controlled field: model_id" in blocker
+        "duplicate provider/model/snapshot identity" in blocker
         for blocker in readiness.blockers
     )
 
 
-def test_direct_arm_must_not_receive_mapping_context() -> None:
+def test_direct_strategy_must_not_receive_mapping_context() -> None:
     document = _ready()
     direct = next(
-        arm for arm in document["arms"]
-        if arm["arm_id"] == "direct_structured_llm"
+        strategy
+        for strategy in document["llm_strategies"]
+        if strategy["strategy_id"] == "direct_structured_llm"
     )
     direct["mapping_context_artifacts"] = [_artifact("a")]
 
     readiness = assess_model_prompt_freeze(document)
 
     assert not readiness.ready
-    assert any("direct arm must not receive" in blocker for blocker in readiness.blockers)
+    assert any(
+        "direct strategy must not receive" in blocker
+        for blocker in readiness.blockers
+    )
 
 
-def test_repair_is_exclusive_to_repair_arm() -> None:
+def test_repair_is_exclusive_to_repair_strategy() -> None:
     document = _ready()
     mapping = next(
-        arm for arm in document["arms"]
-        if arm["arm_id"] == "mapping_aware_llm"
+        strategy
+        for strategy in document["llm_strategies"]
+        if strategy["strategy_id"] == "mapping_aware_llm"
     )
     mapping["syntax_repair"]["enabled"] = True
     mapping["syntax_repair"]["implementation_artifact"] = _artifact("b")
@@ -113,6 +152,21 @@ def test_repair_is_exclusive_to_repair_arm() -> None:
     )
 
 
+def test_model_seed_policy_is_explicit() -> None:
+    document = _ready()
+    document["llm_models"][0]["seed_policy"] = (
+        "provider_does_not_support_seed"
+    )
+    document["llm_models"][0]["seed"] = 20261020
+
+    readiness = assess_model_prompt_freeze(document)
+
+    assert not readiness.ready
+    assert any(
+        "seed must be null" in blocker for blocker in readiness.blockers
+    )
+
+
 def test_silent_model_fallback_is_prohibited() -> None:
     document = _ready()
     document["global_execution_policy"]["silent_model_fallback"] = True
@@ -120,4 +174,6 @@ def test_silent_model_fallback_is_prohibited() -> None:
     readiness = assess_model_prompt_freeze(document)
 
     assert not readiness.ready
-    assert any("silent model fallback" in blocker for blocker in readiness.blockers)
+    assert any(
+        "silent model fallback" in blocker for blocker in readiness.blockers
+    )
