@@ -1,6 +1,6 @@
 pilot_acceptance_plan:
   id: FHIRBRIDGE-PILOT-GATE-PLAN-001
-  version: 0.2.0
+  version: 0.3.0
   status: method_preregistered_numeric_thresholds_pending_pilot
   purpose: >-
     Freeze the procedure used to turn pilot expert-validation evidence into the
@@ -16,6 +16,11 @@ pilot_evidence:
   reference_standard: adjudicated_expert_major_semantic_error
   primary_reviewer_labels_retained: true
   adjudication_required_before_gate_derivation: true
+  unresolved_expert_reference_policy: >-
+    Cases remaining INDETERMINATE after adjudication stay in the pilot manifest
+    and are counted explicitly. They are excluded from binary instrument
+    validity denominators because no determinate expert reference exists; the
+    denominator loss is reported rather than silently discarded.
   seeded_faults:
     role: supplementary_responsiveness_evidence_only
     may_define_numeric_acceptance_thresholds: false
@@ -87,6 +92,7 @@ required_pilot_record:
     - accuracy_with_95_percent_CI
     - runtime_indeterminate_count_and_rate_with_95_percent_CI
     - class_specific_runtime_indeterminate_counts
+    - adjudicated_expert_indeterminate_count
 
 post_threshold_policy:
   material_verifier_change_requires:
