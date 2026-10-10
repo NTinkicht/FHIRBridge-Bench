@@ -1,4 +1,4 @@
-schema_version: "0.1.0"
+schema_version: "0.2.0"
 config_id: "MODEL-FREEZE-TO-BE-ASSIGNED"
 status: incomplete_template
 created_at: null
@@ -11,33 +11,26 @@ global_execution_policy:
     maximum_attempts: 1
     retry_on: []
   timeout_seconds: 120
-arms:
-  - arm_id: deterministic_baseline
-    implementation_kind: deterministic
+deterministic_baseline:
+  implementation_artifact:
+    path_or_ref: "TO_BE_FROZEN"
+    sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+llm_models:
+  - model_key: "MODEL-TO-BE-FROZEN"
+    provider: "TO_BE_FROZEN"
+    model_id: "TO_BE_FROZEN"
+    model_revision_or_snapshot: "TO_BE_FROZEN"
+    temperature: 0.0
+    top_p: 1.0
+    max_output_tokens: 1
+    seed_policy: provider_does_not_support_seed
+    seed: null
+    structured_output_mode: "TO_BE_FROZEN"
+llm_strategies:
+  - strategy_id: direct_structured_llm
     implementation_artifact:
       path_or_ref: "TO_BE_FROZEN"
       sha256: "0000000000000000000000000000000000000000000000000000000000000000"
-    llm: null
-    prompt_artifacts: []
-    mapping_context_artifacts: []
-    syntax_repair:
-      enabled: false
-      implementation_artifact: null
-  - arm_id: direct_structured_llm
-    implementation_kind: llm
-    implementation_artifact:
-      path_or_ref: "TO_BE_FROZEN"
-      sha256: "0000000000000000000000000000000000000000000000000000000000000000"
-    llm:
-      provider: "TO_BE_FROZEN"
-      model_id: "TO_BE_FROZEN"
-      model_revision_or_snapshot: "TO_BE_FROZEN"
-      temperature: 0.0
-      top_p: 1.0
-      max_output_tokens: 1
-      seed_policy: provider_does_not_support_seed
-      seed: null
-      structured_output_mode: "TO_BE_FROZEN"
     prompt_artifacts:
       - path_or_ref: "TO_BE_FROZEN"
         sha256: "0000000000000000000000000000000000000000000000000000000000000000"
@@ -45,21 +38,10 @@ arms:
     syntax_repair:
       enabled: false
       implementation_artifact: null
-  - arm_id: mapping_aware_llm
-    implementation_kind: llm
+  - strategy_id: mapping_aware_llm
     implementation_artifact:
       path_or_ref: "TO_BE_FROZEN"
       sha256: "0000000000000000000000000000000000000000000000000000000000000000"
-    llm:
-      provider: "TO_BE_FROZEN"
-      model_id: "TO_BE_FROZEN"
-      model_revision_or_snapshot: "TO_BE_FROZEN"
-      temperature: 0.0
-      top_p: 1.0
-      max_output_tokens: 1
-      seed_policy: provider_does_not_support_seed
-      seed: null
-      structured_output_mode: "TO_BE_FROZEN"
     prompt_artifacts:
       - path_or_ref: "TO_BE_FROZEN"
         sha256: "0000000000000000000000000000000000000000000000000000000000000000"
@@ -69,21 +51,10 @@ arms:
     syntax_repair:
       enabled: false
       implementation_artifact: null
-  - arm_id: mapping_aware_plus_syntax_repair
-    implementation_kind: llm
+  - strategy_id: mapping_aware_plus_syntax_repair
     implementation_artifact:
       path_or_ref: "TO_BE_FROZEN"
       sha256: "0000000000000000000000000000000000000000000000000000000000000000"
-    llm:
-      provider: "TO_BE_FROZEN"
-      model_id: "TO_BE_FROZEN"
-      model_revision_or_snapshot: "TO_BE_FROZEN"
-      temperature: 0.0
-      top_p: 1.0
-      max_output_tokens: 1
-      seed_policy: provider_does_not_support_seed
-      seed: null
-      structured_output_mode: "TO_BE_FROZEN"
     prompt_artifacts:
       - path_or_ref: "TO_BE_FROZEN"
         sha256: "0000000000000000000000000000000000000000000000000000000000000000"
