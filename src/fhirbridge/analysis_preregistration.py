@@ -50,6 +50,7 @@ def assess_analysis_preregistration(
         "structural_validity_policy_sha256",
         "statistical_analysis_plan_sha256",
         "model_prompt_configuration_sha256",
+        "sample_size_preregistration_sha256",
     ):
         if _zeroish(frozen.get(key)):
             blockers.append(f"{key} is still a zero placeholder")
