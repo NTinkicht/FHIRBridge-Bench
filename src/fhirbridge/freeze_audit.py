@@ -98,6 +98,10 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
         blockers.append("repository_commit is still a zero placeholder")
 
     _artifact_blockers(manifest.get("instrument_components", {}), blockers)
+    _artifact_blockers(
+        {"reviewer_roster": manifest.get("reviewer_roster")},
+        blockers,
+    )
 
     dependency_purposes = {
         dependency.get("purpose")
