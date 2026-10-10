@@ -1,13 +1,14 @@
-schema_version: "0.3.0"
+schema_version: "0.4.0"
 record_id: "PILOT-GATE-TO-BE-ASSIGNED"
 status: incomplete_template
 created_at: null
 pilot_evidence:
   pilot_case_manifest_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
   pilot_adjudication_bundle_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
-  case_count: 1
+  case_count: 2
   expert_major_error_positive_count: 1
   expert_major_error_negative_count: 1
+  expert_major_error_indeterminate_count: 0
   sampling_enrichment_or_weighting_notes: null
 frozen_instrument:
   repository_commit: "0000000"
