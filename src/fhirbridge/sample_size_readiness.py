@@ -22,6 +22,7 @@ _EXPECTED_COMPARISONS = frozenset(
     }
 )
 _PLACEHOLDER_TOKENS = ("TO_BE_", "TO-BE-", "TO BE ")
+_PLANNING_ALPHA = 0.05 / 6.0
 
 
 @dataclass(frozen=True)
@@ -184,6 +185,16 @@ def assess_sample_size_preregistration(
                 f"{comparison_id}: planning probabilities/parameters are incomplete"
             )
             continue
+        if not math.isclose(
+            float(alpha),
+            _PLANNING_ALPHA,
+            rel_tol=1e-12,
+            abs_tol=1e-12,
+        ):
+            blockers.append(
+                f"{comparison_id}: planning alpha must equal 0.05/6 for the "
+                "six-comparison Holm family"
+            )
         try:
             recomputed = plan_paired_mcnemar(
                 p10=float(p10),
