@@ -38,6 +38,13 @@ A third senior adjudicator reviews disagreements after pre-adjudication labels a
 
 Where staffing permits, use a pool of at least four reviewers so that results are not dominated by one pair.
 
+Before any sealed case is opened, the pseudonymous reviewer roster must be
+locked using `expert_validation/schema/reviewer_roster.schema.json`. The
+roster records role assignments, expertise, conflicts, prior project
+involvement, contract-review overlap, renderer-implementation overlap, and the
+access profile used to enforce blinding. The final freeze manifest pins the
+roster artifact by SHA-256.
+
 ## Blinding
 
 Primary reviewers receive:
@@ -59,6 +66,11 @@ Primary reviewers do **not** receive:
 - another reviewer's label.
 
 Deterministic reference outputs may be shown only during post-label adjudication if needed, and any change caused by that information must be recorded.
+
+Primary reviewers must have a pre-opening access profile that denies model
+identity, generation strategy, verifier verdict, model-claimed provenance, and
+the other primary reviewer's labels. An adjudicator must be a different
+pseudonymous member ID from both primary reviewers.
 
 ## Development and sealed sets
 
