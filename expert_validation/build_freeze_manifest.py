@@ -23,6 +23,7 @@ from fhirbridge.pilot_acceptance import (
     assess_pilot_acceptance_preregistration,
 )
 from fhirbridge.sample_size_readiness import assess_sample_size_preregistration
+from fhirbridge.sealed_case_manifest import sealed_case_ids
 from fhirbridge.tooling_manifest import assess_freeze_readiness
 
 _SCHEMA = Path("expert_validation/schema/freeze_manifest.schema.json")
@@ -75,20 +76,7 @@ def _artifact(
 
 
 def _case_ids(path: Path) -> set[str]:
-    text = path.read_text(encoding="utf-8")
-    value = json.loads(text) if path.suffix.lower() == ".json" else yaml.safe_load(text)
-    if isinstance(value, dict):
-        value = value.get("case_ids")
-    if not isinstance(value, list) or not value:
-        raise ValueError("sealed case manifest must contain non-empty case_ids")
-    result: set[str] = set()
-    for case_id in value:
-        if not isinstance(case_id, str) or not case_id:
-            raise ValueError("sealed case IDs must be non-empty strings")
-        if case_id in result:
-            raise ValueError(f"duplicate sealed case ID: {case_id}")
-        result.add(case_id)
-    return result
+    return sealed_case_ids(_load(path))
 
 
 def _dependencies(tooling: dict[str, Any]) -> list[dict[str, Any]]:
