@@ -9,6 +9,7 @@
     "renderer_version",
     "contributor",
     "implementation",
+    "clean_room_inputs",
     "contract",
     "standards_sources",
     "implementation_period",
@@ -18,7 +19,7 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "0.1.0"
+      "const": "0.2.0"
     },
     "renderer_id": {
       "type": "string",
@@ -30,38 +31,76 @@
     },
     "contributor": {
       "type": "object",
-      "required": ["identity", "role"],
+      "required": [
+        "identity",
+        "role"
+      ],
       "properties": {
-        "identity": {"type": "string", "minLength": 1},
-        "role": {"type": "string", "minLength": 1},
-        "organization": {"type": ["string", "null"]}
+        "identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "organization": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       },
       "additionalProperties": false
     },
     "implementation": {
       "type": "object",
-      "required": ["language", "major_libraries", "source_commit"],
+      "required": [
+        "language",
+        "major_libraries",
+        "source_commit"
+      ],
       "properties": {
-        "language": {"type": "string", "minLength": 1},
+        "language": {
+          "type": "string",
+          "minLength": 1
+        },
         "major_libraries": {
           "type": "array",
-          "items": {"type": "string", "minLength": 1},
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
           "uniqueItems": true
         },
         "source_commit": {
           "type": "string",
           "pattern": "^[0-9a-fA-F]{7,40}$"
         },
-        "implementation_notes": {"type": ["string", "null"]}
+        "implementation_notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       },
       "additionalProperties": false
     },
     "contract": {
       "type": "object",
-      "required": ["contract_id", "contract_version"],
+      "required": [
+        "contract_id",
+        "contract_version"
+      ],
       "properties": {
-        "contract_id": {"type": "string", "minLength": 1},
-        "contract_version": {"type": "string", "minLength": 1}
+        "contract_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contract_version": {
+          "type": "string",
+          "minLength": 1
+        }
       },
       "additionalProperties": false
     },
@@ -70,25 +109,45 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["name", "version_or_date"],
+        "required": [
+          "name",
+          "version_or_date"
+        ],
         "properties": {
-          "name": {"type": "string", "minLength": 1},
-          "version_or_date": {"type": "string", "minLength": 1},
-          "reference": {"type": ["string", "null"]}
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version_or_date": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
         },
         "additionalProperties": false
       }
     },
     "implementation_period": {
       "type": "object",
-      "required": ["started_on", "completed_on"],
+      "required": [
+        "started_on",
+        "completed_on"
+      ],
       "properties": {
         "started_on": {
           "type": "string",
           "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
         },
         "completed_on": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
         }
       },
@@ -106,14 +165,36 @@
         "declaration_complete"
       ],
       "properties": {
-        "renderer_a_source_inspected_before_initial_commit": {"type": "boolean"},
-        "renderer_a_outputs_inspected_before_initial_commit": {"type": "boolean"},
-        "renderer_a_mapping_code_reused": {"type": "boolean"},
-        "llm_generated_mapping_code_used": {"type": "boolean"},
-        "shared_semantic_mapping_utility_used": {"type": "boolean"},
-        "accidental_exposure": {"type": ["string", "null"]},
-        "same_language_as_renderer_a_rationale": {"type": ["string", "null"]},
-        "declaration_complete": {"type": "boolean"}
+        "renderer_a_source_inspected_before_initial_commit": {
+          "type": "boolean"
+        },
+        "renderer_a_outputs_inspected_before_initial_commit": {
+          "type": "boolean"
+        },
+        "renderer_a_mapping_code_reused": {
+          "type": "boolean"
+        },
+        "llm_generated_mapping_code_used": {
+          "type": "boolean"
+        },
+        "shared_semantic_mapping_utility_used": {
+          "type": "boolean"
+        },
+        "accidental_exposure": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "same_language_as_renderer_a_rationale": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "declaration_complete": {
+          "type": "boolean"
+        }
       },
       "additionalProperties": false
     },
@@ -121,22 +202,80 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["name", "version"],
+        "required": [
+          "name",
+          "version"
+        ],
         "properties": {
-          "name": {"type": "string", "minLength": 1},
-          "version": {"type": "string", "minLength": 1}
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "additionalProperties": false
       }
     },
     "known_unsupported_cases": {
       "type": "array",
-      "items": {"type": "string", "minLength": 1},
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
       "uniqueItems": true
     },
     "signed_statement": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "description": "Human-readable declaration; structured fields remain authoritative for audit checks."
+    },
+    "clean_room_inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository_full_name",
+        "branch",
+        "starting_commit",
+        "challenge_id",
+        "challenge_version",
+        "challenge_manifest_sha256",
+        "contract_path",
+        "contract_sha256"
+      ],
+      "properties": {
+        "repository_full_name": {
+          "const": "NTinkicht/FHIRBridge-Bench"
+        },
+        "branch": {
+          "const": "renderer-b-cleanroom"
+        },
+        "starting_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{40}$"
+        },
+        "challenge_id": {
+          "const": "FHIRBRIDGE-RENDERER-B-DEV-001"
+        },
+        "challenge_version": {
+          "const": "0.2.0"
+        },
+        "challenge_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{64}$"
+        },
+        "contract_path": {
+          "const": "contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml"
+        },
+        "contract_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{64}$"
+        }
+      }
     }
   },
   "additionalProperties": false
