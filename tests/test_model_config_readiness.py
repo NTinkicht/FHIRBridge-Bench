@@ -49,6 +49,9 @@ def _ready() -> dict:
     document["deterministic_baseline"]["implementation_artifact"] = _artifact(
         "1"
     )
+    document["deterministic_baseline"]["qualification_artifact"] = _artifact(
+        "a"
+    )
     document["llm_models"] = [_model("M1"), _model("M2")]
     for index, strategy in enumerate(document["llm_strategies"], start=2):
         strategy["implementation_artifact"] = _artifact(str(index))
@@ -310,3 +313,18 @@ def test_fixed_supported_seed_requires_concrete_nonnegative_integer() -> None:
 
     assert not readiness.ready
     assert any("fixed seed is missing" in blocker for blocker in readiness.blockers)
+
+
+def test_baseline_qualification_artifact_must_be_hash_pinned() -> None:
+    document = _ready()
+    document["deterministic_baseline"]["qualification_artifact"]["sha256"] = (
+        "0" * 64
+    )
+
+    readiness = assess_model_prompt_freeze(document)
+
+    assert not readiness.ready
+    assert any(
+        "deterministic_baseline.qualification_artifact" in blocker
+        for blocker in readiness.blockers
+    )
