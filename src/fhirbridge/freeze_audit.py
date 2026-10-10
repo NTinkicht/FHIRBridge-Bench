@@ -149,6 +149,9 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
             "case_assignment_manifest": manifest.get(
                 "case_assignment_manifest"
             ),
+            "primary_vur_hypothesis": manifest.get(
+                "primary_vur_hypothesis"
+            ),
             "analysis_preregistration": manifest.get(
                 "analysis_preregistration"
             ),
