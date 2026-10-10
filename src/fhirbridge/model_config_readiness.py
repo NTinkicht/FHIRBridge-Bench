@@ -299,6 +299,22 @@ def assess_model_prompt_freeze(
                 f"{strategy_id}: syntax repair artifact must be null when disabled"
             )
 
+    mapping_strategy = by_id.get("mapping_aware_llm")
+    repair_strategy = by_id.get("mapping_aware_plus_syntax_repair")
+    if isinstance(mapping_strategy, dict) and isinstance(repair_strategy, dict):
+        if mapping_strategy.get("prompt_artifacts") != repair_strategy.get(
+            "prompt_artifacts"
+        ):
+            blockers.append(
+                "mapping and repair strategies must use identical prompt artifacts"
+            )
+        if mapping_strategy.get("mapping_context_artifacts") != repair_strategy.get(
+            "mapping_context_artifacts"
+        ):
+            blockers.append(
+                "mapping and repair strategies must use identical mapping context artifacts"
+            )
+
     return ModelPromptFreezeReadiness(
         ready=not blockers,
         blockers=tuple(sorted(set(blockers))),
