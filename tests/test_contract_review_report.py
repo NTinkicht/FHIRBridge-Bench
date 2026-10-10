@@ -6,8 +6,8 @@ from fhirbridge.contract_review import expected_review_rule_ids
 from fhirbridge.contract_review_report import build_contract_review_pair_report
 from fhirbridge.schema_validation import load_yaml
 
-_CONTRACT = "contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml"
-_CANDIDATES = "contracts/review/relationship_candidates_v0.1.yaml"
+_CONTRACT = "contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml"
+_CANDIDATES = "contracts/review/relationship_candidates_v0.2.yaml"
 
 
 def _complete_response(reviewer_id: str) -> dict:
@@ -18,43 +18,25 @@ def _complete_response(reviewer_id: str) -> dict:
         relationship_candidates=candidates,
     )
 
-    operations_by_rule = {
-        rule["rule_id"]: set(rule.get("allowed_operations", []))
-        for rule in contract["rules"]
-        if rule.get("expert_review_required") is True
-    }
-    operations_by_rule.update(
-        {
-            item["candidate_rule_id"]: set(
-                item.get("proposed_allowed_operations", [])
-            )
-            for item in candidates["candidates"]
-        }
-    )
-
     return {
-        "schema_version": "0.1.0",
+        "schema_version": "0.2.0",
+        "review_stage": "blind",
         "reviewer": {
             "reviewer_id": reviewer_id,
             "expertise": ["HL7 v2/FHIR interoperability"],
             "review_date": "2026-10-10",
             "conflicts_of_interest": "None declared",
+            "prior_project_involvement": "None",
+            "lri_authoring_involvement": "None",
         },
         "contract": {
             "id": "F2V-LAB-ORU-R01-001",
-            "version": "0.2.0",
+            "version": "0.3.0",
         },
         "rule_reviews": [
             {
                 "rule_id": rule_id,
                 "projectability_decision": "INDETERMINATE",
-                "target_locus_defensible": "INDETERMINATE",
-                "alternative_target_loci": [],
-                "accepted_operations": sorted(operations_by_rule[rule_id]),
-                "rejected_operations": [],
-                "rejected_operation_reasons": {},
-                "equivalence_adequate": "INDETERMINATE",
-                "severity_plausible": "NOT_QUALIFIED",
                 "evidence_sufficient": "PARTLY",
                 "evidence_references": ["Independent standards review pending"],
                 "main_concern": "",
@@ -66,6 +48,9 @@ def _complete_response(reviewer_id: str) -> dict:
             "independent_initial_classification": True,
             "no_model_outputs_used": True,
             "no_verifier_outputs_used": True,
+            "no_renderer_outputs_used_as_correctness_evidence": True,
+            "study_proposals_not_seen": True,
+            "reviewer_did_not_author_project_rules": True,
             "not_universal_mapping_endorsement": True,
         },
     }
@@ -88,7 +73,7 @@ def test_pair_report_hashes_original_reviews_and_surfaces_disagreement() -> None
 
     assert report["contract"] == {
         "id": "F2V-LAB-ORU-R01-001",
-        "version": "0.2.0",
+        "version": "0.3.0",
     }
     assert report["reviewers"] == {
         "reviewer_a_id": "EXT-R1",
@@ -98,6 +83,8 @@ def test_pair_report_hashes_original_reviews_and_surfaces_disagreement() -> None
     assert report["agreement"]["n"] == report["rule_count"]
     assert report["disagreement_count"] == 1
     assert report["adjudication_required"] is True
+    assert report["review_stage"] == "blind"
+    assert report["agreement_input_policy"] == "original_blind_stage_labels_only"
     assert report["original_reviews_preserved"] is True
     assert len(report["source_review_sha256"]["reviewer_a"]) == 64
     assert len(report["source_review_sha256"]["reviewer_b"]) == 64
@@ -140,6 +127,23 @@ def test_pair_report_rejects_incomplete_review_before_agreement() -> None:
     second["rule_reviews"] = second["rule_reviews"][1:]
 
     with pytest.raises(ValueError, match="complete frozen review set"):
+        build_contract_review_pair_report(
+            first,
+            second,
+            contract=contract,
+            relationship_candidates=candidates,
+        )
+
+
+def test_pair_report_rejects_unblinded_proposal_responses() -> None:
+    contract = load_yaml(_CONTRACT)
+    candidates = load_yaml(_CANDIDATES)
+    first = _complete_response("EXT-R1")
+    second = _complete_response("EXT-R2")
+    first["review_stage"] = "unblinded"
+    second["review_stage"] = "unblinded"
+
+    with pytest.raises(ValueError, match="blind-stage"):
         build_contract_review_pair_report(
             first,
             second,
