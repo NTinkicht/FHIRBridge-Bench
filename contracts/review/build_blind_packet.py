@@ -74,9 +74,9 @@ Independently classify the projectability of each supplied canonical source
 fact/relation for the named FHIR R4 / US Core 9.0.0 to HL7 v2.5.1 LRI Edition 5
 laboratory scope.
 
-This Stage-1 packet intentionally withholds the study team's proposed target
-locus, projectability label, transformation operations, equivalence rule,
-failure class, severity, and renderer behavior.
+This Stage-1 packet intentionally withholds all project-authored mapping
+answers, operation choices, equivalence rules, failure classes, severities, and
+renderer behavior.
 
 Allowed evidence
 ----------------
