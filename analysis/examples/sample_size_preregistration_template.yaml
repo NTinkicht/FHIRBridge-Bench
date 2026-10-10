@@ -1,4 +1,4 @@
-schema_version: "0.2.0"
+schema_version: "0.3.0"
 record_id: "SAMPLE-SIZE-TO-BE-ASSIGNED"
 status: incomplete_template
 created_at: null
@@ -42,4 +42,4 @@ selection_rule: maximum_required_source_cluster_count_across_primary_precision_a
 attestation:
   pilot_only_used_for_planning: true
   sealed_results_used_for_planning: false
-  final_case_count_recorded_before_confirmatory_inference: true
+  final_source_cluster_count_recorded_before_confirmatory_inference: true
