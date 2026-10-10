@@ -11,6 +11,7 @@ _PRIMARY_ROLES = frozenset(
         "primary_reviewer_clinical_informatics",
     }
 )
+_REQUIRED_GOVERNANCE_ROLES = frozenset({"data_custodian"})
 _BLINDED_ACCESS_FIELDS = (
     "model_identity",
     "generation_strategy",
@@ -56,6 +57,7 @@ def assess_reviewer_roster(document: dict[str, Any]) -> ReviewerRosterReadiness:
     seen_ids: set[str] = set()
     primary_ids: set[str] = set()
     adjudicator_ids: set[str] = set()
+    governance_roles: set[str] = set()
     expertise_union: set[str] = set()
     primary_role_counts = {role: 0 for role in _PRIMARY_ROLES}
 
@@ -113,6 +115,9 @@ def assess_reviewer_roster(document: dict[str, Any]) -> ReviewerRosterReadiness:
 
         if "adjudicator" in roles:
             adjudicator_ids.add(member_id)
+        governance_roles.update(
+            role for role in roles if role in _REQUIRED_GOVERNANCE_ROLES
+        )
 
         for field in ("conflicts_of_interest", "prior_project_involvement"):
             value = member.get(field)
@@ -134,6 +139,13 @@ def assess_reviewer_roster(document: dict[str, Any]) -> ReviewerRosterReadiness:
         blockers.append("at least one adjudicator is required")
     if primary_ids.intersection(adjudicator_ids):
         blockers.append("adjudicator must be distinct from primary reviewers")
+
+    missing_governance_roles = _REQUIRED_GOVERNANCE_ROLES - governance_roles
+    if missing_governance_roles:
+        blockers.append(
+            "missing required governance role(s): "
+            + ", ".join(sorted(missing_governance_roles))
+        )
 
     return ReviewerRosterReadiness(
         ready=not blockers,
