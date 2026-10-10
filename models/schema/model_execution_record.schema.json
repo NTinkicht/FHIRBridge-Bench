@@ -152,6 +152,9 @@
           },
           "final_response_sha256": {
             "$ref": "#/$defs/sha256"
+          },
+          "error_summary": {
+            "type": "null"
           }
         }
       },
@@ -165,6 +168,10 @@
           },
           "syntax_repair_applied": {
             "const": false
+          },
+          "error_summary": {
+            "type": "string",
+            "minLength": 1
           }
         }
       }
