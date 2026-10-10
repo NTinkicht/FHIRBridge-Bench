@@ -119,6 +119,19 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      - name: Build blind severity calibration packet
+        run: python expert_validation/build_severity_blind_packet.py
+
+      - name: Archive blind severity calibration packet
+        uses: actions/upload-artifact@v4
+        with:
+          name: severity-calibration-stage1-blind-${{ github.run_id }}
+          path: |
+            expert_validation/generated/severity-calibration-stage1-blind.zip
+            expert_validation/generated/severity-calibration-stage1-blind-manifest.json
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Build semantic mapping review packet
         run: python contracts/review/build_semantic_mapping_packet.py
 
