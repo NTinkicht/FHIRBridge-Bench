@@ -39,6 +39,10 @@ def test_renderer_b_manifest_explicitly_excludes_reference_outputs() -> None:
     assert manifest["contains_target_gold_serialization"] is False
     assert manifest["contains_verifier_decisions"] is False
     assert manifest["contains_fault_labels"] is False
+    assert manifest["contains_order_context"] is True
+    assert manifest["contract"]["version"] == "0.3.0"
+    assert manifest["contract"]["freeze_status"] == "draft_not_frozen"
+    assert manifest["hl7v2_order_projection_policy"].startswith("fail_closed")
     assert len(manifest["manifest_sha256"]) == 64
 
 
@@ -68,3 +72,25 @@ def test_renderer_b_challenge_writer_emits_only_inputs_and_manifest(
         "manifest.json",
     ]
     assert manifest["cases"][0]["input_path"] == "inputs/RB-001.json"
+
+
+def test_renderer_b_v03_challenge_authors_order_context_in_all_cases() -> None:
+    cases = build_renderer_b_challenge()
+
+    for case in cases:
+        orders = [
+            fact for fact in case.graph["facts"]
+            if fact["fact_type"] == "order"
+        ]
+        reports = [
+            fact for fact in case.graph["facts"]
+            if fact["fact_type"] == "diagnostic_report"
+        ]
+        assert len(orders) == 1, case.scenario_id
+        assert len(reports) == 1, case.scenario_id
+        order_id = orders[0]["fact_id"]
+        assert any(
+            relation["relation_type"] == "based_on_order"
+            and relation["target_fact_id"] == order_id
+            for relation in reports[0]["relations"]
+        ), case.scenario_id
