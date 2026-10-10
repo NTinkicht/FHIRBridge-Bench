@@ -45,6 +45,10 @@ def test_model_prompt_freeze_template_is_schema_valid_but_nonassertive() -> None
         "mapping_aware_plus_syntax_repair",
     }
     assert len(document["llm_models"]) >= 1
+    assert all(
+        model["structured_output_mode"] == "plain_text_hl7_message"
+        for model in document["llm_models"]
+    )
 
 
 def test_model_prompt_schema_forbids_opened_sealed_set() -> None:
@@ -123,6 +127,34 @@ def test_model_prompt_schema_requires_repair_to_reuse_mapping_raw_output() -> No
         if strategy["strategy_id"] == "mapping_aware_plus_syntax_repair"
     )
     repair["generation_source"] = "provider_call"
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+def test_model_prompt_schema_rejects_non_hl7_output_mode() -> None:
+    document = _template()
+    document["llm_models"][0]["structured_output_mode"] = "json_schema"
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+def test_model_prompt_schema_requires_seed_when_supported() -> None:
+    document = _template()
+    model = document["llm_models"][0]
+    model["seed_policy"] = "fixed_supported_seed"
+    model["seed"] = None
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+def test_model_prompt_schema_requires_null_seed_when_unsupported() -> None:
+    document = _template()
+    model = document["llm_models"][0]
+    model["seed_policy"] = "provider_does_not_support_seed"
+    model["seed"] = 123
 
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.Draft202012Validator(_schema()).validate(document)
