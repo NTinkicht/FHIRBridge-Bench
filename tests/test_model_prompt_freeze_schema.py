@@ -1,7 +1,7 @@
+import json
 from copy import deepcopy
 from pathlib import Path
 
-import json
 import jsonschema
 import pytest
 import yaml
