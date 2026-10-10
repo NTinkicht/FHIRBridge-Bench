@@ -1,6 +1,7 @@
 from copy import deepcopy
 from pathlib import Path
 
+import pytest
 import yaml
 
 from fhirbridge.schema_validation import load_yaml, validate_document
@@ -19,7 +20,7 @@ def _write_yaml(tmp_path: Path, name: str, payload: dict) -> Path:
 def test_nonassertive_freeze_manifest_template_matches_schema() -> None:
     document = load_yaml(TEMPLATE)
 
-    assert document["schema_version"] == "0.2.0"
+    assert document["schema_version"] == "0.3.0"
     assert validate_document(TEMPLATE, SCHEMA) == []
 
 
@@ -141,3 +142,23 @@ def test_reviewer_roster_hash_must_be_sha256(tmp_path: Path) -> None:
     )
 
     assert problems
+
+
+@pytest.mark.parametrize(
+    "artifact_name",
+    ["reviewer_roster", "case_assignment_manifest", "analysis_preregistration"],
+)
+def test_freeze_manifest_requires_governance_artifacts(
+    tmp_path: Path,
+    artifact_name: str,
+) -> None:
+    manifest = deepcopy(load_yaml(TEMPLATE))
+    del manifest[artifact_name]
+
+    problems = validate_document(
+        _write_yaml(tmp_path, f"missing-{artifact_name}.yaml", manifest),
+        SCHEMA,
+    )
+
+    assert problems
+    assert any(artifact_name in problem.message for problem in problems)
