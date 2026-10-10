@@ -76,6 +76,14 @@ def _ready_manifest() -> dict:
         }
     )
 
+    manifest["model_prompt_configuration"].update(
+        {
+            "version": "1.0.0",
+            "path_or_ref": "models/model_prompt_freeze.yaml",
+            "sha256": "6" * 64,
+        }
+    )
+
     manifest["sealed_set"].update(
         {
             "bundle_id": "SEALED-001",
@@ -268,3 +276,17 @@ def test_unfrozen_analysis_preregistration_blocks_sealed_opening() -> None:
 
     assert not report.ready_to_open_sealed_set
     assert any("analysis_preregistration" in blocker for blocker in report.blockers)
+
+
+def test_unfrozen_model_prompt_configuration_blocks_sealed_opening() -> None:
+    manifest = _ready_manifest()
+    manifest["model_prompt_configuration"]["version"] = "TO_BE_FROZEN"
+    manifest["model_prompt_configuration"]["sha256"] = "0" * 64
+
+    report = assess_presealed_freeze(manifest)
+
+    assert not report.ready_to_open_sealed_set
+    assert any(
+        "model_prompt_configuration" in blocker
+        for blocker in report.blockers
+    )
