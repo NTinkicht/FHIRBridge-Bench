@@ -177,11 +177,13 @@ The objective is that a reviewer can determine exactly what was frozen, when it 
 
 The final freeze record therefore binds the instrument, dependencies, sealed case manifest, blinding controls, and acceptance gate before the sealed set is opened.
 
-Freeze-manifest schema v0.3 additionally pins three pre-opening governance
-artifacts by SHA-256: the pseudonymous reviewer roster, the sealed case-assignment
-manifest, and the confirmatory analysis preregistration. Changing any of those
-artifacts after the freeze requires a new manifest and follows the same
-post-unsealing amendment rules as an instrument change.
+Freeze-manifest schema v0.4 additionally pins four pre-opening governance and
+execution artifacts by SHA-256: the pseudonymous reviewer roster, the sealed
+case-assignment manifest, the confirmatory analysis preregistration, and the
+confirmatory model/prompt configuration. The analysis preregistration also pins
+the model/prompt configuration hash directly. Changing any of those artifacts
+after the freeze requires a new manifest and follows the same post-unsealing
+amendment rules as an instrument change.
 
 
 ## Verifier abstention gate
