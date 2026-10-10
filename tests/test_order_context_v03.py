@@ -188,3 +188,45 @@ def test_extra_target_requester_identifier_is_primary_fabrication() -> None:
         "FABRICATED-PROVIDER-9915"
     ]
     assert result.primary_endpoint_verdict == "UNFAITHFUL"
+
+
+def test_all_primary_families_preserve_fhir_order_context_without_primary_errors() -> None:
+    contract = fhirbridge.schema_validation.load_yaml(_CONTRACT)
+    policy = fhirbridge.verifier.compile_verification_policy(contract)
+
+    for index in range(1, 12):
+        template_id = f"LAB-{index:03d}"
+        seed = 9950 + index
+        graph = fhirbridge.canonical.generate_lab_scenario(
+            template_id,
+            seed,
+            include_order_context=True,
+        )
+        assert graph["scenario_metadata"]["primary_endpoint_eligible"] is True
+
+        rendered = fhirbridge.renderers.FhirR4LabRendererA().render(
+            graph,
+            contract=contract,
+        )
+        lifted = fhirbridge.lifters.FhirR4LabLifter().lift(
+            rendered.artifact,
+            artifact_id=f"{template_id}-{seed}-order-family",
+        )
+        result = fhirbridge.verifier.classify_graph(
+            graph["facts"],
+            list(lifted.facts),
+            policy=policy,
+        )
+
+        assert result.primary_endpoint_verdict == "FAITHFUL", template_id
+        assert not [
+            decision
+            for decision in result.decisions
+            if decision.primary_endpoint_eligible
+            and decision.classification in {
+                "FABRICATION",
+                "CORRUPTION",
+                "OMISSION",
+                "MISATTRIBUTION",
+            }
+        ], template_id
