@@ -32,6 +32,35 @@ The manifest records immutable identity and SHA-256 evidence for at least:
 
 The repository commit and protocol version are recorded separately so the exact research state can be reconstructed.
 
+## Severity and error-precedence finalization
+
+Severity and semantic error precedence are frozen instrument components, not
+informal reviewer guidance.
+
+The repository contains pre-freeze candidates:
+
+- `benchmark/severity_policy_candidate.yaml`;
+- `benchmark/error_precedence_policy_candidate.yaml`.
+
+The severity rubric retains the protocol-defined S0-S3 meanings, but the exact
+major-error threshold and S2/S3 boundary anchors require expert calibration
+before sealed evaluation. Calibration is recorded under
+`expert_validation/schema/severity_calibration.schema.json`; initial ratings
+are retained before adjudication and no sealed case may be used. The completed
+record is consumed by `expert_validation/finalize_severity_policy.py`, which
+writes a new frozen policy and refuses calibration performed against a different
+candidate hash.
+
+Error precedence is independently reviewed using
+`expert_validation/schema/precedence_review.schema.json`. Only an adjudicated
+ACCEPT of the exact candidate hash can be finalized by
+`expert_validation/finalize_precedence_policy.py`; a rejected candidate must
+be revised and reviewed again.
+
+The completed freeze manifest points only to
+`benchmark/severity_policy_frozen.yaml` and
+`benchmark/error_precedence_policy_frozen.yaml`, never the candidate files.
+
 ## Measurement-critical dependencies
 
 The freeze record must pin the versions/sources used for:
