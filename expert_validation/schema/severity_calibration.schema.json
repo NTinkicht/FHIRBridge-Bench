@@ -9,7 +9,7 @@
     "calibration_id",
     "status",
     "created_at",
-    "severity_policy_sha256",
+    "candidate_policy_sha256",
     "reviewers",
     "anchor_reviews",
     "pre_adjudication_agreement",
@@ -17,11 +17,26 @@
     "attestation"
   ],
   "properties": {
-    "schema_version": {"const": "0.1.0"},
-    "calibration_id": {"type": "string", "minLength": 1},
-    "status": {"enum": ["incomplete_template", "completed"]},
-    "created_at": {"type": ["string", "null"], "format": "date-time"},
-    "severity_policy_sha256": {"$ref": "#/$defs/sha256"},
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "calibration_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "incomplete_template",
+        "completed"
+      ]
+    },
+    "created_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
     "reviewers": {
       "type": "array",
       "minItems": 2,
@@ -36,21 +51,33 @@
           "prior_project_involvement"
         ],
         "properties": {
-          "reviewer_id": {"type": "string", "minLength": 1},
+          "reviewer_id": {
+            "type": "string",
+            "minLength": 1
+          },
           "expertise": {
             "type": "array",
             "minItems": 1,
-            "items": {"type": "string", "minLength": 1}
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
           },
-          "conflicts_of_interest": {"type": "string"},
-          "prior_project_involvement": {"type": "string"}
+          "conflicts_of_interest": {
+            "type": "string"
+          },
+          "prior_project_involvement": {
+            "type": "string"
+          }
         }
       }
     },
     "anchor_reviews": {
       "type": "array",
       "minItems": 4,
-      "items": {"$ref": "#/$defs/anchorReview"}
+      "items": {
+        "$ref": "#/$defs/anchorReview"
+      }
     },
     "pre_adjudication_agreement": {
       "type": "object",
@@ -62,8 +89,14 @@
         "disagreement_anchor_ids"
       ],
       "properties": {
-        "anchor_count": {"type": "integer", "minimum": 1},
-        "exact_agreement_count": {"type": "integer", "minimum": 0},
+        "anchor_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "exact_agreement_count": {
+          "type": "integer",
+          "minimum": 0
+        },
         "exact_agreement_rate": {
           "type": "number",
           "minimum": 0,
@@ -72,7 +105,10 @@
         "disagreement_anchor_ids": {
           "type": "array",
           "uniqueItems": true,
-          "items": {"type": "string", "minLength": 1}
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
@@ -87,16 +123,31 @@
       ],
       "properties": {
         "threshold": {
-          "enum": ["S1_or_higher", "S2_or_higher", "S3_only"]
+          "enum": [
+            "S1_or_higher",
+            "S2_or_higher",
+            "S3_only"
+          ]
         },
         "included_levels": {
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": {"enum": ["S1", "S2", "S3"]}
+          "items": {
+            "enum": [
+              "S1",
+              "S2",
+              "S3"
+            ]
+          }
         },
-        "rationale": {"type": "string", "minLength": 1},
-        "decision_status": {"const": "frozen_for_confirmatory_endpoint"}
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decision_status": {
+          "const": "frozen_for_confirmatory_endpoint"
+        }
       }
     },
     "attestation": {
@@ -109,11 +160,22 @@
         "all_disagreements_retained"
       ],
       "properties": {
-        "independent_initial_ratings": {"const": true},
-        "sealed_cases_used": {"const": false},
-        "adjudication_after_initial_ratings": {"const": true},
-        "all_disagreements_retained": {"const": true}
+        "independent_initial_ratings": {
+          "const": true
+        },
+        "sealed_cases_used": {
+          "const": false
+        },
+        "adjudication_after_initial_ratings": {
+          "const": true
+        },
+        "all_disagreements_retained": {
+          "const": true
+        }
       }
+    },
+    "candidate_policy_sha256": {
+      "$ref": "#/$defs/sha256"
     }
   },
   "$defs": {
@@ -122,7 +184,13 @@
       "pattern": "^[0-9a-fA-F]{64}$"
     },
     "rating": {
-      "enum": ["S0", "S1", "S2", "S3", "INDETERMINATE"]
+      "enum": [
+        "S0",
+        "S1",
+        "S2",
+        "S3",
+        "INDETERMINATE"
+      ]
     },
     "anchorReview": {
       "type": "object",
@@ -136,8 +204,14 @@
         "adjudication_rationale"
       ],
       "properties": {
-        "anchor_id": {"type": "string", "minLength": 1},
-        "anchor_description": {"type": "string", "minLength": 1},
+        "anchor_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "anchor_description": {
+          "type": "string",
+          "minLength": 1
+        },
         "expected_boundary_role": {
           "enum": [
             "S0_S1_boundary",
@@ -153,16 +227,33 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["reviewer_id", "severity", "rationale"],
+            "required": [
+              "reviewer_id",
+              "severity",
+              "rationale"
+            ],
             "properties": {
-              "reviewer_id": {"type": "string", "minLength": 1},
-              "severity": {"$ref": "#/$defs/rating"},
-              "rationale": {"type": "string", "minLength": 1}
+              "reviewer_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "severity": {
+                "$ref": "#/$defs/rating"
+              },
+              "rationale": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           }
         },
-        "adjudicated_severity": {"$ref": "#/$defs/rating"},
-        "adjudication_rationale": {"type": "string", "minLength": 1}
+        "adjudicated_severity": {
+          "$ref": "#/$defs/rating"
+        },
+        "adjudication_rationale": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     }
   }
