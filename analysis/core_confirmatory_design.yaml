@@ -4,6 +4,15 @@ analysis_design:
   status: predeclared_before_confirmatory_inference
   source_protocol: docs/research_protocol.md
   primary_direction: FHIR_to_HL7v2
+  model_factor:
+    design: crossed
+    source: models/model_prompt_freeze.yaml
+    rule: >-
+      Every frozen LLM model family is evaluated under all three LLM strategy
+      conditions. Model identity/configuration is not allowed to vary by
+      strategy. The deterministic baseline is model-independent.
+    paired_row_identity: source_instance_x_model_key_for_LLM_comparisons
+    clustering: source_scenario_or_patient_id
   core_arms:
     - arm_id: deterministic_baseline
       role: standards_based_deterministic_reference
@@ -15,7 +24,7 @@ analysis_design:
       role: mapping_aware_generation_plus_syntax_validator_repair
   primary_estimand:
     name: VUR
-    comparison_mode: arm_specific_estimation_and_preregistered_threshold_test
+    comparison_mode: strategy_specific_estimation_across_frozen_model_families_and_preregistered_threshold_test
   companion_estimand:
     name: VFY
     denominator: all_attempted_transformations
