@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/reviewer_roster.schema.json",
+  "title": "FHIRBridge Sealed Expert Reviewer Roster",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "roster_id",
+    "status",
+    "created_at",
+    "sealed_set_opened",
+    "members"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "roster_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["incomplete_template", "locked_preopening"]},
+    "created_at": {"type": ["string", "null"], "format": "date-time"},
+    "sealed_set_opened": {"const": false},
+    "members": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/member"}
+    },
+    "notes": {"type": ["string", "null"]}
+  },
+  "$defs": {
+    "role": {
+      "enum": [
+        "primary_reviewer_interoperability",
+        "primary_reviewer_clinical_informatics",
+        "adjudicator",
+        "data_custodian",
+        "analysis_custodian"
+      ]
+    },
+    "expertise": {
+      "enum": [
+        "hl7v2_fhir_interoperability",
+        "laboratory_interfaces",
+        "clinical_informatics_laboratory",
+        "clinical_safety",
+        "statistics_measurement"
+      ]
+    },
+    "member": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "member_id",
+        "roles",
+        "expertise",
+        "conflicts_of_interest",
+        "prior_project_involvement",
+        "contract_review_participation",
+        "analytical_separation_attested",
+        "renderer_implementation_participation",
+        "access"
+      ],
+      "properties": {
+        "member_id": {"type": "string", "minLength": 1},
+        "roles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/role"}
+        },
+        "expertise": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/expertise"}
+        },
+        "conflicts_of_interest": {"type": "string"},
+        "prior_project_involvement": {"type": "string"},
+        "contract_review_participation": {"type": "boolean"},
+        "analytical_separation_attested": {"type": "boolean"},
+        "renderer_implementation_participation": {"type": "boolean"},
+        "access": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "model_identity",
+            "generation_strategy",
+            "verifier_verdict",
+            "claimed_provenance",
+            "other_primary_reviewer_labels"
+          ],
+          "properties": {
+            "model_identity": {"type": "boolean"},
+            "generation_strategy": {"type": "boolean"},
+            "verifier_verdict": {"type": "boolean"},
+            "claimed_provenance": {"type": "boolean"},
+            "other_primary_reviewer_labels": {"type": "boolean"}
+          }
+        }
+      }
+    }
+  }
+}
