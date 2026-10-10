@@ -10,6 +10,7 @@
     "status",
     "created_at",
     "candidate_policy_sha256",
+    "blind_stage_evidence",
     "reviewers",
     "anchor_reviews",
     "pre_adjudication_agreement",
@@ -18,7 +19,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "0.1.0"
+      "const": "0.2.0"
     },
     "calibration_id": {
       "type": "string",
@@ -176,6 +177,34 @@
     },
     "candidate_policy_sha256": {
       "$ref": "#/$defs/sha256"
+    },
+    "blind_stage_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assignment_id",
+        "reviewer_a_response_sha256",
+        "reviewer_b_response_sha256",
+        "original_responses_retained",
+        "boundary_roles_hidden_initially"
+      ],
+      "properties": {
+        "assignment_id": {
+          "const": "FHIRBRIDGE-SEVERITY-BLIND-001"
+        },
+        "reviewer_a_response_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "reviewer_b_response_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "original_responses_retained": {
+          "const": true
+        },
+        "boundary_roles_hidden_initially": {
+          "const": true
+        }
+      }
     }
   },
   "$defs": {
