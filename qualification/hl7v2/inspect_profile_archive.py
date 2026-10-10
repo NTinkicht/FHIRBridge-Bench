@@ -29,6 +29,8 @@ def main() -> int:
             "event_type": inspection.identity.event_type,
             "message_structure": inspection.identity.message_structure,
         },
+        "reference_inventory": inspection.reference_inventory.to_dict(),
+        "target_reference_signals": inspection.target_reference_signals,
         "selected_message": {
             "identifier": inspection.selected_message.identifier,
             "description": inspection.selected_message.description,
