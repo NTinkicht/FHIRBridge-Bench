@@ -320,6 +320,7 @@ def test_assembler_rejects_incomplete_sample_size_template() -> None:
         _MODULE.assemble_analysis_preregistration(
             model_config=_ready_model_config(),
             sample_size=_yaml(_SAMPLE_TEMPLATE),
+            primary_hypothesis=_ready_primary_hypothesis(),
             core_design=_yaml(_CORE),
             repository_commit="abcdef1",
             analysis_id="ANALYSIS-001",
