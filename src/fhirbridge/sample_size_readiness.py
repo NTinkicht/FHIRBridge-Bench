@@ -69,6 +69,17 @@ def assess_sample_size_preregistration(
     if _placeholder(document.get("record_id")):
         blockers.append("sample-size record_id is still a placeholder")
 
+    frozen_method = document.get("frozen_method")
+    if not isinstance(frozen_method, dict):
+        blockers.append("frozen_method is missing")
+        frozen_method = {}
+    for key in (
+        "sample_size_method_sha256",
+        "core_confirmatory_design_sha256",
+    ):
+        if _zero_hash(frozen_method.get(key)):
+            blockers.append(f"{key} is still a zero placeholder")
+
     pilot = document.get("pilot_evidence")
     if not isinstance(pilot, dict):
         blockers.append("pilot_evidence is missing")
