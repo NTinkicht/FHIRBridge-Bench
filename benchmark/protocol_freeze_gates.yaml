@@ -231,6 +231,10 @@ gates:
       analysis_preregistration_binding: required_and_sha256_pinned
       sample_size_preregistration_binding: required_and_sha256_pinned
       model_prompt_configuration_binding: required_and_sha256_pinned
+      confirmatory_authorization: src/fhirbridge/confirmatory_authorization.py
+      confirmatory_run_plan_schema: runs/schema/confirmatory_run_plan.schema.json
+      confirmatory_run_plan_readiness: src/fhirbridge/confirmatory_run_plan.py
+      execution_sequence: freeze_then_authorize_then_hash_run_plan_then_open_sealed_set
       status: infrastructure_ready_actual_external_roster_and_sealed_bundle_pending
     completion_rule: >-
       The sealed-set manifest, reviewer roster, roles, blinding controls,
