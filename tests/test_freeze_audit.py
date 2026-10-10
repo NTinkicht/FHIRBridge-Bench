@@ -61,6 +61,21 @@ def _ready_manifest() -> dict:
         }
     )
 
+    manifest["case_assignment_manifest"].update(
+        {
+            "version": "1.0.0",
+            "path_or_ref": "expert_validation/case_assignment_manifest.yaml",
+            "sha256": "8" * 64,
+        }
+    )
+    manifest["analysis_preregistration"].update(
+        {
+            "version": "1.0.0",
+            "path_or_ref": "analysis/analysis_preregistration.yaml",
+            "sha256": "7" * 64,
+        }
+    )
+
     manifest["sealed_set"].update(
         {
             "bundle_id": "SEALED-001",
@@ -231,3 +246,25 @@ def test_unfrozen_reviewer_roster_blocks_sealed_opening() -> None:
 
     assert not report.ready_to_open_sealed_set
     assert any("reviewer_roster" in blocker for blocker in report.blockers)
+
+
+def test_unfrozen_case_assignment_manifest_blocks_sealed_opening() -> None:
+    manifest = _ready_manifest()
+    manifest["case_assignment_manifest"]["version"] = "TO_BE_FROZEN"
+    manifest["case_assignment_manifest"]["sha256"] = "0" * 64
+
+    report = assess_presealed_freeze(manifest)
+
+    assert not report.ready_to_open_sealed_set
+    assert any("case_assignment_manifest" in blocker for blocker in report.blockers)
+
+
+def test_unfrozen_analysis_preregistration_blocks_sealed_opening() -> None:
+    manifest = _ready_manifest()
+    manifest["analysis_preregistration"]["version"] = "TO_BE_FROZEN"
+    manifest["analysis_preregistration"]["sha256"] = "0" * 64
+
+    report = assess_presealed_freeze(manifest)
+
+    assert not report.ready_to_open_sealed_set
+    assert any("analysis_preregistration" in blocker for blocker in report.blockers)
