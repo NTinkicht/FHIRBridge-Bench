@@ -98,19 +98,42 @@ def _identifier_ei(identifier: dict[str, Any]) -> str:
     )
 
 
-def _status_code(status: Any) -> str:
+def _report_status_code(status: Any) -> str:
+    """Map FHIR DiagnosticReport.status only where reverse mapping is unique."""
+
     mapping = {
-        "registered": "R",
-        "partial": "P",
+        "partial": "R",
         "preliminary": "P",
-        "final": "F",
-        "amended": "C",
         "corrected": "C",
-        "appended": "C",
+        "final": "F",
         "cancelled": "X",
-        "entered-in-error": "X",
     }
-    return mapping.get(str(status), "U")
+    key = str(status)
+    if key not in mapping:
+        raise ValueError(
+            "DiagnosticReport status is not uniquely reversible to OBR-25 "
+            f"under the pre-freeze status-map candidate: {key!r}"
+        )
+    return mapping[key]
+
+
+def _observation_status_code(status: Any) -> str:
+    """Map FHIR Observation.status only where reverse mapping is unique."""
+
+    mapping = {
+        "amended": "A",
+        "corrected": "C",
+        "final": "F",
+        "preliminary": "P",
+        "cancelled": "X",
+    }
+    key = str(status)
+    if key not in mapping:
+        raise ValueError(
+            "Observation status is not uniquely reversible to OBX-11 "
+            f"under the pre-freeze status-map candidate: {key!r}"
+        )
+    return mapping[key]
 
 
 def _reference_range(attributes: dict[str, Any]) -> str:
@@ -208,7 +231,7 @@ class Hl7V251OruRendererA:
                 6: _unit_ce(observation.get("unit")),
                 7: _reference_range(attributes),
                 8: interpretation_code,
-                11: _status_code(attributes.get("status")),
+                11: _observation_status_code(attributes.get("status")),
                 14: _hl7_ts(temporal.get("effective_start")),
             },
         )
@@ -298,7 +321,7 @@ class Hl7V251OruRendererA:
                         4: _ce(report.get("concept")),
                         7: _hl7_ts(report_temporal.get("effective_start")),
                         22: _hl7_ts(report_temporal.get("recorded_at")),
-                        25: _status_code(report_attributes.get("status")),
+                        25: _report_status_code(report_attributes.get("status")),
                     },
                 )
             )
