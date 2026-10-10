@@ -1,0 +1,119 @@
+policy:
+  id: FHIRBRIDGE-STRUCTURAL-VALIDITY-001
+  version: 0.1.0
+  status: candidate
+  purpose: >-
+    Define the structural-validity classification used before semantic fidelity
+    and VUR computation. This policy is fail-closed while target-specific warning
+    policies or validator evidence remain unresolved.
+  outcome_states:
+    - VALID
+    - INVALID
+    - MEASUREMENT_FAILURE
+    - POLICY_UNRESOLVED
+  denominator_rule: >-
+    Only outputs classified VALID may enter the structurally-valid VUR
+    denominator. INVALID, MEASUREMENT_FAILURE, and POLICY_UNRESOLVED remain
+    visible in all-attempt reporting and never become valid by default.
+
+common_rules:
+  validator_execution_failure:
+    outcome: MEASUREMENT_FAILURE
+  profile_or_package_load_failure:
+    outcome: MEASUREMENT_FAILURE
+  malformed_or_unparseable_validator_report:
+    outcome: MEASUREMENT_FAILURE
+  missing_required_validator_classification_evidence:
+    outcome: MEASUREMENT_FAILURE
+  unknown_validator_classification:
+    outcome: POLICY_UNRESOLVED
+  post_hoc_policy_change_after_confirmatory_inference:
+    prohibited: true
+
+targets:
+  hl7v2_lri_edition5:
+    validator:
+      implementation: CDCgov_lib_hl7v2_nist_validator
+      version: 1.5.0
+      commit: eeac90c5f88dca3018992005232acdf3da644d88
+      nist_engine_version: 1.7.3
+      exact_profile_required: true
+      profile_pin: benchmark/hl7v2_lri_profile_pin.yaml
+    classifications:
+      Error:
+        structural_validity_effect: INVALID
+      Warning:
+        structural_validity_effect: POLICY_UNRESOLVED
+        prefreeze_qualification_behavior: fail_closed
+      Alert:
+        structural_validity_effect: POLICY_UNRESOLVED
+        prefreeze_qualification_behavior: fail_closed
+      Informational:
+        structural_validity_effect: nonblocking_recorded
+    entry_level_evidence_required: true
+    prefreeze_policy:
+      baseline_requires:
+        - error_total_equals_0
+        - warning_total_equals_0
+        - alert_total_equals_0
+      informational_allowed: true
+      negative_control_requires:
+        - one_or_more_Error_entries
+        - Error_entry_matches_preregistered_expected_locus
+    freeze_requirements:
+      - exact_Edition5_profile_qualified
+      - warning_alert_inventory_from_exact_profile_completed
+      - warning_alert_allowlist_or_fail_policy_frozen_before_confirmatory_inference
+      - negative_controls_match_expected_loci
+      - validator_execution_failure_policy_tested
+
+  fhir_r4_us_core_9:
+    validator:
+      implementation: HL7_FHIR_validator_CLI
+      version: 6.10.0
+      artifact_sha256: fc663ae55dd31bbfde19788dddfb49cacbeebc3c64498fa7b7779df90000434b
+      fhir_version: 4.0.1
+      implementation_guide: hl7.fhir.us.core#9.0.0
+    classifications:
+      fatal:
+        structural_validity_effect: INVALID
+      error:
+        structural_validity_effect: INVALID
+      warning:
+        structural_validity_effect: POLICY_UNRESOLVED
+      information:
+        structural_validity_effect: nonblocking_recorded
+    qualification_note: >-
+      Current development qualification uses validator process success with the
+      pinned US Core package path and terminology server disabled. Confirmatory
+      reverse-direction structural validity requires an explicit frozen
+      OperationOutcome severity policy rather than inheriting process-exit
+      behavior.
+    freeze_requirements:
+      - OperationOutcome_severity_parser_frozen
+      - warning_policy_frozen_before_confirmatory_reverse_direction
+      - terminology_disabled_qualification_scope_explicitly_justified
+      - validator_execution_failure_policy_tested
+
+analysis_reporting:
+  required_counts:
+    - attempted
+    - valid
+    - invalid
+    - measurement_failure
+    - policy_unresolved
+  required_rates:
+    - structural_validity_rate
+    - measurement_failure_rate
+    - policy_unresolved_rate
+  companion_metric:
+    valid_and_faithful_yield: required
+  no_silent_exclusion: true
+
+freeze_gate:
+  ready: false
+  blockers:
+    - exact_Edition5_profile_not_qualified
+    - HL7v2_warning_alert_policy_not_frozen
+    - FHIR_OperationOutcome_warning_policy_not_frozen
+    - FHIR_terminology_disabled_scope_not_yet_frozen_for_confirmatory_reverse_direction
