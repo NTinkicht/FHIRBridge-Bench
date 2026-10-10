@@ -26,6 +26,7 @@ def _ready() -> dict:
     document["created_at"] = "2026-10-20T13:00:00Z"
     document["repository_commit"] = "abcdef1"
     document["authorization"]["record_sha256"] = "1" * 64
+    document["authorization"]["record_schema_sha256"] = "f" * 64
     for index, key in enumerate(document["frozen_artifacts"], start=2):
         document["frozen_artifacts"][key] = f"{index:x}" * 64
     document["sealed_set"].update(
@@ -146,5 +147,31 @@ def test_run_plan_requires_execution_schema_validation() -> None:
     assert not readiness.ready
     assert any(
         "schema validation is not required" in item
+        for item in readiness.blockers
+    )
+
+
+def test_run_plan_rejects_wrong_authorization_schema_version() -> None:
+    document = _ready()
+    document["authorization"]["record_schema_version"] = "0.2.0"
+
+    readiness = assess_confirmatory_run_plan(document)
+
+    assert not readiness.ready
+    assert any(
+        "authorization record schema_version" in item
+        for item in readiness.blockers
+    )
+
+
+def test_run_plan_rejects_unfrozen_authorization_schema_hash() -> None:
+    document = _ready()
+    document["authorization"]["record_schema_sha256"] = "0" * 64
+
+    readiness = assess_confirmatory_run_plan(document)
+
+    assert not readiness.ready
+    assert any(
+        "authorization record schema SHA-256" in item
         for item in readiness.blockers
     )
