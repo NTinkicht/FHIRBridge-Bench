@@ -15,7 +15,7 @@ from fhirbridge.verifier.model import LiftedFact
 from .base import LiftResult, LiftWarning
 
 _LIFTER_ID = "fhir-r4-lab-lifter"
-_LIFTER_VERSION = "0.1.0-dev"
+_LIFTER_VERSION = "0.2.0-dev"
 
 
 def _local_id(resource_type: str, resource_id: str) -> str:
@@ -257,6 +257,69 @@ def _observation_fact(
     )
 
 
+def _order_fact(
+    resource: dict[str, Any],
+    path: str,
+    *,
+    order_report_links: dict[str, list[str]],
+) -> LiftedFact:
+    resource_id = str(resource["id"])
+    lifted_id = _local_id("ServiceRequest", resource_id)
+    relationships = [
+        ("has_report", report_id)
+        for report_id in order_report_links.get(lifted_id, [])
+    ]
+
+    requester_payload: dict[str, Any] | None = None
+    requester = resource.get("requester")
+    if isinstance(requester, dict):
+        requester_payload = {}
+        identifier = requester.get("identifier")
+        if isinstance(identifier, dict) and identifier.get("value") is not None:
+            requester_payload["identifier"] = {
+                "system": identifier.get("system"),
+                "value": identifier.get("value"),
+                "type": None,
+            }
+        if requester.get("display") is not None:
+            requester_payload["display"] = requester.get("display")
+        if not requester_payload:
+            requester_payload = None
+
+    payload = {
+        "fact_type": "order",
+        "subject_ref": _reference_id(resource.get("subject")),
+        "encounter_ref": _reference_id(resource.get("encounter")),
+        "concept": _concept(resource.get("code")),
+        "value": None,
+        "unit": None,
+        "temporal": {
+            "effective_start": None,
+            "effective_end": None,
+            "recorded_at": resource.get("authoredOn"),
+            "precision": "second" if resource.get("authoredOn") is not None else None,
+        },
+        "identifiers": _identifiers(resource),
+        "relations": [
+            {"relation_type": relation_type, "target_fact_id": target_id}
+            for relation_type, target_id in relationships
+        ],
+        "attributes": {
+            "lifecycle_status": resource.get("status"),
+            "request_intent": resource.get("intent"),
+            "requester": requester_payload,
+        },
+    }
+    return LiftedFact(
+        lifted_fact_id=lifted_id,
+        fact_type="order",
+        subject_ref=payload["subject_ref"],
+        semantic_payload=payload,
+        target_paths=(path,),
+        relationships=tuple(relationships),
+    )
+
+
 def _report_fact(resource: dict[str, Any], path: str) -> LiftedFact:
     resource_id = str(resource["id"])
     lifted_id = _local_id("DiagnosticReport", resource_id)
@@ -273,6 +336,12 @@ def _report_fact(resource: dict[str, Any], path: str) -> LiftedFact:
             target = _reference_id(reference)
             if target is not None:
                 relationships.append(("has_specimen", target))
+    based_on = resource.get("basedOn", [])
+    if isinstance(based_on, list):
+        for reference in based_on:
+            target = _reference_id(reference)
+            if target is not None:
+                relationships.append(("based_on_order", target))
 
     payload = {
         "fact_type": "diagnostic_report",
@@ -373,6 +442,25 @@ def _inverse_report_links(
     return links
 
 
+def _inverse_order_report_links(
+    entries: list[tuple[int, dict[str, Any]]],
+) -> dict[str, list[str]]:
+    links: dict[str, list[str]] = {}
+    for _, resource in entries:
+        if resource.get("resourceType") != "DiagnosticReport" or resource.get("id") is None:
+            continue
+        report_id = _local_id("DiagnosticReport", str(resource["id"]))
+        based_on = resource.get("basedOn", [])
+        if not isinstance(based_on, list):
+            continue
+        for reference in based_on:
+            order_id = _reference_id(reference)
+            if order_id is None or not order_id.startswith("fhir::ServiceRequest/"):
+                continue
+            links.setdefault(order_id, []).append(report_id)
+    return links
+
+
 def _inverse_specimen_links(
     entries: list[tuple[int, dict[str, Any]]],
 ) -> dict[str, list[str]]:
@@ -409,6 +497,7 @@ class FhirR4LabLifter:
         entries = _resource_entries(artifact)
         observation_report_links = _inverse_report_links(entries)
         observation_specimen_links = _inverse_specimen_links(entries)
+        order_report_links = _inverse_order_report_links(entries)
 
         facts: list[LiftedFact] = []
         for index, resource in entries:
@@ -436,6 +525,14 @@ class FhirR4LabLifter:
                 )
             elif resource_type == "DiagnosticReport":
                 facts.append(_report_fact(resource, path))
+            elif resource_type == "ServiceRequest":
+                facts.append(
+                    _order_fact(
+                        resource,
+                        path,
+                        order_report_links=order_report_links,
+                    )
+                )
             elif resource_type == "Specimen":
                 facts.append(
                     _specimen_fact(
