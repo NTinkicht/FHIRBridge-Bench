@@ -70,8 +70,8 @@ def assess_confirmatory_result_manifest(
 
     blockers: list[str] = []
 
-    if document.get("schema_version") != "0.2.0":
-        blockers.append("result manifest schema_version is not 0.2.0")
+    if document.get("schema_version") != "0.3.0":
+        blockers.append("result manifest schema_version is not 0.3.0")
     if document.get("status") != "execution_complete_audited":
         blockers.append("result manifest is not execution_complete_audited")
     if document.get("created_at") is None:
@@ -126,6 +126,7 @@ def assess_confirmatory_result_manifest(
     audit = document.get("execution_audit")
     structural = document.get("structural_validation_evidence")
     semantic = document.get("semantic_verification_evidence")
+    analysis_build = document.get("analysis_dataset_build")
     analysis = document.get("analysis_ready_dataset")
     _artifact_blockers(raw, label="raw_execution_records", blockers=blockers)
     _artifact_blockers(
@@ -150,6 +151,11 @@ def assess_confirmatory_result_manifest(
         blockers=blockers,
     )
     _artifact_blockers(
+        analysis_build,
+        label="analysis_dataset_build",
+        blockers=blockers,
+    )
+    _artifact_blockers(
         analysis,
         label="analysis_ready_dataset",
         blockers=blockers,
@@ -162,6 +168,12 @@ def assess_confirmatory_result_manifest(
         blockers.append("execution schema validation is not complete")
     if isinstance(audit, dict) and audit.get("complete") is not True:
         blockers.append("execution audit is not complete")
+
+    if (
+        isinstance(analysis_build, dict)
+        and analysis_build.get("complete") is not True
+    ):
+        blockers.append("analysis dataset build audit is not complete")
 
     if case_count and model_count:
         expected_raw = case_count * model_count * 3
