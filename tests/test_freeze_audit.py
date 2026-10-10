@@ -75,6 +75,13 @@ def _ready_manifest() -> dict:
             "sha256": "7" * 64,
         }
     )
+    manifest["sample_size_preregistration"].update(
+        {
+            "version": "1.0.0",
+            "path_or_ref": "analysis/sample_size_preregistration.yaml",
+            "sha256": "5" * 64,
+        }
+    )
 
     manifest["model_prompt_configuration"].update(
         {
@@ -288,5 +295,19 @@ def test_unfrozen_model_prompt_configuration_blocks_sealed_opening() -> None:
     assert not report.ready_to_open_sealed_set
     assert any(
         "model_prompt_configuration" in blocker
+        for blocker in report.blockers
+    )
+
+
+def test_unfrozen_sample_size_preregistration_blocks_sealed_opening() -> None:
+    manifest = _ready_manifest()
+    manifest["sample_size_preregistration"]["version"] = "TO_BE_FROZEN"
+    manifest["sample_size_preregistration"]["sha256"] = "0" * 64
+
+    report = assess_presealed_freeze(manifest)
+
+    assert not report.ready_to_open_sealed_set
+    assert any(
+        "sample_size_preregistration" in blocker
         for blocker in report.blockers
     )
