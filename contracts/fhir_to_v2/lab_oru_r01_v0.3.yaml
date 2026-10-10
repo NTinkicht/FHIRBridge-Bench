@@ -562,9 +562,9 @@ grounding_guards:
 
   - guard_id: ORDER_REQUESTER_IDENTIFIER_SOURCE_GROUNDING_001
     source_fact_type: order
-    source_field: attributes.requester.identifier.value
+    source_field: attributes.requester.identifiers.value
     target_fact_type: order
-    target_field: attributes.requester.identifier.value
+    target_field: attributes.requester.identifiers.value
     match_type: exact_scalar_membership
     primary_endpoint_eligible: true
     rationale: >-
