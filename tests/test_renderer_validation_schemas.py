@@ -12,11 +12,23 @@ DECLARATION_SCHEMA = (
 DISAGREEMENT_SCHEMA = (
     ROOT / "renderer_validation" / "schema" / "renderer_disagreement.schema.json"
 )
+EXPECTED_INPUTS_SCHEMA = (
+    ROOT
+    / "renderer_validation"
+    / "schema"
+    / "renderer_b_expected_inputs.schema.json"
+)
 DECLARATION_EXAMPLE = (
     ROOT / "renderer_validation" / "examples" / "renderer_b_declaration_template.yaml"
 )
 DISAGREEMENT_EXAMPLE = (
     ROOT / "renderer_validation" / "examples" / "renderer_disagreement_example.yaml"
+)
+EXPECTED_INPUTS_EXAMPLE = (
+    ROOT
+    / "renderer_validation"
+    / "examples"
+    / "renderer_b_expected_inputs_template.yaml"
 )
 
 
@@ -27,7 +39,14 @@ def _write_yaml(tmp_path: Path, name: str, payload: dict) -> Path:
 
 
 def test_renderer_b_declaration_template_matches_schema() -> None:
+    declaration = load_yaml(DECLARATION_EXAMPLE)
+
+    assert declaration["schema_version"] == "0.2.0"
     assert validate_document(DECLARATION_EXAMPLE, DECLARATION_SCHEMA) == []
+
+
+def test_renderer_b_expected_inputs_template_matches_schema() -> None:
+    assert validate_document(EXPECTED_INPUTS_EXAMPLE, EXPECTED_INPUTS_SCHEMA) == []
 
 
 def test_renderer_disagreement_example_matches_schema() -> None:
@@ -91,3 +110,28 @@ def test_external_comparator_cannot_be_declared_ground_truth(tmp_path: Path) -> 
 
     assert problems
     assert any("False" in problem.message for problem in problems)
+
+
+def test_declaration_requires_clean_room_input_identity(tmp_path: Path) -> None:
+    declaration = deepcopy(load_yaml(DECLARATION_EXAMPLE))
+    del declaration["clean_room_inputs"]
+
+    problems = validate_document(
+        _write_yaml(tmp_path, "missing-clean-room-inputs.yaml", declaration),
+        DECLARATION_SCHEMA,
+    )
+
+    assert problems
+    assert any("clean_room_inputs" in problem.message for problem in problems)
+
+
+def test_expected_inputs_starting_commit_requires_full_sha(tmp_path: Path) -> None:
+    handoff = deepcopy(load_yaml(EXPECTED_INPUTS_EXAMPLE))
+    handoff["clean_room_inputs"]["starting_commit"] = "abcdef1"
+
+    problems = validate_document(
+        _write_yaml(tmp_path, "short-clean-room-commit.yaml", handoff),
+        EXPECTED_INPUTS_SCHEMA,
+    )
+
+    assert problems
