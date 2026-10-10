@@ -33,6 +33,12 @@ def build_contract_review_pair_report(
     reviewer decision.
     """
 
+    for label, response in (("reviewer_a", response_a), ("reviewer_b", response_b)):
+        if response.get("review_stage", "legacy") not in {"blind", "legacy"}:
+            raise ValueError(
+                f"{label} agreement input must be an original blind-stage response"
+            )
+
     validate_complete_review_response(
         response_a,
         contract,
