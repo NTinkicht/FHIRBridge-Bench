@@ -16,6 +16,13 @@ def _ready(decision_a: str = "ACCEPT", decision_b: str = "ACCEPT") -> dict:
     document["status"] = "completed"
     document["created_at"] = "2026-10-20T19:00:00Z"
     document["candidate_policy_sha256"] = "a" * 64
+    document["blind_stage_evidence"] = {
+        "assignment_id": "FHIRBRIDGE-PRECEDENCE-BLIND-001",
+        "reviewer_a_response_sha256": "b" * 64,
+        "reviewer_b_response_sha256": "c" * 64,
+        "original_responses_retained": True,
+        "other_reviewer_decisions_hidden_initially": True,
+    }
     document["reviewers"] = [
         {
             "reviewer_id": "R-A",
@@ -106,3 +113,31 @@ def test_decisions_must_match_declared_reviewer_roster() -> None:
 
     assert not readiness.complete
     assert any("do not match" in item for item in readiness.blockers)
+
+
+def test_completed_precedence_review_requires_response_hashes() -> None:
+    document = _ready()
+    document["blind_stage_evidence"]["reviewer_b_response_sha256"] = "0" * 64
+
+    readiness = assess_precedence_review(document)
+
+    assert not readiness.complete
+    assert any(
+        "reviewer_b_response_sha256" in item
+        for item in readiness.blockers
+    )
+
+
+def test_completed_precedence_review_requires_hidden_initial_decisions() -> None:
+    document = _ready()
+    document["blind_stage_evidence"][
+        "other_reviewer_decisions_hidden_initially"
+    ] = False
+
+    readiness = assess_precedence_review(document)
+
+    assert not readiness.complete
+    assert any(
+        "were not hidden initially" in item
+        for item in readiness.blockers
+    )
