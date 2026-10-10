@@ -146,11 +146,14 @@ gates:
     blockers:
       - sealed_set_freeze_manifest_not_complete
       - reviewer_roster_not_locked_and_hashed
+      - sealed_case_assignment_manifest_not_locked
       - sealed_set_not_authorized_for_opening
     evidence:
       reviewer_roster_schema: expert_validation/schema/reviewer_roster.schema.json
       reviewer_roster_template: expert_validation/examples/reviewer_roster_template.yaml
       reviewer_roster_readiness: src/fhirbridge/expert_roles.py
+      case_assignment_schema: expert_validation/schema/case_assignment_manifest.schema.json
+      case_assignment_readiness: src/fhirbridge/expert_assignments.py
       freeze_manifest_schema_version: "0.2.0"
       reviewer_roster_manifest_binding: required_and_sha256_pinned
       status: infrastructure_ready_actual_external_roster_and_sealed_bundle_pending
