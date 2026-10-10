@@ -188,3 +188,42 @@ def test_run_plan_rejects_wrong_top_level_schema_version() -> None:
         "run plan schema_version is not 0.3.0" in item
         for item in readiness.blockers
     )
+
+
+def test_run_plan_rejects_malformed_repository_commit() -> None:
+    document = _ready()
+    document["repository_commit"] = "not-a-commit"
+
+    readiness = assess_confirmatory_run_plan(document)
+
+    assert not readiness.ready
+    assert any(
+        "repository_commit is missing, malformed, or placeholder" in item
+        for item in readiness.blockers
+    )
+
+
+@pytest.mark.parametrize(
+    ("container_name", "field_name"),
+    [
+        ("authorization", "record_sha256"),
+        ("authorization", "record_schema_sha256"),
+        ("frozen_artifacts", "freeze_manifest_sha256"),
+        ("sealed_set", "bundle_sha256"),
+        ("sealed_set", "case_manifest_sha256"),
+    ],
+)
+def test_run_plan_rejects_malformed_hashes(
+    container_name: str,
+    field_name: str,
+) -> None:
+    document = _ready()
+    document[container_name][field_name] = "g" * 64
+
+    readiness = assess_confirmatory_run_plan(document)
+
+    assert not readiness.ready
+    assert any(
+        field_name in item or "authorization record" in item
+        for item in readiness.blockers
+    )
