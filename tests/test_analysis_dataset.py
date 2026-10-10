@@ -62,6 +62,7 @@ def _key_records() -> tuple[list[dict], list[dict]]:
             "INDETERMINATE",
         ),
     ]
+    hex_chars = "123456789abcdef"
     for index, (case_id, model_key, arm_id, outcome, verdict) in enumerate(
         keys,
         start=1,
@@ -73,7 +74,7 @@ def _key_records() -> tuple[list[dict], list[dict]]:
                 "arm_id": arm_id,
                 "source_input_sha256": sources[case_id],
                 "structural_outcome": outcome,
-                "validator_evidence_sha256": f"{index:x}" * 64,
+                "validator_evidence_sha256": hex_chars[index - 1] * 64,
             }
         )
         if outcome != "VALID":
@@ -89,7 +90,7 @@ def _key_records() -> tuple[list[dict], list[dict]]:
                 "arm_id": arm_id,
                 "source_input_sha256": sources[case_id],
                 "semantic_verdict": verdict,
-                "verifier_evidence_sha256": f"{index + 8:x}" * 64,
+                "verifier_evidence_sha256": hex_chars[index + 6] * 64,
                 "evaluation_reason": reason,
             }
         )
