@@ -88,15 +88,22 @@ def assess_model_prompt_freeze(
         blockers.append("silent prompt fallback must be disabled")
     if global_policy.get("policy_id") != "FHIRBRIDGE-MODEL-EXECUTION-001":
         blockers.append("global execution policy_id is not frozen")
-    if global_policy.get("policy_version") != "0.1.0":
+    if global_policy.get("policy_version") != "0.2.0":
         blockers.append("global execution policy_version is not frozen")
     _artifact_blockers(
         global_policy.get("policy_artifact"),
         label="global_execution_policy.policy_artifact",
         blockers=blockers,
     )
-    if global_policy.get("logical_generation_attempts_per_case_arm_model") != 1:
-        blockers.append("logical generation attempts must equal one")
+    expected_calls = {
+        "direct_structured_llm": 1,
+        "mapping_aware_llm": 1,
+        "mapping_aware_plus_syntax_repair": 0,
+    }
+    if global_policy.get("provider_generation_calls_per_case_model") != expected_calls:
+        blockers.append(
+            "provider generation-call policy does not match frozen strategy design"
+        )
     retry = global_policy.get("retry_policy")
     if not isinstance(retry, dict):
         blockers.append("retry_policy is missing")
@@ -233,6 +240,15 @@ def assess_model_prompt_freeze(
         )
 
     for strategy_id, strategy in by_id.items():
+        expected_source = (
+            "reuse_mapping_aware_raw_output"
+            if strategy_id == "mapping_aware_plus_syntax_repair"
+            else "provider_call"
+        )
+        if strategy.get("generation_source") != expected_source:
+            blockers.append(
+                f"{strategy_id}: generation_source does not match frozen design"
+            )
         _artifact_blockers(
             strategy.get("implementation_artifact"),
             label=f"{strategy_id}.implementation_artifact",
