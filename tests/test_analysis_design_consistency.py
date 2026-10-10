@@ -178,3 +178,45 @@ def test_sample_size_dynamic_planning_policy_cannot_drift() -> None:
     assert any(
         "dynamic 0.05/(6M)" in item for item in result.blockers
     )
+
+
+def test_cluster_id_field_must_be_frozen_analysis_cluster_id() -> None:
+    core, template, sample, execution = _documents()
+    mutated = deepcopy(core)
+    mutated["analysis_design"]["paired_analysis"]["cluster_id_field"] = (
+        "source_scenario_or_patient_id"
+    )
+
+    result = assess_analysis_design_consistency(
+        mutated,
+        template,
+        sample,
+        execution,
+    )
+
+    assert not result.consistent
+    assert any(
+        "cluster_id_field is not frozen to analysis_cluster_id" in item
+        for item in result.blockers
+    )
+
+
+def test_cluster_id_source_must_be_sealed_case_manifest() -> None:
+    core, template, sample, execution = _documents()
+    mutated = deepcopy(core)
+    mutated["analysis_design"]["paired_analysis"]["cluster_id_source"] = (
+        "post_run_reconstruction"
+    )
+
+    result = assess_analysis_design_consistency(
+        mutated,
+        template,
+        sample,
+        execution,
+    )
+
+    assert not result.consistent
+    assert any(
+        "cluster_id_source is not the sealed case manifest" in item
+        for item in result.blockers
+    )
