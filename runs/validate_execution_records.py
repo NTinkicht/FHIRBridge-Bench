@@ -26,6 +26,7 @@ def validate_jsonl(
 
     record_count = 0
     invalid_records: list[dict[str, object]] = []
+    batch_errors: list[str] = []
     seen_execution_ids: set[str] = set()
 
     for line_number, raw_line in enumerate(
@@ -90,13 +91,7 @@ def validate_jsonl(
             )
 
     if record_count == 0:
-        invalid_records.append(
-            {
-                "line_number": None,
-                "execution_id": None,
-                "errors": ["execution JSONL contains no records"],
-            }
-        )
+        batch_errors.append("execution JSONL contains no records")
 
     invalid_count = len(invalid_records)
     return {
@@ -111,9 +106,10 @@ def validate_jsonl(
         "record_count": record_count,
         "valid_record_count": record_count - invalid_count,
         "invalid_record_count": invalid_count,
+        "batch_errors": batch_errors,
         "duplicate_execution_ids_checked": True,
         "invalid_records": invalid_records,
-        "passed": invalid_count == 0,
+        "passed": invalid_count == 0 and not batch_errors,
     }
 
 
