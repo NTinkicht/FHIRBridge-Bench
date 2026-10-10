@@ -33,6 +33,7 @@ def _ready() -> dict:
             "structural_validity_policy_sha256": "2" * 64,
             "statistical_analysis_plan_sha256": "3" * 64,
             "model_prompt_configuration_sha256": "4" * 64,
+            "sample_size_preregistration_sha256": "5" * 64,
         }
     )
     document["paired_comparisons"]["comparison_family"] = [
@@ -119,5 +120,18 @@ def test_model_prompt_configuration_hash_is_required() -> None:
     assert not readiness.ready
     assert any(
         "model_prompt_configuration_sha256" in item
+        for item in readiness.blockers
+    )
+
+
+def test_sample_size_preregistration_hash_is_required() -> None:
+    document = _ready()
+    document["frozen_inputs"]["sample_size_preregistration_sha256"] = "0" * 64
+
+    readiness = assess_analysis_preregistration(document)
+
+    assert not readiness.ready
+    assert any(
+        "sample_size_preregistration_sha256" in item
         for item in readiness.blockers
     )
