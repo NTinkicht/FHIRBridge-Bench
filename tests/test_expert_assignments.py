@@ -21,6 +21,7 @@ def _ready_roster() -> dict:
     roster["members"][0]["member_id"] = "R-INT"
     roster["members"][1]["member_id"] = "R-CLIN"
     roster["members"][2]["member_id"] = "R-ADJ"
+    roster["members"][3]["member_id"] = "R-DATA"
     for member in roster["members"]:
         member["conflicts_of_interest"] = "None declared"
         member["prior_project_involvement"] = "None"
