@@ -88,7 +88,7 @@ def assess_model_prompt_freeze(
         blockers.append("silent prompt fallback must be disabled")
     if global_policy.get("policy_id") != "FHIRBRIDGE-MODEL-EXECUTION-001":
         blockers.append("global execution policy_id is not frozen")
-    if global_policy.get("policy_version") != "0.2.0":
+    if global_policy.get("policy_version") != "0.3.0":
         blockers.append("global execution policy_version is not frozen")
     _artifact_blockers(
         global_policy.get("policy_artifact"),
