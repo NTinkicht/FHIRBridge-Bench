@@ -1,0 +1,38 @@
+precedence_policy:
+  id: FHIRBRIDGE-ERROR-PRECEDENCE-001
+  version: 0.1.0
+  status: candidate_consistency_verified_before_freeze
+  scientific_role: prefreeze_measurement_policy
+  source_documents:
+    - contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml
+    - fault_injection/fault_taxonomy_v0.1.yaml
+
+resolution_scope: canonical_fact
+
+order:
+  - MISATTRIBUTION
+  - CORRUPTION
+  - OMISSION
+  - FABRICATION
+
+rule: >-
+  When one erroneous target assertion can be grounded to a source fact,
+  classify the canonical-fact error once using the highest applicable class in
+  the frozen order. A grounded fact attached to the wrong patient, order,
+  report, result, specimen, or other context is MISATTRIBUTION rather than a
+  double-counted OMISSION plus FABRICATION pair.
+
+multi_fault_policy:
+  independent_facts_may_yield_multiple_errors: true
+  same_fact_double_counting_prohibited: true
+  omission_plus_unrelated_fabrication: >-
+    Retain OMISSION for the missing required source fact and FABRICATION for an
+    unrelated added fact unless a one-to-one erroneous grounding establishes
+    CORRUPTION or MISATTRIBUTION.
+
+freeze_conditions:
+  contract_precedence_must_match: true
+  fault_taxonomy_precedence_must_match: true
+  verifier_classifier_behavior_must_be_tested: true
+  external_contract_review_disagreements_affecting_precedence_must_be_resolved: true
+  status_must_equal: frozen
