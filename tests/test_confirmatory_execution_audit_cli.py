@@ -172,6 +172,17 @@ def _fixture(tmp_path: Path) -> dict[str, Path]:
         encoding="utf-8",
     )
 
+    run_plan_document = yaml.safe_load(
+        run_plan.read_text(encoding="utf-8")
+    )
+    run_plan_document["sealed_set"]["case_manifest_sha256"] = (
+        _MODULE._sha256(manifest)
+    )
+    run_plan.write_text(
+        yaml.safe_dump(run_plan_document, sort_keys=False),
+        encoding="utf-8",
+    )
+
     executions = tmp_path / "execution-records.jsonl"
     _write_jsonl(executions, _records())
 
