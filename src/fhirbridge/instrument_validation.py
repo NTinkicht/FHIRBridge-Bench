@@ -66,6 +66,13 @@ class AbstainingInstrumentQualification:
     determinate_cases: int
     indeterminate_count: int
     indeterminate_rate: ConfidenceInterval
+    expert_positive_indeterminate_count: int
+    expert_negative_indeterminate_count: int
+    expert_positive_indeterminate_rate: ConfidenceInterval
+    expert_negative_indeterminate_rate: ConfidenceInterval
+    effective_sensitivity: ConfidenceInterval
+    effective_specificity: ConfidenceInterval
+    effective_accuracy: ConfidenceInterval
     determinate_binary: InstrumentQualification
 
 
@@ -73,6 +80,7 @@ class AbstainingInstrumentQualification:
 class AbstainingQualificationGate:
     passed: bool
     binary_gate: QualificationGate
+    effective_sensitivity_value: float
     maximum_indeterminate_rate: float
     use_upper_confidence_bound_for_indeterminate: bool
     indeterminate_value: float
@@ -198,9 +206,15 @@ def qualify_instrument_with_abstention(
     determinate_expert: list[bool] = []
     determinate_verifier: list[bool] = []
     indeterminate_count = 0
+    expert_positive_indeterminate_count = 0
+    expert_negative_indeterminate_count = 0
     for truth, verdict in zip(expert, verdicts, strict=True):
         if verdict == "INDETERMINATE":
             indeterminate_count += 1
+            if truth:
+                expert_positive_indeterminate_count += 1
+            else:
+                expert_negative_indeterminate_count += 1
             continue
         determinate_expert.append(truth)
         determinate_verifier.append(verdict == "UNFAITHFUL")
@@ -215,11 +229,47 @@ def qualify_instrument_with_abstention(
         determinate_expert,
         determinate_verifier,
     )
+    expert_positive_total = sum(expert)
+    expert_negative_total = len(expert) - expert_positive_total
+    if expert_positive_total == 0 or expert_negative_total == 0:
+        raise ValueError(
+            "abstaining qualification requires both expert-positive and "
+            "expert-negative cases"
+        )
+
+    effective_true_positive = binary.counts.true_positive
+    effective_true_negative = binary.counts.true_negative
     return AbstainingInstrumentQualification(
         total_cases=len(expert),
         determinate_cases=len(determinate_expert),
         indeterminate_count=indeterminate_count,
         indeterminate_rate=_wilson(indeterminate_count, len(expert)),
+        expert_positive_indeterminate_count=(
+            expert_positive_indeterminate_count
+        ),
+        expert_negative_indeterminate_count=(
+            expert_negative_indeterminate_count
+        ),
+        expert_positive_indeterminate_rate=_wilson(
+            expert_positive_indeterminate_count,
+            expert_positive_total,
+        ),
+        expert_negative_indeterminate_rate=_wilson(
+            expert_negative_indeterminate_count,
+            expert_negative_total,
+        ),
+        effective_sensitivity=_wilson(
+            effective_true_positive,
+            expert_positive_total,
+        ),
+        effective_specificity=_wilson(
+            effective_true_negative,
+            expert_negative_total,
+        ),
+        effective_accuracy=_wilson(
+            effective_true_positive + effective_true_negative,
+            len(expert),
+        ),
         determinate_binary=binary,
     )
 
@@ -246,6 +296,11 @@ def evaluate_gate_with_abstention(
         minimum_ppv=minimum_ppv,
         use_lower_confidence_bound=use_lower_confidence_bound,
     )
+    effective_sensitivity_value = (
+        qualification.effective_sensitivity.lower
+        if use_lower_confidence_bound
+        else qualification.effective_sensitivity.estimate
+    )
     indeterminate_value = (
         qualification.indeterminate_rate.upper
         if use_upper_confidence_bound_for_indeterminate
@@ -254,9 +309,11 @@ def evaluate_gate_with_abstention(
     return AbstainingQualificationGate(
         passed=(
             binary_gate.passed
+            and effective_sensitivity_value >= minimum_sensitivity
             and indeterminate_value <= maximum_indeterminate_rate
         ),
         binary_gate=binary_gate,
+        effective_sensitivity_value=effective_sensitivity_value,
         maximum_indeterminate_rate=maximum_indeterminate_rate,
         use_upper_confidence_bound_for_indeterminate=(
             use_upper_confidence_bound_for_indeterminate
