@@ -23,7 +23,13 @@ def test_model_prompt_freeze_template_is_schema_valid_but_nonassertive() -> None
 
     jsonschema.Draft202012Validator(_schema()).validate(document)
 
-    assert document["schema_version"] == "0.2.0"
+    assert document["schema_version"] == "0.3.0"
+    policy = document["global_execution_policy"]
+    assert policy["policy_id"] == "FHIRBRIDGE-MODEL-EXECUTION-001"
+    assert policy["policy_version"] == "0.1.0"
+    assert policy["logical_generation_attempts_per_case_arm_model"] == 1
+    assert policy["retry_policy"] == {"maximum_attempts": 1, "retry_on": []}
+    assert policy["timeout_seconds"] == 120
     assert document["status"] == "incomplete_template"
     assert document["sealed_set_opened"] is False
     assert {
@@ -74,6 +80,22 @@ def test_model_prompt_schema_requires_sha256_artifacts() -> None:
     document["deterministic_baseline"]["implementation_artifact"][
         "sha256"
     ] = "bad"
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+def test_model_prompt_schema_forbids_retry_drift() -> None:
+    document = _template()
+    document["global_execution_policy"]["retry_policy"]["maximum_attempts"] = 2
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+def test_model_prompt_schema_forbids_timeout_drift() -> None:
+    document = _template()
+    document["global_execution_policy"]["timeout_seconds"] = 121
 
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.Draft202012Validator(_schema()).validate(document)
