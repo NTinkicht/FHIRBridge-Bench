@@ -182,3 +182,13 @@ artifacts by SHA-256: the pseudonymous reviewer roster, the sealed case-assignme
 manifest, and the confirmatory analysis preregistration. Changing any of those
 artifacts after the freeze requires a new manifest and follows the same
 post-unsealing amendment rules as an instrument change.
+
+
+## Verifier abstention gate
+
+Pilot qualification of the tri-state verifier must not preprocess
+`INDETERMINATE` outputs into a binary class. The calibration record reports
+binary sensitivity/PPV on determinate outputs and separately freezes a maximum
+runtime-indeterminate rate, evaluated using either its point estimate or the
+upper Wilson 95% confidence bound as preregistered. All-indeterminate verifier
+output cannot satisfy instrument qualification.
