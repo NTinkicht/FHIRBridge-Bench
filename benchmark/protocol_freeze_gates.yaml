@@ -223,6 +223,11 @@ gates:
       schema: models/schema/model_prompt_freeze.schema.json
       incomplete_template: models/examples/model_prompt_freeze_template.yaml
       readiness_check: src/fhirbridge/model_config_readiness.py
+      baseline_qualification_schema: models/schema/baseline_qualification.schema.json
+      baseline_qualification_template: models/examples/baseline_qualification_template.yaml
+      baseline_qualification_readiness: src/fhirbridge/baseline_qualification.py
+      model_declarations_schema: models/schema/model_declarations.schema.json
+      model_freeze_builder: models/build_model_prompt_freeze.py
       provider_independent_execution_policy: models/execution_policy.yaml
       direct_prompt_template: models/prompts/direct_structured_v0.1.txt
       mapping_prompt_template: models/prompts/mapping_aware_v0.1.txt
@@ -244,10 +249,11 @@ gates:
       hosted_model_data_scope: synthetic_only
       status: >-
         provider-independent execution, prompts, strategy assembly, syntax
-        repair, structured-output semantics and seed-capability consistency are
-        frozen/CI-hashed; final model snapshots, model-specific decoding/seed
-        declarations, frozen mapping context, deterministic v2 baseline, and
-        final arm hashes remain pending
+        repair, structured-output semantics, seed-capability consistency,
+        baseline qualification requirements and deterministic final-freeze
+        assembly are defined/hashed; final model snapshots, model-specific
+        decoding/seed declarations, frozen mapping context, exact-profile
+        baseline qualification and resulting final arm hashes remain pending
     completion_rule: >-
       The deterministic baseline plus all frozen LLM model families and the
       three LLM strategy conditions must be frozen with cryptographic hashes for
