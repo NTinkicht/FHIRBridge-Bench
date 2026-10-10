@@ -63,6 +63,11 @@ def prepare_strategy_prompt(
 
     if strategy_id not in _STRATEGIES:
         raise ValueError(f"unsupported strategy_id: {strategy_id}")
+    if strategy_id == REPAIR_STRATEGY:
+        raise ValueError(
+            "repair strategy does not make a provider call; reuse the raw "
+            "mapping_aware_llm response and apply process_strategy_output"
+        )
 
     source_json = _canonical_source_json(fhir_bundle)
     if strategy_id == DIRECT_STRATEGY:
