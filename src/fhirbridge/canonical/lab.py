@@ -463,7 +463,7 @@ def _specimen_fact(
             for obs_id in observation_ids
         ],
         "attributes": {
-            "type_label": "serum_or_plasma",
+            "type_label": "serum",
             "collection_method_label": "venipuncture",
         },
         "provenance": _provenance(template_id),
