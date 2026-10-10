@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/structural_evidence_record.schema.json",
+  "title": "FHIRBridge Structural Validation Evidence Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "model_key",
+    "arm_id",
+    "source_input_sha256",
+    "structural_outcome",
+    "validator_evidence_sha256"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "case_id": {"type": "string", "minLength": 1},
+    "model_key": {"type": ["string", "null"]},
+    "arm_id": {
+      "enum": [
+        "deterministic_baseline",
+        "direct_structured_llm",
+        "mapping_aware_llm",
+        "mapping_aware_plus_syntax_repair"
+      ]
+    },
+    "source_input_sha256": {"$ref": "#/$defs/sha256"},
+    "structural_outcome": {
+      "enum": [
+        "VALID",
+        "INVALID",
+        "MEASUREMENT_FAILURE",
+        "POLICY_UNRESOLVED"
+      ]
+    },
+    "validator_evidence_sha256": {"$ref": "#/$defs/sha256"}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"arm_id": {"const": "deterministic_baseline"}}
+      },
+      "then": {"properties": {"model_key": {"type": "null"}}},
+      "else": {"properties": {"model_key": {"type": "string", "minLength": 1}}}
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    }
+  }
+}
