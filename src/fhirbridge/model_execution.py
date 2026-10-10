@@ -264,7 +264,7 @@ def build_failure_record(
         )
 
     return ModelExecutionRecord(
-        schema_version="0.2.0",
+        schema_version="0.3.0",
         execution_id=execution_id,
         case_id=case_id,
         model_key=model_key,
