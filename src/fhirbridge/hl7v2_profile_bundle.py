@@ -8,13 +8,7 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 _REQUIRED_FILES = ("PROFILE.xml",)
-_OPTIONAL_FILES = (
-    "CONSTRAINTS.xml",
-    "VALUESETS.xml",
-    "VALUESETBINDINGS.xml",
-    "COCONSTRAINTS.xml",
-    "SLICINGS.xml",
-)
+_IGNORED_NONSCIENTIFIC_NAMES = frozenset({".DS_Store", "Thumbs.db"})
 
 
 @dataclass(frozen=True)
@@ -50,9 +44,11 @@ def _hash_bytes(data: bytes) -> str:
 def compute_profile_bundle_manifest(root: Path) -> ProfileBundleManifest:
     """Hash one local IGAMT profile bundle deterministically.
 
-    PROFILE.xml is mandatory. Known IGAMT companion artifacts are included
-    when present. Unknown files are intentionally ignored so editor metadata or
-    operating-system files cannot silently change the scientific profile hash.
+    PROFILE.xml is mandatory. Every regular file in the selected profile
+    subtree is included in the manifest, including previously unknown companion
+    artifacts. Only explicit operating-system junk names are excluded. This
+    prevents an unrecognized constraints/value-set resource from silently
+    disappearing from the scientific bundle hash.
     """
 
     if not root.is_dir():
@@ -66,10 +62,19 @@ def compute_profile_bundle_manifest(root: Path) -> ProfileBundleManifest:
 
     files: list[ProfileBundleFile] = []
     aggregate = sha256()
-    for name in (*_REQUIRED_FILES, *_OPTIONAL_FILES):
-        path = root / name
-        if not path.is_file():
-            continue
+    candidates = [
+        path
+        for path in root.rglob("*")
+        if path.is_file() and path.name not in _IGNORED_NONSCIENTIFIC_NAMES
+    ]
+    candidates.sort(
+        key=lambda path: (
+            path.relative_to(root).as_posix() != "PROFILE.xml",
+            path.relative_to(root).as_posix(),
+        )
+    )
+    for path in candidates:
+        name = path.relative_to(root).as_posix()
         data = path.read_bytes()
         digest = _hash_bytes(data)
         files.append(
