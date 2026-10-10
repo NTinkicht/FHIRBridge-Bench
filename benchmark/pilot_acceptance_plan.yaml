@@ -1,6 +1,6 @@
 pilot_acceptance_plan:
   id: FHIRBRIDGE-PILOT-GATE-PLAN-001
-  version: 0.1.0
+  version: 0.2.0
   status: method_preregistered_numeric_thresholds_pending_pilot
   purpose: >-
     Freeze the procedure used to turn pilot expert-validation evidence into the
@@ -22,7 +22,7 @@ pilot_evidence:
 
 gate_metrics:
   primary:
-    - sensitivity
+    - effective_sensitivity
     - positive_predictive_value
     - runtime_indeterminate_rate
   diagnostic_only:
@@ -30,6 +30,19 @@ gate_metrics:
     - negative_predictive_value
     - accuracy
   confidence_interval: Wilson_95_percent
+  sensitivity_semantics: >-
+    Sensitivity is evaluated across all expert-positive pilot cases. A verifier
+    INDETERMINATE on an expert-positive case does not disappear from the
+    denominator; it reduces effective sensitivity. Conditional sensitivity on
+    determinate cases is retained only as a diagnostic.
+  specificity_semantics: >-
+    Specificity and accuracy are likewise reported conservatively over all
+    expert-negative/all pilot cases, while PPV and NPV remain properties of
+    determinate positive/negative calls.
+  abstention_stratification:
+    - overall_runtime_indeterminate_count
+    - expert_positive_runtime_indeterminate_count
+    - expert_negative_runtime_indeterminate_count
   implementation: src/fhirbridge/instrument_validation.py
 
 threshold_semantics:
@@ -67,12 +80,13 @@ required_pilot_record:
     - thresholds_recorded_before_sealed_opening
   required_metrics:
     - pilot_confusion_counts
-    - sensitivity_with_95_percent_CI
+    - effective_sensitivity_with_95_percent_CI
     - PPV_with_95_percent_CI
     - specificity_with_95_percent_CI
     - NPV_with_95_percent_CI
     - accuracy_with_95_percent_CI
     - runtime_indeterminate_count_and_rate_with_95_percent_CI
+    - class_specific_runtime_indeterminate_counts
 
 post_threshold_policy:
   material_verifier_change_requires:
