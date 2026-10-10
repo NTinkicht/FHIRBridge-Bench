@@ -32,6 +32,7 @@ def _ready() -> dict:
             "projectability_contract_sha256": "1" * 64,
             "structural_validity_policy_sha256": "2" * 64,
             "statistical_analysis_plan_sha256": "3" * 64,
+            "model_prompt_configuration_sha256": "4" * 64,
         }
     )
     document["paired_comparisons"]["comparison_family"] = [
@@ -107,3 +108,16 @@ def test_schema_forbids_opened_sealed_set() -> None:
 
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+def test_model_prompt_configuration_hash_is_required() -> None:
+    document = _ready()
+    document["frozen_inputs"]["model_prompt_configuration_sha256"] = "0" * 64
+
+    readiness = assess_analysis_preregistration(document)
+
+    assert not readiness.ready
+    assert any(
+        "model_prompt_configuration_sha256" in item
+        for item in readiness.blockers
+    )
