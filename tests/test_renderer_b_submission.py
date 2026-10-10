@@ -5,7 +5,7 @@ from fhirbridge.renderer_b_submission import assess_renderer_b_declaration
 
 def _declaration() -> dict:
     return {
-        "schema_version": "0.1.0",
+        "schema_version": "0.2.0",
         "renderer_id": "RENDERER-B",
         "renderer_version": "0.1.0",
         "contributor": {
@@ -18,6 +18,16 @@ def _declaration() -> dict:
             "major_libraries": ["HAPI"],
             "source_commit": "1234567890abcdef1234567890abcdef12345678",
             "implementation_notes": None,
+        },
+        "clean_room_inputs": {
+            "repository_full_name": "NTinkicht/FHIRBridge-Bench",
+            "branch": "renderer-b-cleanroom",
+            "starting_commit": "1" * 40,
+            "challenge_id": "FHIRBRIDGE-RENDERER-B-DEV-001",
+            "challenge_version": "0.2.0",
+            "challenge_manifest_sha256": "2" * 64,
+            "contract_path": "contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml",
+            "contract_sha256": "3" * 64,
         },
         "contract": {
             "contract_id": "F2V-LAB-ORU-R01-001",
@@ -55,8 +65,15 @@ def _declaration() -> dict:
     }
 
 
+def _expected_inputs() -> dict:
+    return dict(_declaration()["clean_room_inputs"])
+
+
 def test_complete_independent_declaration_is_ready() -> None:
-    readiness = assess_renderer_b_declaration(_declaration())
+    readiness = assess_renderer_b_declaration(
+        _declaration(),
+        expected_clean_room_inputs=_expected_inputs(),
+    )
 
     assert readiness.ready_for_differential_comparison is True
     assert readiness.blockers == ()
@@ -69,7 +86,7 @@ def test_renderer_a_exposure_blocks_comparison() -> None:
         "renderer_a_source_inspected_before_initial_commit"
     ] = True
 
-    readiness = assess_renderer_b_declaration(declaration)
+    readiness = assess_renderer_b_declaration(declaration, expected_clean_room_inputs=_expected_inputs())
 
     assert readiness.ready_for_differential_comparison is False
     assert any(
@@ -82,7 +99,7 @@ def test_python_requires_same_language_independence_rationale() -> None:
     declaration = _declaration()
     declaration["implementation"]["language"] = "Python 3.11"
 
-    blocked = assess_renderer_b_declaration(declaration)
+    blocked = assess_renderer_b_declaration(declaration, expected_clean_room_inputs=_expected_inputs())
     assert blocked.ready_for_differential_comparison is False
     assert any("same-language" in blocker for blocker in blocked.blockers)
 
@@ -90,7 +107,7 @@ def test_python_requires_same_language_independence_rationale() -> None:
         "Independently authored with a different standards library and no "
         "shared mapping or serialization utilities."
     )
-    ready = assess_renderer_b_declaration(declaration)
+    ready = assess_renderer_b_declaration(declaration, expected_clean_room_inputs=_expected_inputs())
     assert ready.ready_for_differential_comparison is True
 
 
@@ -98,7 +115,7 @@ def test_llm_mapping_use_is_audit_warning_not_automatic_failure() -> None:
     declaration = _declaration()
     declaration["independence"]["llm_generated_mapping_code_used"] = True
 
-    readiness = assess_renderer_b_declaration(declaration)
+    readiness = assess_renderer_b_declaration(declaration, expected_clean_room_inputs=_expected_inputs())
 
     assert readiness.ready_for_differential_comparison is True
     assert len(readiness.warnings) == 1
@@ -114,7 +131,28 @@ def test_placeholders_block_comparison() -> None:
         "TO_BE_COMPLETED_BY_INDEPENDENT_IMPLEMENTER"
     ]
 
-    readiness = assess_renderer_b_declaration(declaration)
+    readiness = assess_renderer_b_declaration(declaration, expected_clean_room_inputs=_expected_inputs())
 
     assert readiness.ready_for_differential_comparison is False
     assert len(readiness.blockers) >= 2
+
+
+def test_missing_custodian_handoff_blocks_comparison() -> None:
+    readiness = assess_renderer_b_declaration(_declaration())
+
+    assert not readiness.ready_for_differential_comparison
+    assert any("expected clean-room input record" in x for x in readiness.blockers)
+
+
+def test_clean_room_input_hash_mismatch_blocks_comparison() -> None:
+    declaration = _declaration()
+    expected = _expected_inputs()
+    expected["challenge_manifest_sha256"] = "f" * 64
+
+    readiness = assess_renderer_b_declaration(
+        declaration,
+        expected_clean_room_inputs=expected,
+    )
+
+    assert not readiness.ready_for_differential_comparison
+    assert any("challenge_manifest_sha256" in x for x in readiness.blockers)
