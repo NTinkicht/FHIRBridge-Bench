@@ -211,11 +211,12 @@ gates:
       frozen_method_hashes:
         - sample_size_method_sha256
         - core_confirmatory_design_sha256
+        - model_prompt_configuration_sha256
       preregistration_schema: analysis/schema/sample_size_preregistration.schema.json
       incomplete_template: analysis/examples/sample_size_preregistration_template.yaml
       readiness_check: src/fhirbridge/sample_size_readiness.py
       paired_comparison_family: analysis/core_confirmatory_design.yaml
-      multiplicity_planning_policy: Bonferroni_0_05_over_6_conservative_bound_for_Holm_family
+      multiplicity_planning_policy: Bonferroni_0_05_over_6M_conservative_bound_for_Holm_family
       independent_unit: source_scenario_or_patient_cluster
       status: method_and_recomputation_checks_ready_numeric_record_pending_pilot
     completion_rule: >-
@@ -223,7 +224,8 @@ gates:
       source-cluster count before confirmatory inference. The record must
       reproduce deterministically from pilot VUR, retention, clustering and
       discordant-pair estimates, and must use the maximum requirement across
-      primary VUR precision and all six predeclared paired comparisons.
+      primary VUR precision and all six model-specific contrasts for every
+      frozen LLM model.
 
   - gate_id: model_prompt_configuration
     category: experimental_reproducibility
