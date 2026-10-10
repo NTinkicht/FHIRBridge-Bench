@@ -52,6 +52,17 @@ def build_report() -> dict:
                 }
             )
 
+    protocol_blocker_item_count = sum(
+        len(gate["blockers"])
+        for gate in protocol_blockers
+        if isinstance(gate.get("blockers"), list)
+    )
+    blocker_items_by_gate = {
+        str(gate["gate_id"]): list(gate["blockers"])
+        for gate in protocol_blockers
+        if isinstance(gate.get("blockers"), list)
+    }
+
     tooling_blockers = [
         *tooling.unresolved_paths,
         *tooling.false_boolean_paths,
@@ -72,6 +83,8 @@ def build_report() -> dict:
         "protocol_non_tooling": {
             "ready": not protocol_blockers,
             "gate_blocker_count": len(protocol_blockers),
+            "blocker_item_count": protocol_blocker_item_count,
+            "blocker_items_by_gate": blocker_items_by_gate,
             "gates": protocol_blockers,
         },
         "total_blocking_categories": (
