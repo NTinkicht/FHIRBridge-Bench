@@ -334,6 +334,9 @@ jobs:
           set -euo pipefail
           mvn -q -f qualification/hl7v2/pom.xml exec:java             -Dexec.mainClass=org.fhirbridge.hl7v2.ValidateLriProfile             -Dexec.args="qualification/hl7v2/dev-profile qualification/hl7v2/dev-message.er7 --report-only"             | tee qualification/hl7v2/legacy-differential-report.log
           grep -q '"error_total":' qualification/hl7v2/legacy-differential-report.log
+          grep -q '"alert_total":' qualification/hl7v2/legacy-differential-report.log
+          grep -q '"informational_total":' qualification/hl7v2/legacy-differential-report.log
+          grep -q '"entries":' qualification/hl7v2/legacy-differential-report.log
           grep -q '"status":"STRUCTURE_ERRORS"' qualification/hl7v2/legacy-differential-report.log
 
       - name: Archive legacy differential harness evidence
