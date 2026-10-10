@@ -59,6 +59,24 @@ def _zeroish_hex(value: Any) -> bool:
     return isinstance(value, str) and bool(value) and set(value.lower()) <= {"0"}
 
 
+def _valid_sha256(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(ch in "0123456789abcdefABCDEF" for ch in value)
+        and not _zeroish_hex(value)
+    )
+
+
+def _valid_commit(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and 7 <= len(value) <= 40
+        and all(ch in "0123456789abcdefABCDEF" for ch in value)
+        and not _zeroish_hex(value)
+    )
+
+
 def _artifact_blockers(
     components: dict[str, Any],
     blockers: list[str],
@@ -67,13 +85,32 @@ def _artifact_blockers(
         if not isinstance(component, dict):
             blockers.append(f"component {component_name} is not an object")
             continue
+        artifact_id = component.get("artifact_id")
         version = component.get("version")
         path_or_ref = component.get("path_or_ref")
         digest = component.get("sha256")
-        if _contains_placeholder(version) or _contains_placeholder(path_or_ref):
-            blockers.append(f"component {component_name} still contains freeze placeholders")
-        if digest == _ZERO_SHA256:
-            blockers.append(f"component {component_name} still uses the zero placeholder hash")
+        if not isinstance(artifact_id, str) or not artifact_id.strip():
+            blockers.append(f"component {component_name} lacks artifact_id")
+        if (
+            not isinstance(version, str)
+            or not version.strip()
+            or _contains_placeholder(version)
+        ):
+            blockers.append(
+                f"component {component_name} has missing/placeholder version"
+            )
+        if (
+            not isinstance(path_or_ref, str)
+            or not path_or_ref.strip()
+            or _contains_placeholder(path_or_ref)
+        ):
+            blockers.append(
+                f"component {component_name} has missing/placeholder path_or_ref"
+            )
+        if not _valid_sha256(digest):
+            blockers.append(
+                f"component {component_name} lacks a frozen SHA-256"
+            )
 
 
 def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
@@ -94,8 +131,8 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
         blockers.append("freeze_timestamp is not recorded")
     if _contains_placeholder(manifest.get("protocol_version")):
         blockers.append("protocol_version is still a placeholder")
-    if _zeroish_hex(manifest.get("repository_commit")):
-        blockers.append("repository_commit is still a zero placeholder")
+    if not _valid_commit(manifest.get("repository_commit")):
+        blockers.append("repository_commit is missing, malformed, or placeholder")
 
     _artifact_blockers(
         {
@@ -125,9 +162,14 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
         blockers,
     )
 
+    dependencies = manifest.get("dependencies")
+    if not isinstance(dependencies, list) or not dependencies:
+        blockers.append("dependency list is missing or empty")
+        dependencies = []
+
     dependency_purposes = {
         dependency.get("purpose")
-        for dependency in manifest.get("dependencies", [])
+        for dependency in dependencies
         if isinstance(dependency, dict)
     }
     missing_dependencies = _REQUIRED_DEPENDENCY_PURPOSES - dependency_purposes
@@ -137,12 +179,19 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
             + ", ".join(sorted(missing_dependencies))
         )
 
-    for dependency in manifest.get("dependencies", []):
+    seen_critical_purposes: set[str] = set()
+    for dependency in dependencies:
         if not isinstance(dependency, dict):
+            blockers.append("dependency entry is malformed")
             continue
         purpose = dependency.get("purpose")
         if purpose not in _REQUIRED_DEPENDENCY_PURPOSES:
             continue
+        if purpose in seen_critical_purposes:
+            blockers.append(
+                f"duplicate measurement-critical dependency purpose: {purpose}"
+            )
+        seen_critical_purposes.add(str(purpose))
         name = dependency.get("name", "unknown")
         if _contains_placeholder(dependency.get("version")):
             blockers.append(
@@ -153,7 +202,7 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
                 f"measurement-critical dependency {name} has placeholder source"
             )
         digest = dependency.get("sha256")
-        if digest is None or _zeroish_hex(digest):
+        if not _valid_sha256(digest):
             blockers.append(
                 f"measurement-critical dependency {name} lacks a frozen SHA-256"
             )
@@ -165,10 +214,12 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
         blockers.append("sealed-set bundle_id is still a placeholder")
     if sealed_set.get("case_count", 0) <= 0:
         blockers.append("sealed-set case_count must be positive before opening")
-    if sealed_set.get("bundle_sha256") == _ZERO_SHA256:
-        blockers.append("sealed-set bundle still uses the zero placeholder hash")
-    if sealed_set.get("case_manifest_sha256") == _ZERO_SHA256:
-        blockers.append("sealed-set case manifest still uses the zero placeholder hash")
+    if not _valid_sha256(sealed_set.get("bundle_sha256")):
+        blockers.append("sealed-set bundle SHA-256 is missing/malformed/placeholder")
+    if not _valid_sha256(sealed_set.get("case_manifest_sha256")):
+        blockers.append(
+            "sealed-set case manifest SHA-256 is missing/malformed/placeholder"
+        )
     if sealed_set.get("opened") is True:
         blockers.append("sealed set is already marked opened; this is not a pre-opening freeze")
     if sealed_set.get("opened_at") is not None:
@@ -205,9 +256,9 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
             )
         if _contains_placeholder(acceptance_gate.get("preregistration_ref")):
             blockers.append("acceptance gate preregistration_ref is still a placeholder")
-        if _zeroish_hex(acceptance_gate.get("preregistration_sha256")):
+        if not _valid_sha256(acceptance_gate.get("preregistration_sha256")):
             blockers.append(
-                "acceptance gate preregistration_sha256 is still a zero placeholder"
+                "acceptance gate preregistration_sha256 is missing/malformed/placeholder"
             )
         if _contains_placeholder(acceptance_gate.get("gate_policy_summary")):
             blockers.append("acceptance gate policy summary is still a placeholder")
