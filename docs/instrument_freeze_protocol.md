@@ -286,3 +286,23 @@ The analysis-ready table has one source-instance × model row, carrying that
 model's three LLM strategy outcomes plus the shared deterministic baseline.
 Raw execution records remain immutable source evidence and are never replaced
 by the analysis table.
+
+
+## Sealed case and execution lineage
+
+The confirmatory chain uses a **single sealed case manifest** as the case-identity
+source of truth. Each case records its pseudonymous case ID, scenario family,
+canonical graph SHA-256, and exact source-input SHA-256. The final freeze
+manifest binds that case manifest by SHA-256.
+
+Authorization derives the canonical case-ID set from the frozen case manifest;
+no independent case-ID list is permitted. The confirmatory run plan rechecks the
+same manifest, sealed-bundle ID, bundle bytes, case count, and authorization
+hashes before inference.
+
+Every LLM execution record must carry the source-input SHA-256 frozen for its
+case. The post-run execution audit rejects records that merely agree with each
+other but do not match the sealed manifest. The deterministic result-manifest
+builder then recomputes artifact hashes/counts and cross-checks the execution
+schema-validation report and execution-audit input bindings before it may emit
+`execution_complete_audited`.
