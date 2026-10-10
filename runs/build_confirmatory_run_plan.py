@@ -143,6 +143,31 @@ def build_run_plan(
                 f"authorized artifact changed after authorization: {key}"
             )
 
+    sealed_case_manifest_sha256 = _sha256(sealed_case_manifest_path)
+    if auth_hashes.get("sealed_case_manifest_sha256") != (
+        sealed_case_manifest_sha256
+    ):
+        raise ValueError(
+            "authorized sealed case manifest changed after authorization"
+        )
+
+    freeze_manifest = _load_document(freeze_manifest_path)
+    frozen_sealed = freeze_manifest.get("sealed_set")
+    if not isinstance(frozen_sealed, dict):
+        raise ValueError("freeze manifest lacks sealed_set binding")
+
+    sealed_bundle_sha256 = _sha256(sealed_bundle_path)
+    if frozen_sealed.get("bundle_id") != sealed_bundle_id:
+        raise ValueError("sealed bundle ID does not match freeze manifest")
+    if frozen_sealed.get("bundle_sha256") != sealed_bundle_sha256:
+        raise ValueError("sealed bundle bytes do not match freeze manifest")
+    if frozen_sealed.get("case_manifest_sha256") != (
+        sealed_case_manifest_sha256
+    ):
+        raise ValueError(
+            "sealed case manifest bytes do not match freeze manifest"
+        )
+
     model_config = _load_document(model_config_path)
     model_readiness = assess_model_prompt_freeze(model_config)
     if not model_readiness.ready:
@@ -164,8 +189,16 @@ def build_run_plan(
         case_ids
     ):
         raise ValueError("authorized sealed case identity set changed")
+    if sealed_case_set.get("manifest_file_sha256") != (
+        sealed_case_manifest_sha256
+    ):
+        raise ValueError(
+            "authorization sealed case-manifest file hash changed"
+        )
 
     case_count = len(case_ids)
+    if frozen_sealed.get("case_count") != case_count:
+        raise ValueError("sealed case count does not match freeze manifest")
     model_count = len(model_keys)
     result = {
         "schema_version": "0.3.0",
@@ -208,8 +241,8 @@ def build_run_plan(
         },
         "sealed_set": {
             "bundle_id": sealed_bundle_id,
-            "bundle_sha256": _sha256(sealed_bundle_path),
-            "case_manifest_sha256": _sha256(sealed_case_manifest_path),
+            "bundle_sha256": sealed_bundle_sha256,
+            "case_manifest_sha256": sealed_case_manifest_sha256,
             "case_count": case_count,
         },
         "model_keys": model_keys,
