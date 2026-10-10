@@ -182,3 +182,24 @@ def test_provider_failure_cannot_be_recorded_as_repair_failure() -> None:
             error_summary="Invalid provider-style failure on derived arm.",
             source_execution_id="EXEC-MAPPING-007",
         )
+
+
+def test_repair_arm_records_upstream_mapping_failure_explicitly() -> None:
+    record = build_failure_record(
+        execution_id="EXEC-009",
+        case_id="CASE-008",
+        model_key="M1",
+        strategy_id=REPAIR_STRATEGY,
+        outcome_class="MEASUREMENT_FAILURE_UPSTREAM",
+        request_started_at="2026-10-10T10:00:01Z",
+        request_finished_at="2026-10-10T10:00:01Z",
+        error_summary="Mapping-aware provider call failed; no raw output existed.",
+        source_execution_id="EXEC-MAPPING-008",
+    )
+    document = execution_record_to_dict(record)
+
+    jsonschema.Draft202012Validator(_schema()).validate(document)
+    assert document["generation_source"] == "reuse_mapping_aware_raw_output"
+    assert document["attempt_number"] is None
+    assert document["source_execution_id"] == "EXEC-MAPPING-008"
+    assert document["outcome_class"] == "MEASUREMENT_FAILURE_UPSTREAM"
