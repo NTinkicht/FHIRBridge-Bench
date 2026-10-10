@@ -267,7 +267,7 @@ def assess_sample_size_preregistration(
             blockers.append("sealed results must not be used for sample sizing")
         if (
             attestation.get(
-                "final_case_count_recorded_before_confirmatory_inference"
+                "final_source_cluster_count_recorded_before_confirmatory_inference"
             )
             is not True
         ):
