@@ -12,7 +12,7 @@ implementation:
   implementation_notes: null
 contract:
   contract_id: "F2V-LAB-ORU-R01-001"
-  contract_version: "0.2.0"
+  contract_version: "0.3.0"
 standards_sources:
   - name: "HL7 FHIR R4"
     version_or_date: "R4"
@@ -34,5 +34,6 @@ independence:
   declaration_complete: false
 terminology_dependencies: []
 known_unsupported_cases:
+  - "HL7 v2 order-context projection remains unsupported until exact Edition 5 machine-profile qualification and external review"
   - "TO_BE_COMPLETED_BY_INDEPENDENT_IMPLEMENTER"
 signed_statement: null
