@@ -91,6 +91,25 @@ gates:
       truth. Status/code mappings and target bindings must be frozen from
       standards evidence plus independent review.
 
+  - gate_id: measurement_error_policy
+    category: semantic_measurement_instrument
+    status: blocked
+    blockers:
+      - severity_policy_not_expert_calibrated_and_frozen
+      - primary_endpoint_major_threshold_not_frozen
+      - error_precedence_policy_not_frozen
+    evidence:
+      severity_candidate: benchmark/severity_policy_candidate.yaml
+      precedence_candidate: benchmark/error_precedence_policy_candidate.yaml
+      readiness_check: src/fhirbridge/measurement_policy_readiness.py
+      source_rubric: docs/expert_validation_protocol.md
+      current_major_candidate: [S2, S3]
+      current_policy_consistency: internally_consistent_not_freeze_ready
+    completion_rule: >-
+      Severity anchors, the primary-endpoint definition of major semantic error,
+      and the canonical-fact error-precedence policy must be expert calibrated,
+      internally consistent, and frozen before sealed evaluation.
+
   - gate_id: primary_metric_definition
     category: statistical_analysis
     status: blocked
