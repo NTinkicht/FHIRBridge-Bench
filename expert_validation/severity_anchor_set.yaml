@@ -1,0 +1,102 @@
+severity_anchor_set:
+  id: FHIRBRIDGE-SEVERITY-ANCHORS-001
+  version: 0.1.0
+  status: prefreeze_calibration_design
+  scientific_role: synthetic_measurement_anchor_set
+  source_policy: benchmark/severity_policy_candidate.yaml
+  sealed_case_content_used: false
+  note: >-
+    expected_boundary_role_internal is study-design metadata. It must be removed
+    from blind reviewer packets and is used only to ensure the anchor set spans
+    the intended severity boundaries before adjudication.
+
+anchors:
+  - anchor_id: SEV-A01
+    reviewer_visible:
+      title: Non-semantic presentation difference
+      vignette: >-
+        A laboratory transformation preserves the patient, order, test code,
+        result value, unit, status, timestamps and relationships exactly, but
+        changes inconsequential whitespace in a human-readable display string.
+      review_question: >-
+        Rate the semantic/interoperability severity of this transformation
+        difference under the supplied S0-S3 rubric.
+    expected_boundary_role_internal: S0_S1_boundary
+
+  - anchor_id: SEV-A02
+    reviewer_visible:
+      title: Identifier namespace metadata loss
+      vignette: >-
+        A source laboratory identifier value is preserved exactly, but the
+        target omits its namespace/system metadata. In the synthetic case there
+        is no second identifier with the same value, so the individual result
+        remains locally recognizable, although cross-system identity resolution
+        is weakened.
+      review_question: >-
+        Rate the semantic/interoperability severity of this transformation
+        difference under the supplied S0-S3 rubric.
+    expected_boundary_role_internal: S1_S2_boundary
+
+  - anchor_id: SEV-A03
+    reviewer_visible:
+      title: Numeric result unit omitted
+      vignette: >-
+        A numeric laboratory result value and test code are preserved, but the
+        target omits the source unit. The numeric value alone could be
+        interpreted differently by a downstream system that does not already
+        know the expected unit for that test.
+      review_question: >-
+        Rate the semantic/interoperability severity of this transformation
+        difference under the supplied S0-S3 rubric.
+    expected_boundary_role_internal: clear_S2_anchor
+
+  - anchor_id: SEV-A04
+    reviewer_visible:
+      title: Corrected result represented as final
+      vignette: >-
+        The source explicitly states that a laboratory result is corrected after
+        an earlier report, but the target represents the result only as final
+        and does not communicate that correction status. Patient identity,
+        result value and unit are otherwise preserved.
+      review_question: >-
+        Rate the semantic/interoperability severity of this transformation
+        difference under the supplied S0-S3 rubric.
+    expected_boundary_role_internal: S1_S2_boundary
+
+  - anchor_id: SEV-A05
+    reviewer_visible:
+      title: Material numeric result corruption
+      vignette: >-
+        The source sodium result is 140 mmol/L. The target carries the same
+        patient, test code and unit but represents the result value as
+        14 mmol/L. No source fact supports the changed numeric value.
+      review_question: >-
+        Rate the semantic/interoperability severity of this transformation
+        difference under the supplied S0-S3 rubric.
+    expected_boundary_role_internal: S2_S3_boundary
+
+  - anchor_id: SEV-A06
+    reviewer_visible:
+      title: Result attached to the wrong patient
+      vignette: >-
+        A laboratory result value, code, unit and status are otherwise preserved
+        correctly, but the target associates the result with a different patient
+        identifier than the source.
+      review_question: >-
+        Rate the semantic/interoperability severity of this transformation
+        difference under the supplied S0-S3 rubric.
+    expected_boundary_role_internal: clear_S3_anchor
+
+blind_review_policy:
+  reveal_to_initial_reviewers:
+    - anchor_id
+    - reviewer_visible
+    - frozen_severity_level_definitions
+  withhold_from_initial_reviewers:
+    - expected_boundary_role_internal
+    - other_reviewer_ratings
+    - study_team_preferred_rating
+    - major_threshold_candidate
+  independent_initial_ratings_required: true
+  original_responses_retained_and_hashed: true
+  adjudication_only_after_initial_responses_locked: true
