@@ -175,7 +175,8 @@
       "required": [
         "schema_version",
         "required_bindings",
-        "mapping_repair_lineage_required"
+        "mapping_repair_lineage_required",
+        "schema_validation_required"
       ],
       "properties": {
         "schema_version": {
@@ -190,6 +191,9 @@
           ]
         },
         "mapping_repair_lineage_required": {
+          "const": true
+        },
+        "schema_validation_required": {
           "const": true
         }
       }
