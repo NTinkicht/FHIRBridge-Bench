@@ -70,6 +70,20 @@ def _ready() -> dict:
             "complete": True,
         }
     )
+    document["structural_validation_evidence"].update(
+        {
+            "path_or_ref": "runs/results/structural-validation.jsonl",
+            "sha256": "7" * 64,
+            "record_count": 70,
+        }
+    )
+    document["semantic_verification_evidence"].update(
+        {
+            "path_or_ref": "runs/results/semantic-verification.jsonl",
+            "sha256": "6" * 64,
+            "record_count": 70,
+        }
+    )
     document["analysis_ready_dataset"].update(
         {
             "path_or_ref": "runs/results/analysis-rows.jsonl",
@@ -168,3 +182,36 @@ def test_execution_audit_must_be_complete() -> None:
 
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+@pytest.mark.parametrize(
+    ("section", "wrong_count", "expected_fragment"),
+    [
+        (
+            "structural_validation_evidence",
+            69,
+            "total arm outputs",
+        ),
+        (
+            "semantic_verification_evidence",
+            69,
+            "total arm outputs",
+        ),
+    ],
+)
+def test_result_manifest_rejects_incomplete_validation_or_verification_evidence(
+    section: str,
+    wrong_count: int,
+    expected_fragment: str,
+) -> None:
+    document = _ready()
+    document[section]["record_count"] = wrong_count
+
+    readiness = assess_confirmatory_result_manifest(
+        document,
+        run_plan=_run_plan(),
+        run_plan_sha256="1" * 64,
+    )
+
+    assert not readiness.ready
+    assert any(expected_fragment in item for item in readiness.blockers)
