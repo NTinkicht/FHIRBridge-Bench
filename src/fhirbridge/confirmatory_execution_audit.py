@@ -12,6 +12,17 @@ _REPAIR = "mapping_aware_plus_syntax_repair"
 _RESPONSE = "RESPONSE_RECEIVED"
 _UPSTREAM = "MEASUREMENT_FAILURE_UPSTREAM"
 _POSTPROCESS = "MEASUREMENT_FAILURE_POSTPROCESSING"
+_PROVIDER_FAILURES = frozenset(
+    {
+        "MEASUREMENT_FAILURE_TRANSPORT",
+        "MEASUREMENT_FAILURE_RATE_LIMIT",
+        "MEASUREMENT_FAILURE_PROVIDER_5XX",
+        "MEASUREMENT_FAILURE_TIMEOUT",
+        "MEASUREMENT_FAILURE_AUTH_OR_CONFIG",
+    }
+)
+_REPAIR_FAILURES = frozenset({_UPSTREAM, _POSTPROCESS})
+_ALLOWED_OUTCOMES = frozenset({_RESPONSE}) | _PROVIDER_FAILURES | _REPAIR_FAILURES
 
 
 @dataclass(frozen=True)
@@ -215,14 +226,49 @@ def audit_confirmatory_execution(
                 )
 
         outcome = record.get("outcome_class")
-        if isinstance(outcome, str):
-            outcome_counts[outcome] += 1
-        else:
+        if not isinstance(outcome, str):
             blockers.append("/".join(key) + ": outcome_class is missing")
+        elif outcome not in _ALLOWED_OUTCOMES:
+            blockers.append(
+                "/".join(key) + f": unsupported outcome_class: {outcome}"
+            )
+        else:
+            outcome_counts[outcome] += 1
+
+        raw_hash = record.get("raw_response_sha256")
+        final_hash = record.get("final_response_sha256")
+        error_summary = record.get("error_summary")
+        if outcome == _RESPONSE:
+            if not _valid_sha256(raw_hash) or not _valid_sha256(final_hash):
+                blockers.append(
+                    "/".join(key)
+                    + ": successful response requires raw/final SHA-256"
+                )
+            if error_summary is not None:
+                blockers.append(
+                    "/".join(key)
+                    + ": successful response must not carry error_summary"
+                )
+        elif outcome in _ALLOWED_OUTCOMES:
+            if raw_hash is not None or final_hash is not None:
+                blockers.append(
+                    "/".join(key)
+                    + ": measurement failure must not carry response hashes"
+                )
+            if not isinstance(error_summary, str) or not error_summary.strip():
+                blockers.append(
+                    "/".join(key)
+                    + ": measurement failure requires error_summary"
+                )
 
         strategy_id = key[2]
         generation_source = record.get("generation_source")
         if strategy_id in {_DIRECT, _MAPPING}:
+            if outcome in _REPAIR_FAILURES:
+                blockers.append(
+                    "/".join(key)
+                    + ": provider strategy cannot use repair failure class"
+                )
             if generation_source != "provider_call":
                 blockers.append(
                     "/".join(key) + ": provider strategy has wrong generation_source"
@@ -256,6 +302,11 @@ def audit_confirmatory_execution(
                     )
             provider_calls += 1
         elif strategy_id == _REPAIR:
+            if outcome in _PROVIDER_FAILURES:
+                blockers.append(
+                    "/".join(key)
+                    + ": repair strategy cannot use provider failure class"
+                )
             if generation_source != "reuse_mapping_aware_raw_output":
                 blockers.append(
                     "/".join(key) + ": repair strategy has wrong generation_source"
