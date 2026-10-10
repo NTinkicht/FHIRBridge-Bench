@@ -45,6 +45,22 @@ These exclusions limit the first contract; they are not claims that those domain
 
 ---
 
+### FHIR order representation
+
+The source-side order is represented with the **US Core ServiceRequest Profile
+9.0.0**, not an unconstrained base ServiceRequest. US Core 9.0.0 explicitly
+profiles ServiceRequest for orders, including requester support, and the US Core
+laboratory DiagnosticReport guidance states that `DiagnosticReport.basedOn`
+connects the report to the originating order. The benchmark therefore uses a
+source-grounded ServiceRequest plus `DiagnosticReport.basedOn` when authoring
+Edition 5 order context.
+
+Order-control, filler-order-identifier, ordering-provider identity, and
+basedOn-to-ORC semantic equivalence remain outside the primary endpoint until
+the relevant contract rules have completed independent review. Their presence
+may still participate in the structural-validity gate where the target profile
+requires it.
+
 ## HL7 v2 target profile
 
 The primary HL7 v2 target is:

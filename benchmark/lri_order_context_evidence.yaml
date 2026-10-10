@@ -1,9 +1,10 @@
 evidence_record:
   id: FHIRBRIDGE-LRI-ORDER-CONTEXT-001
-  version: 0.2.0
+  version: 0.3.0
   status: prefreeze_evidence
   decision_status: order_context_resolved_from_authoritative_edition5_publication
   scientific_role: structural_design_evidence_only
+  profile_selection_record: benchmark/lri_profile_selection.yaml
 
 authoritative_publication:
   publisher: HL7_International
@@ -25,24 +26,72 @@ authoritative_publication:
       filename: 2024 12 06 - CSDO Errata Letter for LRI.pdf
       sha256: 32eeb375ecb78dd77acb01ed388e30c554688e55a8a4d58df05dd0e7a791700f
     contains_machine_readable_profile_xml: false
+  page_anchors:
+    profile_components_and_precoordinated_ng_fru:
+      pages: [152]
+      establishes:
+        - LRI_NG_FRU_Profile_V3_name
+        - candidate_precoordinated_oid_2_16_840_1_113883_9_195_3_25
+        - component_combination_common_plus_ng_plus_fru
+    abstract_message_syntax:
+      pages: [156]
+      establishes:
+        - order_observation_group_usage_R_cardinality_1_to_many
+        - ORC_usage_R_cardinality_1_to_1
+        - OBR_usage_R_cardinality_1_to_1
+    msh21_profile_combinations:
+      pages: [166, 167, 168, 169]
+      establishes:
+        - MSH_21_usage_R_cardinality_1_to_many
+        - component_oid_declaration_allowed
+        - component_oids_common_ng_fru
+      caveat: >-
+        Section 7.4.3 and Table 9-2 identify the pre-coordinated
+        LRI_NG_FRU_Profile_V3 OID as 2.16.840.1.113883.9.195.3.25, while
+        conformance statement LRI-11 on page 169 prints
+        2.16.840.1.113883.9.195.3.3 for the pre-coordinated identifier.
+        This internal publication inconsistency must be resolved against the
+        machine-readable Edition 5 bundle before using a pre-coordinated OID
+        in generated MSH-21.
+    ORC_table_and_constraints:
+      pages: [185, 186, 188]
+      establishes:
+        - ORC_1_order_control_usage_R_cardinality_1_to_1
+        - ORC_2_placer_order_number_usage_RE_cardinality_0_to_1
+        - ORC_3_filler_order_number_usage_R_cardinality_1_to_1
+        - ORC_12_ordering_provider_usage_R_cardinality_1_to_1
+        - ORC_2_equals_OBR_2_when_present
+        - ORC_3_equals_OBR_3
+        - ORC_12_equals_OBR_16
+    OBR_table:
+      pages: [189, 190]
+      establishes:
+        - OBR_2_placer_order_number_usage_RE_cardinality_0_to_1
+        - OBR_3_filler_order_number_usage_R_cardinality_1_to_1
+        - OBR_4_universal_service_identifier_usage_R_cardinality_1_to_1
+        - OBR_16_ordering_provider_usage_R_cardinality_1_to_1
   establishes:
     - edition5_is_active_stu
     - 2024dec_errata_exists
     - order_observation_group_usage_R_cardinality_1_to_many
     - ORC_usage_R_cardinality_1_to_1
     - OBR_usage_R_cardinality_1_to_1
+    - ORC_1_order_control_usage_R_cardinality_1_to_1
     - ORC_2_placer_order_number_usage_RE_cardinality_0_to_1
     - ORC_3_filler_order_number_usage_R_cardinality_1_to_1
     - OBR_2_placer_order_number_usage_RE_cardinality_0_to_1
     - OBR_3_filler_order_number_usage_R_cardinality_1_to_1
     - ORC_12_ordering_provider_usage_R_cardinality_1_to_1
+    - OBR_16_ordering_provider_usage_R_cardinality_1_to_1
     - ORC_2_and_OBR_2_must_match_when_present
     - ORC_3_and_OBR_3_must_match
+    - ORC_12_and_OBR_16_must_match
   does_not_establish:
     - machine_readable_igamt_bundle_identity
     - exact_nist_validator_profile_artifact
     - profile_xml_hash
     - projectability_truth
+    - resolution_of_precoordinated_msh21_oid_conflict
 
 edition5_profile_architecture:
   minimum_required_profile_components:
@@ -54,11 +103,11 @@ edition5_profile_architecture:
     - LRI_GU_FRN_Profile_V3
     - LRI_NG_FRU_Profile_V3
     - LRI_NG_FRN_Profile_V3
-  selected_confirmatory_combination: unresolved_pending_profile_choice
+  selected_confirmatory_combination: LRI_NG_FRU_Profile_V3_candidate_pending_machine_bundle
+  selection_record: benchmark/lri_profile_selection.yaml
   note: >-
-    General-laboratory scope does not remove the base ORC/OBR requirements.
-    A specific GU/NG and FRU/FRN combination must still be frozen before
-    confirmatory profile validation.
+    LRI_NG_FRU_Profile_V3 is the selected study-design candidate. The exact
+    machine-readable bundle remains required before profile identity is frozen.
 
 legacy_nist_comparator:
   repository: usnistgov/hit-core-hl7v2
@@ -83,36 +132,51 @@ secondary_implementation_evidence:
 
 freeze_decision:
   exact_edition5_profile_bundle_required_for_machine_validation: true
+  selected_profile_candidate: LRI_NG_FRU_Profile_V3
   resolved_from_authoritative_publication:
     ORC_usage: R
     ORC_cardinality: "1..1"
     OBR_usage: R
     OBR_cardinality: "1..1"
+    order_control_usage: R
+    order_control_cardinality: "1..1"
     placer_order_identifier_usage: RE
     placer_order_identifier_cardinality: "0..1"
     filler_order_identifier_usage: R
     filler_order_identifier_cardinality: "1..1"
     ordering_provider_usage: R
     ordering_provider_cardinality: "1..1"
+  msh21_prefreeze_strategy:
+    use_precoordinated_oid: false
+    reason: official_pdf_internal_oid_conflict
+    use_component_oids:
+      - 2.16.840.1.113883.9.195.3.22
+      - 2.16.840.1.113883.9.13
+      - 2.16.840.1.113883.9.83
+    freeze_precoordinated_oid_only_after_machine_bundle_verification: true
   still_required_before_hl7_profile_qualification:
-    - select_exact_general_lri_profile_component_combination
     - acquire_exact_machine_readable_profile_bundle
     - verify_profile_bundle_lineage_to_edition5_2024dec
+    - resolve_precoordinated_msh21_oid_against_machine_bundle
     - qualify_reference_and_negative_messages_against_profile
   prohibited_shortcuts:
     - infer_machine_profile_from_human_readable_pdf
     - infer_edition5_from_legacy_r2
     - infer_edition5_from_michigan_local_profile
     - invent_order_identifiers_to_make_validator_green
+    - invent_ordering_provider_to_make_validator_green
     - map_diagnostic_report_identifier_to_order_identifier_without_review
+    - use_conflicted_precoordinated_msh21_oid_before_machine_verification
   required_design_change: >-
     The current ORU renderer cannot be structurally conformant to Edition 5
     while omitting ORC. Add explicit source-grounded order context before
     profile qualification. At minimum, the benchmark source must provide a
-    filler order identifier and ordering provider that can be projected to the
-    required ORC/OBR fields without inventing facts.
+    filler order identifier, an order-control value with a declared derivation
+    basis, and ordering provider context that can be projected to the required
+    ORC/OBR fields without inventing facts.
   safe_source_grounded_path: >-
-    Add an explicit canonical order fact plus corresponding FHIR
+    Add an explicit canonical order fact plus corresponding US Core
     ServiceRequest/requester context and HL7 v2 ORC/OBR projection. Keep new
-    order-identifier semantic scoring outside the primary endpoint until the
-    mapping is independently reviewed and frozen.
+    order-identifier, order-control, ordering-provider, and basedOn linkage
+    semantic scoring outside the primary endpoint until the mapping is
+    independently reviewed and frozen.

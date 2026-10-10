@@ -76,6 +76,13 @@ structural_validation:
       us_core: "hl7.fhir.us.core#9.0.0"
       hl7_terminology_r4: "hl7.terminology.r4#7.1.0"
     package_dependency_source: US_Core_9.0.0_published_manifest
+    terminology_version_rationale: >-
+      Direct terminology qualification pins the standalone hl7.terminology
+      package at 7.4.0. FHIR profile validation separately uses
+      hl7.terminology.r4#7.1.0 because that exact R4 package version is the
+      dependency resolved by the published US Core 9.0.0 package set. These
+      serve different qualification roles and are intentionally not forced to
+      the same package version.
     profile_validation_qualification_passed: true
     profile_validation_qualification_scope: structural_and_profile_constraints_with_tx_disabled
     qualification_fixture_count: 4

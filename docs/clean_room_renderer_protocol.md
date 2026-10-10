@@ -71,6 +71,36 @@ A defensible initial design is:
 
 The exact stacks may change, but code-level independence must remain demonstrable.
 
+## Contract synchronization point for order-context work
+
+Before either renderer implements the Edition 5 order-context amendment, the
+canonical order facts, source FHIR profile, projectability rules, and structural
+requirements must exist in one numbered contract revision. Renderer A and
+Renderer B must receive that same revision as the semantic specification.
+
+Renderer A may be exercised against development validators while the contract
+is still draft, but any semantic change learned from validator feedback must be
+written back into the contract and independently reviewed before Renderer B is
+asked to implement it. Renderer B must never be expected to infer a rule from
+Renderer A output, Renderer A source, or an undocumented validator workaround.
+
+Once the order-context contract revision is designated as the differential
+synchronization point:
+
+- both renderers receive the same canonical schema, contract revision, profile
+  selection record, and permitted standards evidence;
+- neither renderer receives the other renderer's source or rendered outputs;
+- if Renderer A changes semantic behavior after that point, the contract must
+  either already authorize the behavior or be amended and re-synchronized;
+- a contract amendment affecting order semantics requires both renderers to be
+  re-run from that amended specification before differential comparison;
+- qualification fixes that merely correct serialization without changing the
+  frozen semantic mapping must be documented as such.
+
+This synchronization rule is intended to prevent an asymmetry in which Renderer
+A is iteratively taught hidden profile behavior while Renderer B sees only a
+later, undocumented interpretation.
+
 ## Differential comparison
 
 Once both implementations independently pass structural validation on the development corpus, run a differential comparison.

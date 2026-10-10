@@ -17,7 +17,12 @@ target:
   implementation_guide_edition: "5"
   errata: 2024DEC
   selected_precoordinated_profile: LRI_NG_FRU_Profile_V3
-  selected_precoordinated_profile_oid: 2.16.840.1.113883.9.195.3.25
+  candidate_precoordinated_profile_oid_from_pdf: 2.16.840.1.113883.9.195.3.25
+  precoordinated_msh21_oid_status: conflicted_in_publication_pending_machine_bundle
+  msh21_prefreeze_component_oids:
+    - 2.16.840.1.113883.9.195.3.22
+    - 2.16.840.1.113883.9.13
+    - 2.16.840.1.113883.9.83
   profile_selection_record: benchmark/lri_profile_selection.yaml
 
 authoritative_evidence:
@@ -56,6 +61,17 @@ bundle:
   aggregate_sha256: unresolved
   profile_xml_sha256: unresolved
   component_manifest_path: unresolved
+  completeness_policy:
+    preserve_entire_original_export: true
+    inventory_all_entries: true
+    profile_xml_required: true
+    fail_on_unresolved_internal_references: true
+    constraints_required_if_referenced: true
+    value_sets_required_if_referenced: true
+    value_set_bindings_required_if_referenced: true
+    co_constraints_required_if_referenced: true
+    slicings_required_if_referenced: true
+    do_not_drop_unknown_companion_artifacts: true
 
 identity_verification:
   profile_xml_hl7_version: unresolved
@@ -84,6 +100,21 @@ qualification:
   hosted_differential_role: audit_only
   hosted_differential_completed: false
   warning_error_policy_frozen: false
+  warning_error_policy_plan:
+    unknown_validator_warning: fail_closed_until_classified
+    parser_error: fail
+    profile_error: fail
+    unresolved_value_set_binding: fail
+    missing_referenced_companion_artifact: fail
+    allowlist_must_be_frozen_before_confirmatory_run: true
+    hosted_validator_disagreement: record_and_adjudicate_before_freeze
+  required_negative_controls_after_bundle_acquisition:
+    - wrong_MSH_21_profile_identifier
+    - missing_ORC
+    - missing_ORC_3
+    - missing_ORC_12
+    - ORC_3_not_equal_OBR_3
+    - ORC_12_not_equal_OBR_16
   qualification_report_sha256: unresolved
 
 freeze_gate:
