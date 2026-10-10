@@ -1,6 +1,6 @@
 analysis_design:
   id: FHIRBRIDGE-CONFIRMATORY-DESIGN-001
-  version: 0.1.0
+  version: 0.2.0
   status: predeclared_before_confirmatory_inference
   source_protocol: docs/research_protocol.md
   primary_direction: FHIR_to_HL7v2
@@ -13,7 +13,7 @@ analysis_design:
       strategy. The deterministic baseline is model-independent.
     pairwise_test_unit: source_instance_within_one_frozen_model_family
     global_summary_row_identity: source_instance_x_model_key
-    clustering: source_scenario_or_patient_id
+    clustering: analysis_cluster_id
   core_arms:
     - arm_id: deterministic_baseline
       role: standards_based_deterministic_reference
@@ -57,7 +57,12 @@ analysis_design:
     exact_McNemar_scope: one_model_family_per_test
     pooled_multi_model_McNemar: prohibited
     deterministic_baseline_reuse_across_model_specific_tests: permitted_with_familywise_multiplicity_control
-    cluster_id_field: source_scenario_or_patient_id
+    cluster_id_field: analysis_cluster_id
+    cluster_id_source: runs/schema/sealed_case_manifest.schema.json
+    cluster_id_freeze_rule: >-
+      The per-case analysis_cluster_id is assigned in the sealed case manifest
+      before confirmatory execution and is propagated unchanged into analysis
+      rows. It must not be reconstructed from post-run outcomes.
     VUR_analysis_set_rule: both_arms_VALID_and_semantic_determinate_for_VUR
     VFY_analysis_set_rule: all_paired_attempted_transformations
     risk_difference: arm_a_minus_arm_b
