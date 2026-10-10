@@ -17,6 +17,9 @@ from fhirbridge.artifact_bundle import hash_components_from_manifest
 from fhirbridge.confirmatory_authorization import (
     assess_confirmatory_authorization,
 )
+from fhirbridge.sealed_case_manifest import (
+    sealed_case_ids as sealed_case_ids_from_manifest,
+)
 
 _SCHEMA = Path("runs/schema/confirmatory_authorization_record.schema.json")
 _DEFAULT_OUTPUT = Path("runs/confirmatory_authorization.json")
@@ -59,30 +62,6 @@ def _repository_commit(explicit: str | None) -> str:
     return value.lower()
 
 
-def _load_case_ids(path: Path) -> set[str]:
-    text = path.read_text(encoding="utf-8")
-    if path.suffix.lower() == ".json":
-        value = json.loads(text)
-    else:
-        value = yaml.safe_load(text)
-
-    if isinstance(value, dict):
-        value = value.get("case_ids")
-    if not isinstance(value, list) or not value:
-        raise ValueError(
-            "sealed case ID file must be a non-empty list or {case_ids: [...]}"
-        )
-
-    result: set[str] = set()
-    for case_id in value:
-        if not isinstance(case_id, str) or not case_id:
-            raise ValueError("sealed case IDs must be non-empty strings")
-        if case_id in result:
-            raise ValueError(f"duplicate sealed case ID: {case_id}")
-        result.add(case_id)
-    return result
-
-
 def _case_ids_sha256(case_ids: set[str]) -> str:
     payload = json.dumps(
         sorted(case_ids),
@@ -105,7 +84,6 @@ def build_authorization_record(
     model_config_path: Path,
     pilot_acceptance_path: Path,
     sealed_case_manifest_path: Path,
-    sealed_case_ids_path: Path,
     authorization_id: str,
     created_at: str,
     repository_commit: str | None = None,
@@ -131,7 +109,8 @@ def build_authorization_record(
         key: _sha256(path)
         for key, path in paths.items()
     }
-    sealed_case_ids = _load_case_ids(sealed_case_ids_path)
+    sealed_case_manifest = _load_document(sealed_case_manifest_path)
+    sealed_case_ids = sealed_case_ids_from_manifest(sealed_case_manifest)
 
     component_digests = hash_components_from_manifest(
         documents["instrument_component_manifest"],
@@ -239,7 +218,6 @@ def main() -> int:
     parser.add_argument("--model-config", type=Path, required=True)
     parser.add_argument("--pilot-acceptance", type=Path, required=True)
     parser.add_argument("--sealed-case-manifest", type=Path, required=True)
-    parser.add_argument("--sealed-case-ids", type=Path, required=True)
     parser.add_argument("--authorization-id", required=True)
     parser.add_argument("--created-at", required=True)
     parser.add_argument("--repository-commit")
@@ -263,7 +241,6 @@ def main() -> int:
         model_config_path=args.model_config,
         pilot_acceptance_path=args.pilot_acceptance,
         sealed_case_manifest_path=args.sealed_case_manifest,
-        sealed_case_ids_path=args.sealed_case_ids,
         authorization_id=args.authorization_id,
         created_at=args.created_at,
         repository_commit=args.repository_commit,
