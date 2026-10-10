@@ -426,6 +426,14 @@ jobs:
           test -f vendor/lib-hl7v2-nist-validator/lib/gov/nist/hl7-v2-profile/1.7.3/hl7-v2-profile-1.7.3.jar
           test -f vendor/lib-hl7v2-nist-validator/lib/gov/nist/hl7-v2-validation/1.7.3/hl7-v2-validation-1.7.3.jar
 
+      - name: Freeze exact HL7 v2 validator runtime classpath
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/hl7v2/results
+          mvn -q -B -f qualification/hl7v2/pom.xml             dependency:build-classpath             -Dmdep.outputFile=runtime-classpath.txt
+          python qualification/hl7v2/hash_validator_runtime.py             qualification/hl7v2/runtime-classpath.txt             --output qualification/hl7v2/results/validator-runtime-classpath.json
+
       - name: Compile pinned NIST HL7 v2 qualification harness
         run: mvn -B -f qualification/hl7v2/pom.xml package -DskipTests
 
@@ -460,6 +468,8 @@ jobs:
           path: |
             qualification/hl7v2/dev-message.er7
             qualification/hl7v2/legacy-differential-report.log
+            qualification/hl7v2/runtime-classpath.txt
+            qualification/hl7v2/results/validator-runtime-classpath.json
           if-no-files-found: warn
           retention-days: 90
 
