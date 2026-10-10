@@ -25,6 +25,24 @@ def _zeroish(value: Any) -> bool:
     return isinstance(value, str) and bool(value) and set(value.lower()) <= {"0"}
 
 
+def _valid_sha256(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(ch in "0123456789abcdefABCDEF" for ch in value)
+        and not _zeroish(value)
+    )
+
+
+def _valid_commit(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and 7 <= len(value) <= 40
+        and all(ch in "0123456789abcdefABCDEF" for ch in value)
+        and not _zeroish(value)
+    )
+
+
 def assess_confirmatory_run_plan(
     document: dict[str, Any],
 ) -> ConfirmatoryRunPlanReadiness:
@@ -42,8 +60,8 @@ def assess_confirmatory_run_plan(
         blockers.append("inference must not have started at run-plan freeze")
     if _placeholder(document.get("run_plan_id")):
         blockers.append("run_plan_id is still a placeholder")
-    if _zeroish(document.get("repository_commit")):
-        blockers.append("repository_commit is still a zero placeholder")
+    if not _valid_commit(document.get("repository_commit")):
+        blockers.append("repository_commit is missing, malformed, or placeholder")
 
     authorization = document.get("authorization")
     if not isinstance(authorization, dict):
@@ -51,18 +69,16 @@ def assess_confirmatory_run_plan(
     else:
         if authorization.get("authorized") is not True:
             blockers.append("run authorization is not true")
-        if _zeroish(authorization.get("record_sha256")):
-            blockers.append("authorization record SHA-256 is still a zero placeholder")
+        if not _valid_sha256(authorization.get("record_sha256")):
+            blockers.append(
+                "authorization record SHA-256 is missing/malformed/placeholder"
+            )
         if authorization.get("record_schema_version") != "0.2.0":
             blockers.append(
                 "authorization record schema_version is not frozen to 0.2.0"
             )
         schema_hash = authorization.get("record_schema_sha256")
-        if (
-            not isinstance(schema_hash, str)
-            or len(schema_hash) != 64
-            or _zeroish(schema_hash)
-        ):
+        if not _valid_sha256(schema_hash):
             blockers.append(
                 "authorization record schema SHA-256 is missing or placeholder"
             )
@@ -82,8 +98,8 @@ def assess_confirmatory_run_plan(
         "execution_record_schema_sha256",
     ):
         value = frozen.get(key)
-        if not isinstance(value, str) or len(value) != 64 or _zeroish(value):
-            blockers.append(f"{key} is missing or still a zero placeholder")
+        if not _valid_sha256(value):
+            blockers.append(f"{key} is missing, malformed, or placeholder")
 
     execution_contract = document.get("execution_record_contract")
     if not isinstance(execution_contract, dict):
@@ -121,8 +137,10 @@ def assess_confirmatory_run_plan(
         blockers.append("sealed_set.bundle_id is missing or placeholder")
     for key in ("bundle_sha256", "case_manifest_sha256"):
         value = sealed.get(key)
-        if not isinstance(value, str) or len(value) != 64 or _zeroish(value):
-            blockers.append(f"sealed_set.{key} is missing or placeholder")
+        if not _valid_sha256(value):
+            blockers.append(
+                f"sealed_set.{key} is missing, malformed, or placeholder"
+            )
     case_count = sealed.get("case_count")
     if not isinstance(case_count, int) or isinstance(case_count, bool) or case_count < 1:
         blockers.append("sealed_set.case_count must be a positive integer")
