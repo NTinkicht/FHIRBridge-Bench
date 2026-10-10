@@ -112,13 +112,35 @@ def _fixture_paths(tmp_path: Path) -> dict[str, Path]:
         encoding="utf-8",
     )
     paths["sealed_case_manifest"] = case_manifest
+
+    component_manifest = tmp_path / "instrument-components.yaml"
+    _write_yaml(
+        component_manifest,
+        {
+            "instrument_component_manifest": {"version": "0.1.0"},
+            "components": {"verifier": {"path": "verifier.py"}},
+        },
+    )
+    paths["instrument_component_manifest"] = component_manifest
+
+    _write_yaml(
+        paths["freeze_manifest"],
+        {
+            "sealed_set": {
+                "bundle_id": "SEALED-001",
+                "bundle_sha256": _MODULE._sha256(bundle),
+                "case_manifest_sha256": _MODULE._sha256(case_manifest),
+                "case_count": 2,
+            }
+        },
+    )
     return paths
 
 
 def _authorization(paths: dict[str, Path]) -> dict:
     case_ids = {"C1", "C2"}
     return {
-        "schema_version": "0.1.0",
+        "schema_version": "0.2.0",
         "authorization_id": "AUTH-001",
         "created_at": "2026-10-20T16:00:00Z",
         "repository_commit": "abcdef1",
@@ -148,10 +170,22 @@ def _authorization(paths: dict[str, Path]) -> dict:
             "pilot_acceptance_preregistration_sha256": _MODULE._sha256(
                 paths["pilot_acceptance"]
             ),
+            "instrument_component_manifest_sha256": _MODULE._sha256(
+                paths["instrument_component_manifest"]
+            ),
+            "sealed_case_manifest_sha256": _MODULE._sha256(
+                paths["sealed_case_manifest"]
+            ),
+        },
+        "instrument_component_sha256": {
+            "verifier": "a" * 64,
         },
         "sealed_case_set": {
             "case_count": 2,
             "canonical_case_ids_sha256": _MODULE._case_ids_sha256(case_ids),
+            "manifest_file_sha256": _MODULE._sha256(
+                paths["sealed_case_manifest"]
+            ),
         },
     }
 
@@ -214,7 +248,7 @@ def test_run_plan_assembler_derives_counts_and_schema_bindings(
         "total_arm_outputs": 14,
     }
     assert plan["execution_record_contract"]["schema_version"] == "0.3.0"
-    assert plan["authorization"]["record_schema_version"] == "0.1.0"
+    assert plan["authorization"]["record_schema_version"] == "0.2.0"
     assert plan["authorization"]["record_schema_sha256"] == _MODULE._sha256(
         _MODULE._AUTH_SCHEMA
     )
@@ -320,3 +354,86 @@ def test_run_plan_assembler_rejects_denied_authorization(
         assert "does not authorize inference" in str(exc)
     else:
         raise AssertionError("denied authorization must never produce run plan")
+
+
+def test_run_plan_assembler_rejects_sealed_bundle_changed_after_freeze(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture_paths(tmp_path)
+    authorization = _write_authorization(tmp_path, paths)
+    paths["sealed_bundle"].write_bytes(b"changed-sealed-bundle")
+
+    with pytest.raises(ValueError, match="sealed bundle bytes"):
+        _MODULE.build_run_plan(
+            authorization_record_path=authorization,
+            freeze_manifest_path=paths["freeze_manifest"],
+            protocol_gates_path=paths["protocol_gates"],
+            tooling_manifest_path=paths["tooling_manifest"],
+            model_config_path=paths["model_config"],
+            analysis_preregistration_path=paths["analysis_preregistration"],
+            sample_size_path=paths["sample_size"],
+            pilot_acceptance_path=paths["pilot_acceptance"],
+            sealed_bundle_path=paths["sealed_bundle"],
+            sealed_case_manifest_path=paths["sealed_case_manifest"],
+            sealed_case_ids_path=paths["sealed_case_ids"],
+            sealed_bundle_id="SEALED-001",
+            run_plan_id="RUN-PLAN-001",
+            created_at="2026-10-20T17:00:00Z",
+            repository_commit="abcdef1",
+        )
+
+
+def test_run_plan_assembler_rejects_wrong_sealed_bundle_id(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture_paths(tmp_path)
+    authorization = _write_authorization(tmp_path, paths)
+
+    with pytest.raises(ValueError, match="bundle ID"):
+        _MODULE.build_run_plan(
+            authorization_record_path=authorization,
+            freeze_manifest_path=paths["freeze_manifest"],
+            protocol_gates_path=paths["protocol_gates"],
+            tooling_manifest_path=paths["tooling_manifest"],
+            model_config_path=paths["model_config"],
+            analysis_preregistration_path=paths["analysis_preregistration"],
+            sample_size_path=paths["sample_size"],
+            pilot_acceptance_path=paths["pilot_acceptance"],
+            sealed_bundle_path=paths["sealed_bundle"],
+            sealed_case_manifest_path=paths["sealed_case_manifest"],
+            sealed_case_ids_path=paths["sealed_case_ids"],
+            sealed_bundle_id="SEALED-WRONG",
+            run_plan_id="RUN-PLAN-001",
+            created_at="2026-10-20T17:00:00Z",
+            repository_commit="abcdef1",
+        )
+
+
+def test_run_plan_assembler_rejects_case_manifest_changed_after_authorization(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture_paths(tmp_path)
+    authorization = _write_authorization(tmp_path, paths)
+    paths["sealed_case_manifest"].write_text(
+        json.dumps({"cases": ["C1", "C2"], "changed": True}) + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="case manifest changed"):
+        _MODULE.build_run_plan(
+            authorization_record_path=authorization,
+            freeze_manifest_path=paths["freeze_manifest"],
+            protocol_gates_path=paths["protocol_gates"],
+            tooling_manifest_path=paths["tooling_manifest"],
+            model_config_path=paths["model_config"],
+            analysis_preregistration_path=paths["analysis_preregistration"],
+            sample_size_path=paths["sample_size"],
+            pilot_acceptance_path=paths["pilot_acceptance"],
+            sealed_bundle_path=paths["sealed_bundle"],
+            sealed_case_manifest_path=paths["sealed_case_manifest"],
+            sealed_case_ids_path=paths["sealed_case_ids"],
+            sealed_bundle_id="SEALED-001",
+            run_plan_id="RUN-PLAN-001",
+            created_at="2026-10-20T17:00:00Z",
+            repository_commit="abcdef1",
+        )
