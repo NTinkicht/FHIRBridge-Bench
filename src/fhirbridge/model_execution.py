@@ -23,7 +23,12 @@ _PROVIDER_FAILURES = frozenset(
         "MEASUREMENT_FAILURE_AUTH_OR_CONFIG",
     }
 )
-_REPAIR_FAILURE = "MEASUREMENT_FAILURE_POSTPROCESSING"
+_REPAIR_FAILURES = frozenset(
+    {
+        "MEASUREMENT_FAILURE_POSTPROCESSING",
+        "MEASUREMENT_FAILURE_UPSTREAM",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -152,9 +157,9 @@ def build_failure_record(
         generation_source = "provider_call"
         attempt_number: int | None = 1
     else:
-        if outcome_class != _REPAIR_FAILURE:
+        if outcome_class not in _REPAIR_FAILURES:
             raise ValueError(
-                "repair failure must use MEASUREMENT_FAILURE_POSTPROCESSING"
+                "repair failure must use a frozen derived-arm measurement failure"
             )
         if not isinstance(source_execution_id, str) or not source_execution_id:
             raise ValueError(
