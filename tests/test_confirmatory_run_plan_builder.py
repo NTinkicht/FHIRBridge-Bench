@@ -150,7 +150,12 @@ def _fixture_paths(tmp_path: Path) -> dict[str, Path]:
                 "bundle_sha256": _MODULE._sha256(bundle),
                 "case_manifest_sha256": _MODULE._sha256(case_manifest),
                 "case_count": 2,
-            }
+            },
+            "instrument_components": {
+                "deterministic_baseline_renderer": {
+                    "sha256": "d" * 64,
+                }
+            },
         },
     )
     return paths
@@ -270,6 +275,9 @@ def test_run_plan_assembler_derives_counts_and_schema_bindings(
     assert plan["authorization"]["record_schema_sha256"] == _MODULE._sha256(
         _MODULE._AUTH_SCHEMA
     )
+    assert plan["frozen_artifacts"][
+        "deterministic_baseline_renderer_sha256"
+    ] == "d" * 64
 
 
 def test_run_plan_assembler_rejects_artifact_changed_after_authorization(
