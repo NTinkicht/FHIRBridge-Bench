@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+import yaml
 
 from fhirbridge.fhir_warning_audit import (
     audit_to_dict,
@@ -15,6 +16,12 @@ _POLICY = Path("benchmark/fhir_validator_warning_policy.yaml")
 
 def test_warning_policy_is_unique_and_loadable() -> None:
     categories = load_warning_policy(_POLICY)
+    document = yaml.safe_load(_POLICY.read_text(encoding="utf-8"))
+
+    assert document["policy"]["status"] == "frozen"
+    assert document["freeze_evidence"]["combined_warning_audit"][
+        "unknown_warning_count_required_by_CI"
+    ] == 0
 
     ids = [category_id for category_id, _ in categories]
     assert len(ids) == len(set(ids))
