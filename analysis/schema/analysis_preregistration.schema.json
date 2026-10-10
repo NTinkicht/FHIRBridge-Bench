@@ -113,8 +113,7 @@
           "const": "both_arms_VALID_and_semantic_determinate_for_VUR"
         },
         "cluster_id_field": {
-          "type": "string",
-          "minLength": 1
+          "const": "analysis_cluster_id"
         },
         "comparison_family": {
           "type": "array",
