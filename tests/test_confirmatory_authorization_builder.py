@@ -42,6 +42,25 @@ def _paths(tmp_path: Path) -> dict[str, Path]:
         path = tmp_path / f"{name}.yaml"
         _write_yaml(path, {"fixture": index})
         result[name] = path
+    component_file = tmp_path / "component.txt"
+    component_file.write_text("frozen component bytes\n", encoding="utf-8")
+    component_manifest = tmp_path / "instrument-components.yaml"
+    _write_yaml(
+        component_manifest,
+        {
+            "instrument_component_manifest": {
+                "hash_method": "path_bound_sha256_manifest_v1",
+            },
+            "components": {
+                "fixture_component": {
+                    "artifact_id": "fixture-component",
+                    "paths": ["component.txt"],
+                }
+            },
+        },
+    )
+    result["instrument_component_manifest"] = component_manifest
+
     case_ids = tmp_path / "case-ids.json"
     case_ids.write_text(
         json.dumps(["CASE-002", "CASE-001"]) + "\n",
@@ -60,6 +79,9 @@ def _build(
         protocol_gates_path=paths["protocol_gates"],
         tooling_manifest_path=paths["tooling_manifest"],
         freeze_manifest_path=paths["freeze_manifest"],
+        instrument_component_manifest_path=paths[
+            "instrument_component_manifest"
+        ],
         reviewer_roster_path=paths["reviewer_roster"],
         case_assignment_path=paths["case_assignment"],
         analysis_preregistration_path=paths["analysis_preregistration"],
@@ -70,6 +92,7 @@ def _build(
         authorization_id=authorization_id,
         created_at="2026-10-20T16:00:00Z",
         repository_commit="abcdef1",
+        repository_root=paths["instrument_component_manifest"].parent,
     )
 
 
@@ -97,6 +120,16 @@ def test_authorization_builder_hashes_inputs_and_case_set(
     assert record["input_artifacts"]["model_prompt_configuration_sha256"] == (
         _MODULE._sha256(paths["model_config"])
     )
+    assert record["input_artifacts"][
+        "instrument_component_manifest_sha256"
+    ] == _MODULE._sha256(paths["instrument_component_manifest"])
+    assert record["input_artifacts"]["sealed_case_manifest_sha256"] == (
+        _MODULE._sha256(paths["sealed_case_ids"])
+    )
+    assert record["sealed_case_set"]["manifest_file_sha256"] == (
+        _MODULE._sha256(paths["sealed_case_ids"])
+    )
+    assert set(record["instrument_component_sha256"]) == {"fixture_component"}
 
 
 def test_authorization_builder_preserves_denial_blockers(
