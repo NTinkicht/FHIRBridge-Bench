@@ -3,7 +3,9 @@ import pytest
 from fhirbridge.instrument_validation import (
     confusion_counts,
     evaluate_gate,
+    evaluate_gate_with_abstention,
     qualify_instrument,
+    qualify_instrument_with_abstention,
 )
 
 
@@ -98,3 +100,105 @@ def test_gate_rejects_invalid_thresholds() -> None:
 
     with pytest.raises(ValueError, match="between 0 and 1"):
         evaluate_gate(result, minimum_sensitivity=1.1, minimum_ppv=0.5)
+
+
+def test_abstaining_verifier_reports_indeterminate_rate_separately() -> None:
+    expert = [True, True, True, False, False, False]
+    verdicts = [
+        "UNFAITHFUL",
+        "INDETERMINATE",
+        "UNFAITHFUL",
+        "FAITHFUL",
+        "INDETERMINATE",
+        "FAITHFUL",
+    ]
+
+    result = qualify_instrument_with_abstention(expert, verdicts)
+
+    assert result.total_cases == 6
+    assert result.determinate_cases == 4
+    assert result.indeterminate_count == 2
+    assert result.indeterminate_rate.estimate == pytest.approx(2 / 6)
+    assert result.determinate_binary.sensitivity.estimate == 1.0
+    assert result.determinate_binary.specificity.estimate == 1.0
+
+
+def test_abstention_gate_can_fail_even_when_binary_metrics_pass() -> None:
+    result = qualify_instrument_with_abstention(
+        [True, True, True, False, False, False],
+        [
+            "UNFAITHFUL",
+            "INDETERMINATE",
+            "UNFAITHFUL",
+            "FAITHFUL",
+            "INDETERMINATE",
+            "FAITHFUL",
+        ],
+    )
+
+    gate = evaluate_gate_with_abstention(
+        result,
+        minimum_sensitivity=0.9,
+        minimum_ppv=0.9,
+        maximum_indeterminate_rate=0.2,
+    )
+
+    assert gate.binary_gate.passed
+    assert not gate.passed
+    assert gate.indeterminate_value == pytest.approx(2 / 6)
+
+
+def test_abstention_gate_can_use_upper_confidence_bound() -> None:
+    result = qualify_instrument_with_abstention(
+        [True, True, False, False],
+        ["UNFAITHFUL", "UNFAITHFUL", "FAITHFUL", "FAITHFUL"],
+    )
+
+    point_gate = evaluate_gate_with_abstention(
+        result,
+        minimum_sensitivity=0.9,
+        minimum_ppv=0.9,
+        maximum_indeterminate_rate=0.2,
+    )
+    upper_gate = evaluate_gate_with_abstention(
+        result,
+        minimum_sensitivity=0.9,
+        minimum_ppv=0.9,
+        maximum_indeterminate_rate=0.2,
+        use_upper_confidence_bound_for_indeterminate=True,
+    )
+
+    assert point_gate.passed
+    assert not upper_gate.passed
+    assert upper_gate.indeterminate_value > point_gate.indeterminate_value
+
+
+def test_all_indeterminate_verifier_output_is_not_binary_qualified() -> None:
+    with pytest.raises(ValueError, match="every verifier verdict"):
+        qualify_instrument_with_abstention(
+            [True, False],
+            ["INDETERMINATE", "INDETERMINATE"],
+        )
+
+
+def test_abstention_qualification_rejects_unknown_verdicts() -> None:
+    with pytest.raises(ValueError, match="unsupported verifier semantic verdict"):
+        qualify_instrument_with_abstention(
+            [True, False],
+            ["UNFAITHFUL", "MAYBE"],
+        )
+
+
+def test_abstention_gate_rejects_invalid_ceiling() -> None:
+    result = qualify_instrument_with_abstention(
+        [True, True, False, False],
+        ["UNFAITHFUL", "UNFAITHFUL", "FAITHFUL", "FAITHFUL"],
+    )
+
+    with pytest.raises(ValueError, match="maximum_indeterminate_rate"):
+        evaluate_gate_with_abstention(
+            result,
+            minimum_sensitivity=0.8,
+            minimum_ppv=0.8,
+            maximum_indeterminate_rate=1.1,
+        )
