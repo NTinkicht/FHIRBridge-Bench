@@ -14,11 +14,12 @@
     "primary_precision_plan",
     "paired_comparison_plans",
     "final_source_cluster_count",
+    "selection_rule",
     "attestation"
   ],
   "properties": {
     "schema_version": {
-      "const": "0.2.0"
+      "const": "0.3.0"
     },
     "record_id": {
       "type": "string",
@@ -135,7 +136,7 @@
       "required": [
         "pilot_only_used_for_planning",
         "sealed_results_used_for_planning",
-        "final_case_count_recorded_before_confirmatory_inference"
+        "final_source_cluster_count_recorded_before_confirmatory_inference"
       ],
       "properties": {
         "pilot_only_used_for_planning": {
@@ -144,7 +145,7 @@
         "sealed_results_used_for_planning": {
           "const": false
         },
-        "final_case_count_recorded_before_confirmatory_inference": {
+        "final_source_cluster_count_recorded_before_confirmatory_inference": {
           "const": true
         }
       }
