@@ -14,9 +14,12 @@ gates:
     blockers:
       - contract_v0_3_order_rules_not_frozen
       - canonical_order_fact_not_yet_in_all_primary_scenarios
-      - fhir_service_request_and_basedOn_not_yet_in_reference_path
       - hl7v2_ORC_MSH21_OBR3_OBR16_not_yet_in_reference_path
       - order_lifter_grounding_not_yet_qualified
+    evidence:
+      fhir_order_context_prefreeze_qualification: qualification/fhir/results/order-context-prefreeze-qualification.json
+      fhir_order_context_status: implemented_and_external_validator_passed
+      hl7v2_order_context_status: blocked_pending_safe_ORC_control_and_profile_qualification
     completion_rule: >-
       Source-grounded order context must survive canonical -> FHIR -> HL7 v2
       rendering/lifting without invented facts, and the independently reviewed
