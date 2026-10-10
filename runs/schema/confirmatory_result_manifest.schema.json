@@ -15,11 +15,13 @@
     "raw_execution_records",
     "deterministic_baseline_outputs",
     "execution_audit",
+    "structural_validation_evidence",
+    "semantic_verification_evidence",
     "analysis_ready_dataset"
   ],
   "properties": {
     "schema_version": {
-      "const": "0.1.0"
+      "const": "0.2.0"
     },
     "result_manifest_id": {
       "type": "string",
@@ -58,6 +60,12 @@
       "$ref": "#/$defs/auditArtifact"
     },
     "analysis_ready_dataset": {
+      "$ref": "#/$defs/artifactCounted"
+    },
+    "structural_validation_evidence": {
+      "$ref": "#/$defs/artifactCounted"
+    },
+    "semantic_verification_evidence": {
       "$ref": "#/$defs/artifactCounted"
     }
   },
