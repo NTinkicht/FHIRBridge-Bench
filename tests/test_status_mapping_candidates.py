@@ -42,13 +42,19 @@ def test_primary_observation_statuses_have_unique_reverse_candidates() -> None:
     assert _observation_status_code("corrected") == "C"
 
 
-@pytest.mark.parametrize("status", ["registered", "amended", "appended", "entered-in-error", "unknown"])
+@pytest.mark.parametrize(
+    "status",
+    ["registered", "amended", "appended", "entered-in-error", "unknown"],
+)
 def test_report_reverse_mapping_fails_closed_when_not_unique(status: str) -> None:
     with pytest.raises(ValueError, match="not uniquely reversible"):
         _report_status_code(status)
 
 
-@pytest.mark.parametrize("status", ["registered", "partial", "appended", "entered-in-error", "unknown"])
+@pytest.mark.parametrize(
+    "status",
+    ["registered", "partial", "appended", "entered-in-error", "unknown"],
+)
 def test_observation_reverse_mapping_fails_closed_when_not_unique(status: str) -> None:
     with pytest.raises(ValueError, match="not uniquely reversible"):
         _observation_status_code(status)
