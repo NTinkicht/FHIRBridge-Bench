@@ -209,7 +209,9 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
 
     sealed_set = manifest.get("sealed_set", {})
     if sealed_set.get("split") != "sealed_test":
-        blockers.append("confirmatory freeze manifest must identify split as sealed_test")
+        blockers.append(
+            "confirmatory freeze manifest must identify split as sealed_test"
+        )
     if _contains_placeholder(sealed_set.get("bundle_id")):
         blockers.append("sealed-set bundle_id is still a placeholder")
     if sealed_set.get("case_count", 0) <= 0:
@@ -221,11 +223,15 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
             "sealed-set case manifest SHA-256 is missing/malformed/placeholder"
         )
     if sealed_set.get("opened") is True:
-        blockers.append("sealed set is already marked opened; this is not a pre-opening freeze")
+        blockers.append(
+            "sealed set is already marked opened; this is not a pre-opening freeze"
+        )
     if sealed_set.get("opened_at") is not None:
         blockers.append("opened_at must be null before first sealed-set opening")
     if sealed_set.get("opened_by_role_ids"):
-        blockers.append("opened_by_role_ids must be empty before first sealed-set opening")
+        blockers.append(
+            "opened_by_role_ids must be empty before first sealed-set opening"
+        )
 
     blinding = manifest.get("blinding", {})
     if blinding.get("controls_verified") is not True:
@@ -255,10 +261,13 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
                 "acceptance gate is not attested as defined before sealed opening"
             )
         if _contains_placeholder(acceptance_gate.get("preregistration_ref")):
-            blockers.append("acceptance gate preregistration_ref is still a placeholder")
+            blockers.append(
+                "acceptance gate preregistration_ref is still a placeholder"
+            )
         if not _valid_sha256(acceptance_gate.get("preregistration_sha256")):
             blockers.append(
-                "acceptance gate preregistration_sha256 is missing/malformed/placeholder"
+                "acceptance gate preregistration_sha256 is missing/malformed/"
+                "placeholder"
             )
         if _contains_placeholder(acceptance_gate.get("gate_policy_summary")):
             blockers.append("acceptance gate policy summary is still a placeholder")
@@ -268,13 +277,15 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
             continue
         if amendment.get("sealed_set_had_been_opened") is not True:
             warnings.append(
-                f"pre-opening amendment recorded: {amendment.get('amendment_id', 'unknown')}"
+                "pre-opening amendment recorded: "
+                + str(amendment.get("amendment_id", "unknown"))
             )
             continue
         disposition = amendment.get("disposition")
         if disposition == "REQUIRES_NEW_SEALED_SET":
             blockers.append(
-                "post-unsealing instrument amendment requires a fresh untouched sealed set: "
+                "post-unsealing instrument amendment requires a fresh untouched "
+                "sealed set: "
                 + str(amendment.get("amendment_id", "unknown"))
             )
         elif disposition == "DOWNGRADE_TO_EXPLORATORY":
