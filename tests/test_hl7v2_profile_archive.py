@@ -24,7 +24,8 @@ def test_profile_archive_inspection_accepts_nested_single_bundle(
     with ZipFile(archive, "w") as output:
         output.writestr("bundle/PROFILE.xml", _profile_xml())
         output.writestr("bundle/CONSTRAINTS.xml", "<constraints/>")
-        output.writestr("bundle/notes.txt", "ignored")
+        output.writestr("bundle/notes.txt", "preserved")
+        output.writestr("bundle/resources/custom.xml", "<custom/>")
         output.writestr("other/CONSTRAINTS.xml", "<not-selected/>")
 
     inspection = inspect_profile_archive(archive)
@@ -36,6 +37,8 @@ def test_profile_archive_inspection_accepts_nested_single_bundle(
     assert [item.name for item in inspection.manifest.files] == [
         "PROFILE.xml",
         "CONSTRAINTS.xml",
+        "notes.txt",
+        "resources/custom.xml",
     ]
 
 
@@ -64,7 +67,7 @@ def test_profile_archive_rejects_multiple_oru_profiles(tmp_path: Path) -> None:
         inspect_profile_archive(archive)
 
 
-def test_profile_archive_ignores_path_traversal_and_unknown_files(
+def test_profile_archive_ignores_path_traversal_outside_selected_subtree(
     tmp_path: Path,
 ) -> None:
     archive = tmp_path / "profile.zip"
