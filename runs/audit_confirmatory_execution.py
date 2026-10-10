@@ -65,7 +65,9 @@ def _baseline_case_ids(path: Path) -> set[str]:
                 f"baseline record {index} lacks a non-empty case_id"
             )
         if case_id in result:
-            raise ValueError(f"duplicate deterministic baseline case_id: {case_id}")
+            raise ValueError(
+                f"duplicate deterministic baseline case_id: {case_id}"
+            )
         result.add(case_id)
     return result
 
