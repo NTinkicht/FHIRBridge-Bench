@@ -206,7 +206,7 @@ locus.
 9. Are code equivalence and UCUM conversion rules conservative enough to prevent broader/narrower concept substitutions from being counted as equivalent?
 10. Which rules, if any, should remain `INDETERMINATE` for the primary endpoint even after adjudication?
 11. Are the four relationship/grouping candidates in
-    `relationship_candidates_v0.1.yaml` stable enough under LRI Edition 5 to
+    `relationship_candidates_v0.2.yaml` stable enough under LRI Edition 5 to
     enter Contract v1.0? For any promoted candidate, provide the exact grouping
     semantics or equivalence class that should be scored.
 
