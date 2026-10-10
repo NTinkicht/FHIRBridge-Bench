@@ -60,6 +60,8 @@ def build_lri_profile_pin_candidate(
             "source_directory_in_archive": inspection.source_directory,
             "aggregate_sha256": inspection.manifest.aggregate_sha256,
             "profile_xml_sha256": profile.sha256,
+            "reference_inventory": inspection.reference_inventory.to_dict(),
+            "target_reference_signals": inspection.target_reference_signals,
             "component_files": [
                 {
                     "name": item.name,
