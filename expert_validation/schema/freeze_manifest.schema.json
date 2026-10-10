@@ -15,6 +15,7 @@
     "reviewer_roster",
     "case_assignment_manifest",
     "analysis_preregistration",
+    "model_prompt_configuration",
     "sealed_set",
     "blinding",
     "post_freeze_amendments"
@@ -22,7 +23,7 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "0.3.0"
+      "const": "0.4.0"
     },
     "manifest_id": {
       "type": "string",
@@ -312,6 +313,9 @@
       "$ref": "#/$defs/frozenArtifact"
     },
     "analysis_preregistration": {
+      "$ref": "#/$defs/frozenArtifact"
+    },
+    "model_prompt_configuration": {
       "$ref": "#/$defs/frozenArtifact"
     }
   },
