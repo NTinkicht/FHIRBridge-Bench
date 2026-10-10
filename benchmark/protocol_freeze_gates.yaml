@@ -1,0 +1,116 @@
+protocol_freeze:
+  id: FHIRBRIDGE-PROTOCOL-FREEZE-001
+  version: 0.1.0
+  status: blocked
+  note: >-
+    This ledger complements, rather than replaces, the tooling freeze gate.
+    A small tooling blocker count must never be interpreted as overall
+    confirmatory-study readiness.
+
+gates:
+  - gate_id: order_context_end_to_end
+    category: measurement_instrument
+    status: blocked
+    blockers:
+      - contract_v0_3_order_rules_not_frozen
+      - canonical_order_fact_not_yet_in_all_primary_scenarios
+      - fhir_service_request_and_basedOn_not_yet_in_reference_path
+      - hl7v2_ORC_MSH21_OBR3_OBR16_not_yet_in_reference_path
+      - order_lifter_grounding_not_yet_qualified
+    completion_rule: >-
+      Source-grounded order context must survive canonical -> FHIR -> HL7 v2
+      rendering/lifting without invented facts, and the independently reviewed
+      scoring boundary must be frozen.
+
+  - gate_id: required_element_inventory
+    category: target_profile_coverage
+    status: blocked
+    blockers:
+      - full_Common_NG_FRU_required_element_inventory_not_complete
+      - second_independent_extraction_not_complete
+    completion_rule: >-
+      Every required/conditional target element for the selected profile slice
+      must be classified as SOURCE_FACT, PROFILE_CONSTANT, ENVELOPE, DERIVED,
+      or UNPROJECTABLE by two independent extractions with disagreements
+      retained and resolved or marked indeterminate.
+
+  - gate_id: external_contract_review
+    category: construct_validity
+    status: blocked
+    blockers:
+      - two_blind_stage1_reviews_not_returned
+      - inter_rater_agreement_not_computed
+      - disagreements_not_adjudicated_or_marked_indeterminate
+    completion_rule: >-
+      Two independent blind classifications must be retained before proposal
+      disclosure. Agreement is computed on the original blind responses.
+
+  - gate_id: renderer_b_clean_room
+    category: implementation_reproducibility
+    status: blocked
+    blockers:
+      - independent_renderer_b_implementation_not_returned
+      - clean_room_declaration_not_validated
+      - differential_comparison_not_complete
+    completion_rule: >-
+      Renderer B must be independently implemented from the synchronized
+      contract revision and pass the clean-room declaration gate.
+
+  - gate_id: status_and_code_maps
+    category: semantic_mapping
+    status: blocked
+    blockers:
+      - report_status_map_not_independently_frozen
+      - observation_status_map_not_independently_frozen
+      - specimen_code_binding_behavior_not_frozen
+    completion_rule: >-
+      Renderer-internal convenience maps may not define confirmatory semantic
+      truth. Status/code mappings and target bindings must be frozen from
+      standards evidence plus independent review.
+
+  - gate_id: primary_metric_definition
+    category: statistical_analysis
+    status: blocked
+    blockers:
+      - unconditional_valid_and_faithful_yield_not_preregistered
+      - structural_validity_classification_policy_not_fully_frozen
+    completion_rule: >-
+      Report VUR conditional on structural validity and an unconditional
+      valid-and-faithful yield across all attempts, with the structural-validity
+      denominator policy preregistered.
+
+  - gate_id: per_scenario_feasibility
+    category: benchmark_design
+    status: blocked
+    blockers:
+      - valid_and_faithful_existence_not_demonstrated_for_each_primary_family
+    completion_rule: >-
+      Before freezing a primary scenario family, at least one independently
+      rendered output must be both structurally valid and semantically faithful
+      under the frozen instrument. Unprojectable cases belong in an exploratory
+      stratum.
+
+  - gate_id: pilot_acceptance_gate
+    category: qualification
+    status: blocked
+    blockers:
+      - pilot_derived_acceptance_thresholds_not_preregistered
+    completion_rule: >-
+      Instrument acceptance thresholds must be derived on the pilot partition
+      and preregistered before opening the sealed set.
+
+  - gate_id: sealed_expert_validation
+    category: confirmatory_governance
+    status: blocked
+    blockers:
+      - sealed_set_freeze_manifest_not_complete
+      - blinded_expert_roles_not_complete
+      - sealed_set_not_authorized_for_opening
+    completion_rule: >-
+      The sealed-set manifest, roles, blinding controls, dependencies, and
+      acceptance gate must satisfy the pre-opening freeze audit.
+
+confirmatory_run_policy:
+  allowed_when_all_protocol_gates_passed: true
+  tooling_manifest_must_also_be_frozen: true
+  no_confirmatory_model_inference_before_ready: true
