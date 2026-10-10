@@ -16,6 +16,10 @@ def test_vur_uses_only_structurally_valid_determinate_cases() -> None:
     assert summary.unfaithful == 1
     assert summary.indeterminate == 1
     assert summary.determinate_denominator == 3
+    assert summary.structural_validity_rate == pytest.approx(4 / 5)
+    assert summary.valid_and_faithful_yield == pytest.approx(2 / 5)
+    assert summary.valid_and_unfaithful_yield == pytest.approx(1 / 5)
+    assert summary.valid_indeterminate_yield == pytest.approx(1 / 5)
     assert summary.vur == pytest.approx(1 / 3)
     assert summary.indeterminate_rate == pytest.approx(1 / 4)
     assert summary.best_case_vur == pytest.approx(1 / 4)
@@ -30,6 +34,10 @@ def test_all_valid_indeterminate_cases_do_not_become_zero_vur() -> None:
 
     assert summary.vur is None
     assert summary.determinate_denominator == 0
+    assert summary.structural_validity_rate == 1.0
+    assert summary.valid_and_faithful_yield == 0.0
+    assert summary.valid_and_unfaithful_yield == 0.0
+    assert summary.valid_indeterminate_yield == 1.0
     assert summary.indeterminate_rate == 1.0
     assert summary.best_case_vur == 0.0
     assert summary.worst_case_vur == 1.0
@@ -42,6 +50,10 @@ def test_no_structurally_valid_outputs_yields_no_vur() -> None:
     )
 
     assert summary.structurally_valid == 0
+    assert summary.structural_validity_rate == 0.0
+    assert summary.valid_and_faithful_yield == 0.0
+    assert summary.valid_and_unfaithful_yield == 0.0
+    assert summary.valid_indeterminate_yield == 0.0
     assert summary.vur is None
     assert summary.indeterminate_rate is None
     assert summary.best_case_vur is None
