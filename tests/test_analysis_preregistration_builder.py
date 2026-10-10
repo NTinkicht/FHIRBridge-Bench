@@ -190,6 +190,55 @@ def _ready_sample_size() -> dict:
     return record
 
 
+def _ready_primary_hypothesis() -> dict:
+    return {
+        "schema_version": "0.1.0",
+        "record_id": "PRIMARY-VUR-001",
+        "status": "preregistered",
+        "created_at": "2026-10-20T14:30:00Z",
+        "sealed_set_opened": False,
+        "pilot_evidence": {
+            "pilot_case_manifest_sha256": "a" * 64,
+            "pilot_analysis_sha256": "b" * 64,
+        },
+        "estimand": {
+            "name": "VUR",
+            "direction": "FHIR_to_HL7v2",
+            "denominator_rule": "VALID_and_semantic_determinate",
+        },
+        "hypothesis": {
+            "null_relation": "VUR_less_than_or_equal_threshold",
+            "alternative_relation": "VUR_greater_than_threshold",
+            "nontrivial_vur_threshold": 0.10,
+            "threshold_rationale": "Pilot-derived non-trivial threshold.",
+        },
+        "target_population": {
+            "inclusion_rule": "Frozen eligible FHIR-to-HL7v2 LLM outputs.",
+            "model_strategy_aggregation_policy": (
+                "Frozen cluster-aware aggregation across model/strategy rows."
+            ),
+            "cluster_id_field": "analysis_cluster_id",
+        },
+        "inference": {
+            "method": "cluster_aware_one_sided_threshold_test",
+            "alpha": 0.05,
+            "sidedness": "one_sided",
+            "cluster_handling": "Use frozen analysis_cluster_id.",
+            "confidence_interval_method": "Frozen cluster-aware interval.",
+            "decision_rule": "Reject H0 only at frozen alpha 0.05.",
+        },
+        "indeterminate_policy": {
+            "semantic_indeterminate_policy": (
+                "exclude_from_binary_VUR_with_reported_denominator_loss_and_"
+                "sensitivity_bounds"
+            ),
+            "structural_policy_ref": (
+                "benchmark/structural_validity_policy.yaml"
+            ),
+        },
+    }
+
+
 def _hashes() -> dict[str, str]:
     return {
         "projectability_contract_sha256": "a" * 64,
@@ -197,6 +246,7 @@ def _hashes() -> dict[str, str]:
         "statistical_analysis_plan_sha256": "c" * 64,
         "model_prompt_configuration_sha256": "d" * 64,
         "sample_size_preregistration_sha256": "e" * 64,
+        "primary_vur_hypothesis_sha256": "f" * 64,
     }
 
 
@@ -217,6 +267,7 @@ def test_assembler_builds_schema_valid_ready_analysis_record() -> None:
     record = _MODULE.assemble_analysis_preregistration(
         model_config=_ready_model_config(),
         sample_size=_ready_sample_size(),
+        primary_hypothesis=_ready_primary_hypothesis(),
         core_design=_yaml(_CORE),
         repository_commit="abcdef1",
         analysis_id="ANALYSIS-001",
@@ -251,6 +302,7 @@ def test_assembler_rejects_incomplete_repository_model_template() -> None:
         _MODULE.assemble_analysis_preregistration(
             model_config=_yaml(_MODEL_TEMPLATE),
             sample_size=_ready_sample_size(),
+            primary_hypothesis=_ready_primary_hypothesis(),
             core_design=_yaml(_CORE),
             repository_commit="abcdef1",
             analysis_id="ANALYSIS-001",
@@ -288,6 +340,7 @@ def test_assembler_rejects_missing_frozen_input_hash() -> None:
         _MODULE.assemble_analysis_preregistration(
             model_config=_ready_model_config(),
             sample_size=_ready_sample_size(),
+            primary_hypothesis=_ready_primary_hypothesis(),
             core_design=_yaml(_CORE),
             repository_commit="abcdef1",
             analysis_id="ANALYSIS-001",
@@ -308,6 +361,7 @@ def test_assembler_rejects_sample_size_model_key_drift() -> None:
         _MODULE.assemble_analysis_preregistration(
             model_config=_ready_model_config(),
             sample_size=sample_size,
+            primary_hypothesis=_ready_primary_hypothesis(),
             core_design=_yaml(_CORE),
             repository_commit="abcdef1",
             analysis_id="ANALYSIS-001",
@@ -333,6 +387,7 @@ def test_assembler_rejects_sample_size_model_config_hash_drift() -> None:
         _MODULE.assemble_analysis_preregistration(
             model_config=_ready_model_config(),
             sample_size=sample_size,
+            primary_hypothesis=_ready_primary_hypothesis(),
             core_design=_yaml(_CORE),
             repository_commit="abcdef1",
             analysis_id="ANALYSIS-001",
@@ -343,3 +398,24 @@ def test_assembler_rejects_sample_size_model_config_hash_drift() -> None:
         assert "same frozen model configuration" in str(exc)
     else:
         raise AssertionError("sample-size model-config hash drift must be rejected")
+
+
+def test_assembler_rejects_unfrozen_primary_hypothesis() -> None:
+    hypothesis = _ready_primary_hypothesis()
+    hypothesis["status"] = "incomplete_template"
+
+    try:
+        _MODULE.assemble_analysis_preregistration(
+            model_config=_ready_model_config(),
+            sample_size=_ready_sample_size(),
+            primary_hypothesis=hypothesis,
+            core_design=_yaml(_CORE),
+            repository_commit="abcdef1",
+            analysis_id="ANALYSIS-001",
+            created_at="2026-10-20T15:00:00Z",
+            input_hashes=_hashes(),
+        )
+    except ValueError as exc:
+        assert "primary VUR hypothesis is not freeze-ready" in str(exc)
+    else:
+        raise AssertionError("unfrozen primary hypothesis must be rejected")
