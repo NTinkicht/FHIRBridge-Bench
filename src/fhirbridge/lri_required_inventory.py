@@ -12,7 +12,9 @@ class RequiredElementInventoryReadiness:
     blockers: tuple[str, ...]
 
 
-def assess_required_element_inventory(document: dict[str, Any]) -> RequiredElementInventoryReadiness:
+def assess_required_element_inventory(
+    document: dict[str, Any],
+) -> RequiredElementInventoryReadiness:
     inventory = document.get("inventory")
     extraction = document.get("extraction_protocol")
     completion = document.get("completion_gate")
