@@ -97,6 +97,13 @@ def _ready_sample_size() -> dict:
     record["record_id"] = "SAMPLE-SIZE-001"
     record["status"] = "preregistered"
     record["created_at"] = "2026-10-20T14:00:00Z"
+    record["frozen_method"].update(
+        {
+            "sample_size_method_sha256": "1" * 64,
+            "core_confirmatory_design_sha256": "2" * 64,
+            "model_prompt_configuration_sha256": "d" * 64,
+        }
+    )
     record["pilot_evidence"].update(
         {
             "pilot_case_manifest_sha256": "1" * 64,
@@ -107,6 +114,16 @@ def _ready_sample_size() -> dict:
             "icc": 0.10,
         }
     )
+    model_keys = ["M1", "M2"]
+    record["model_keys"] = model_keys
+    alpha = 0.05 / (6 * len(model_keys))
+    record["multiplicity"] = {
+        "method": "Holm",
+        "familywise_alpha": 0.05,
+        "comparison_family_size": 12,
+        "planning_alpha_policy": "Bonferroni_upper_bound_for_Holm_family",
+        "per_comparison_planning_alpha": alpha,
+    }
 
     primary = plan_proportion_precision(
         expected_rate=0.20,
@@ -129,38 +146,42 @@ def _ready_sample_size() -> dict:
     }
 
     plans = []
-    for index, comparison_id in enumerate(_COMPARISONS):
-        p10 = 0.16 + index * 0.005
-        p01 = 0.05
-        plan = plan_paired_mcnemar(
-            p10=p10,
-            p01=p01,
-            mean_cluster_size=2.0,
-            icc=0.10,
-            expected_pair_retention=0.75,
-            alpha=0.05 / 6.0,
-            power=0.80,
-        )
-        plans.append(
-            {
-                "comparison_id": comparison_id,
-                "p10": p10,
-                "p01": p01,
-                "alpha": 0.05 / 6.0,
-                "power": 0.80,
-                "expected_pair_retention": 0.75,
-                "independent_pair_row_n": plan.independent_pair_row_n,
-                "design_effect": plan.design_effect,
-                "cluster_inflated_pair_row_n": (
-                    plan.cluster_inflated_pair_row_n
-                ),
-                "attempted_pair_row_n": plan.attempted_pair_row_n,
-                "planned_source_cluster_count": (
-                    plan.planned_source_cluster_count
-                ),
-                "planning_method": plan.method,
-            }
-        )
+    row_index = 0
+    for model_key in model_keys:
+        for base_id in _COMPARISONS:
+            p10 = 0.16 + row_index * 0.002
+            p01 = 0.05
+            plan = plan_paired_mcnemar(
+                p10=p10,
+                p01=p01,
+                mean_cluster_size=2.0,
+                icc=0.10,
+                expected_pair_retention=0.75,
+                alpha=alpha,
+                power=0.80,
+            )
+            plans.append(
+                {
+                    "comparison_id": f"{model_key}__{base_id}",
+                    "model_key": model_key,
+                    "p10": p10,
+                    "p01": p01,
+                    "alpha": alpha,
+                    "power": 0.80,
+                    "expected_pair_retention": 0.75,
+                    "independent_pair_row_n": plan.independent_pair_row_n,
+                    "design_effect": plan.design_effect,
+                    "cluster_inflated_pair_row_n": (
+                        plan.cluster_inflated_pair_row_n
+                    ),
+                    "attempted_pair_row_n": plan.attempted_pair_row_n,
+                    "planned_source_cluster_count": (
+                        plan.planned_source_cluster_count
+                    ),
+                    "planning_method": plan.method,
+                }
+            )
+            row_index += 1
     record["paired_comparison_plans"] = plans
     record["final_source_cluster_count"] = max(
         primary.planned_source_cluster_count,
@@ -277,3 +298,48 @@ def test_assembler_rejects_missing_frozen_input_hash() -> None:
         assert "input_hashes do not match required frozen inputs" in str(exc)
     else:
         raise AssertionError("missing frozen input hash must be rejected")
+
+
+def test_assembler_rejects_sample_size_model_key_drift() -> None:
+    sample_size = _ready_sample_size()
+    sample_size["model_keys"] = ["M1"]
+
+    try:
+        _MODULE.assemble_analysis_preregistration(
+            model_config=_ready_model_config(),
+            sample_size=sample_size,
+            core_design=_yaml(_CORE),
+            repository_commit="abcdef1",
+            analysis_id="ANALYSIS-001",
+            created_at="2026-10-20T15:00:00Z",
+            input_hashes=_hashes(),
+        )
+    except ValueError as exc:
+        assert (
+            "sample-size preregistration is not freeze-ready" in str(exc)
+            or "sample-size model_keys do not match" in str(exc)
+        )
+    else:
+        raise AssertionError("sample-size model-key drift must be rejected")
+
+
+def test_assembler_rejects_sample_size_model_config_hash_drift() -> None:
+    sample_size = _ready_sample_size()
+    sample_size["frozen_method"]["model_prompt_configuration_sha256"] = (
+        "f" * 64
+    )
+
+    try:
+        _MODULE.assemble_analysis_preregistration(
+            model_config=_ready_model_config(),
+            sample_size=sample_size,
+            core_design=_yaml(_CORE),
+            repository_commit="abcdef1",
+            analysis_id="ANALYSIS-001",
+            created_at="2026-10-20T15:00:00Z",
+            input_hashes=_hashes(),
+        )
+    except ValueError as exc:
+        assert "same frozen model configuration" in str(exc)
+    else:
+        raise AssertionError("sample-size model-config hash drift must be rejected")
