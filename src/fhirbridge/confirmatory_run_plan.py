@@ -70,6 +70,29 @@ def assess_confirmatory_run_plan(
         if not isinstance(value, str) or len(value) != 64 or _zeroish(value):
             blockers.append(f"{key} is missing or still a zero placeholder")
 
+    execution_contract = document.get("execution_record_contract")
+    if not isinstance(execution_contract, dict):
+        blockers.append("execution_record_contract is missing")
+    else:
+        if execution_contract.get("schema_version") != "0.3.0":
+            blockers.append(
+                "execution record schema_version is not frozen to 0.3.0"
+            )
+        expected_bindings = [
+            "model_prompt_freeze_sha256",
+            "source_input_sha256",
+            "rendered_prompt_sha256",
+            "mapping_context_sha256",
+        ]
+        if execution_contract.get("required_bindings") != expected_bindings:
+            blockers.append(
+                "execution record required_bindings do not match frozen lineage policy"
+            )
+        if execution_contract.get("mapping_repair_lineage_required") is not True:
+            blockers.append(
+                "mapping-to-repair execution lineage is not required"
+            )
+
     sealed = document.get("sealed_set")
     if not isinstance(sealed, dict):
         blockers.append("sealed_set binding is missing")
