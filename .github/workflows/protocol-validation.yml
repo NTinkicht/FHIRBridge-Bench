@@ -81,7 +81,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: contract-review-assignment-${{ github.run_id }}
-          path: contracts/review/generated/contract-review-assignment-v0.2.json
+          path: contracts/review/generated/contract-review-assignment-v0.3-blind.json
           if-no-files-found: error
           retention-days: 90
 
