@@ -188,8 +188,14 @@ It implements:
 - paired cluster percentile-bootstrap risk-difference intervals;
 - Holm-adjusted p-values in the original comparison order.
 
-The analysis code does not decide which rows belong to a comparison. Analysis
-set construction, cluster identifiers, comparison families, and bootstrap seed
+Paired analysis-set construction is implemented in
+`src/fhirbridge/analysis_sets.py`. For VUR it includes a case only when both
+arms are structurally `VALID` and semantically determinate, and reports each
+excluded case by preregistered reason. For VFY it retains every explicitly
+attempted paired transformation; missing arm output is an error and must instead
+be represented explicitly as `MEASUREMENT_FAILURE`.
+
+Analysis-set rules, cluster identifiers, comparison families, and bootstrap seed
 must be frozen in the run/analysis manifest before confirmatory inference.
 
 ### Effect size reporting
