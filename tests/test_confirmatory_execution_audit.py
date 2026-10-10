@@ -164,6 +164,7 @@ def test_complete_execution_cross_product_passes() -> None:
         _records(),
         sealed_case_ids={"C1", "C2"},
         deterministic_baseline_case_ids={"C1", "C2"},
+        expected_source_input_sha256=_SOURCE_HASHES,
     )
 
     assert result.complete
@@ -305,6 +306,7 @@ def test_baseline_must_cover_exact_sealed_case_set() -> None:
         _records(),
         sealed_case_ids={"C1", "C2"},
         deterministic_baseline_case_ids={"C1"},
+        expected_source_input_sha256=_SOURCE_HASHES,
     )
 
     assert not result.complete
@@ -381,3 +383,59 @@ def test_execution_schema_version_must_match_frozen_record_version() -> None:
 
     assert not result.complete
     assert any("schema_version must be 0.3.0" in item for item in result.blockers)
+
+
+def test_execution_source_hash_must_match_frozen_sealed_manifest() -> None:
+    records = _records()
+    for record in records:
+        if record["case_id"] == "C1":
+            record["source_input_sha256"] = "e" * 64
+
+    result = audit_confirmatory_execution(
+        _plan(),
+        records,
+        sealed_case_ids={"C1", "C2"},
+        deterministic_baseline_case_ids={"C1", "C2"},
+        expected_source_input_sha256=_SOURCE_HASHES,
+    )
+
+    assert not result.complete
+    assert any(
+        "C1: source_input_sha256 does not match sealed manifest" in item
+        for item in result.blockers
+    )
+
+
+def test_frozen_source_hash_map_must_cover_exact_sealed_case_set() -> None:
+    result = audit_confirmatory_execution(
+        _plan(),
+        _records(),
+        sealed_case_ids={"C1", "C2"},
+        deterministic_baseline_case_ids={"C1", "C2"},
+        expected_source_input_sha256={"C1": _SOURCE_HASHES["C1"]},
+    )
+
+    assert not result.complete
+    assert any(
+        "sealed source-hash map missing cases: C2" in item
+        for item in result.blockers
+    )
+
+
+def test_zero_frozen_source_hash_is_rejected() -> None:
+    result = audit_confirmatory_execution(
+        _plan(),
+        _records(),
+        sealed_case_ids={"C1", "C2"},
+        deterministic_baseline_case_ids={"C1", "C2"},
+        expected_source_input_sha256={
+            "C1": "0" * 64,
+            "C2": _SOURCE_HASHES["C2"],
+        },
+    )
+
+    assert not result.complete
+    assert any(
+        "C1: frozen source_input_sha256 is missing or invalid" in item
+        for item in result.blockers
+    )
