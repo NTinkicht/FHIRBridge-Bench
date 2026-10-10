@@ -14,6 +14,7 @@
     "sealed_bundle_sha256",
     "raw_execution_records",
     "deterministic_baseline_outputs",
+    "execution_schema_validation",
     "execution_audit",
     "structural_validation_evidence",
     "semantic_verification_evidence",
@@ -67,6 +68,9 @@
     },
     "semantic_verification_evidence": {
       "$ref": "#/$defs/artifactCounted"
+    },
+    "execution_schema_validation": {
+      "$ref": "#/$defs/auditArtifact"
     }
   },
   "$defs": {
