@@ -17,7 +17,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "0.3.0"
+      "const": "0.4.0"
     },
     "record_id": {
       "type": "string",
@@ -44,7 +44,8 @@
         "pilot_adjudication_bundle_sha256",
         "case_count",
         "expert_major_error_positive_count",
-        "expert_major_error_negative_count"
+        "expert_major_error_negative_count",
+        "expert_major_error_indeterminate_count"
       ],
       "properties": {
         "pilot_case_manifest_sha256": {
@@ -70,6 +71,10 @@
             "string",
             "null"
           ]
+        },
+        "expert_major_error_indeterminate_count": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     },
