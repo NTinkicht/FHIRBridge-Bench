@@ -224,3 +224,36 @@ The allowed order is therefore:
 
 There is no supported path that starts confirmatory inference by bypassing these
 checks.
+
+## Execution-to-analysis provenance chain
+
+After authorization and run-plan freeze, every provider attempt and derived
+repair output is recorded under the frozen execution-record schema. Provider
+calls and derived repair records are distinct: direct/mapping records have one
+provider attempt, while the repair arm has no provider attempt and must point to
+the exact mapping execution whose raw output it reuses. If the mapping call
+fails, the repair arm is retained explicitly as
+`MEASUREMENT_FAILURE_UPSTREAM`; a deterministic repair exception is recorded
+as `MEASUREMENT_FAILURE_POSTPROCESSING`.
+
+Before any confirmatory analysis, 
+`src/fhirbridge/confirmatory_execution_audit.py` verifies the exact sealed
+case × model × strategy cross-product, deterministic-baseline case coverage,
+execution-ID uniqueness, repair provenance, raw-hash reuse, explicit failure
+propagation, and the run-plan output counts.
+
+A successful execution is then bound by
+`runs/schema/confirmatory_result_manifest.schema.json`. The result manifest
+pins by SHA-256:
+
+- the exact pre-inference run plan;
+- the sealed bundle used for execution;
+- the raw execution-record bundle;
+- deterministic baseline outputs;
+- the successful execution-audit record;
+- the analysis-ready dataset.
+
+The analysis-ready table has one source-instance × model row, carrying that
+model's three LLM strategy outcomes plus the shared deterministic baseline.
+Raw execution records remain immutable source evidence and are never replaced
+by the analysis table.
