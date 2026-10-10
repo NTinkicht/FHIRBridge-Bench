@@ -25,6 +25,24 @@ def _zeroish(value: Any) -> bool:
     return isinstance(value, str) and bool(value) and set(value.lower()) <= {"0"}
 
 
+def _valid_sha256(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(ch in "0123456789abcdefABCDEF" for ch in value)
+        and not _zeroish(value)
+    )
+
+
+def _valid_commit(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and 7 <= len(value) <= 40
+        and all(ch in "0123456789abcdefABCDEF" for ch in value)
+        and not _zeroish(value)
+    )
+
+
 def _artifact_blockers(
     artifact: Any,
     *,
@@ -38,8 +56,8 @@ def _artifact_blockers(
     digest = artifact.get("sha256")
     if not isinstance(ref, str) or not ref or _placeholder(ref):
         blockers.append(f"{label}.path_or_ref is missing or placeholder")
-    if not isinstance(digest, str) or len(digest) != 64 or _zeroish(digest):
-        blockers.append(f"{label}.sha256 is missing or placeholder")
+    if not _valid_sha256(digest):
+        blockers.append(f"{label}.sha256 is missing, malformed, or placeholder")
 
 
 def assess_confirmatory_result_manifest(
@@ -52,16 +70,32 @@ def assess_confirmatory_result_manifest(
 
     blockers: list[str] = []
 
+    if document.get("schema_version") != "0.2.0":
+        blockers.append("result manifest schema_version is not 0.2.0")
     if document.get("status") != "execution_complete_audited":
         blockers.append("result manifest is not execution_complete_audited")
     if document.get("created_at") is None:
         blockers.append("result manifest has no creation timestamp")
     if _placeholder(document.get("result_manifest_id")):
         blockers.append("result_manifest_id is still a placeholder")
-    if _zeroish(document.get("repository_commit")):
-        blockers.append("repository_commit is still a zero placeholder")
+    result_commit = document.get("repository_commit")
+    if not _valid_commit(result_commit):
+        blockers.append("repository_commit is missing, malformed, or placeholder")
+    run_commit = run_plan.get("repository_commit")
+    if not _valid_commit(run_commit):
+        blockers.append("run plan repository_commit is missing or malformed")
+    elif (
+        isinstance(result_commit, str)
+        and _valid_commit(result_commit)
+        and result_commit.lower() != str(run_commit).lower()
+    ):
+        blockers.append("result repository_commit does not match run plan")
 
-    if document.get("run_plan_sha256") != run_plan_sha256:
+    if not _valid_sha256(run_plan_sha256):
+        blockers.append("supplied run_plan_sha256 is missing or malformed")
+    if not _valid_sha256(document.get("run_plan_sha256")):
+        blockers.append("result manifest run_plan_sha256 is missing or malformed")
+    elif document.get("run_plan_sha256") != run_plan_sha256:
         blockers.append("result manifest run_plan_sha256 does not match run plan")
 
     sealed_plan = run_plan.get("sealed_set")
