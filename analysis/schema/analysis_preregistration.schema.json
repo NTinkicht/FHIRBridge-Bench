@@ -14,14 +14,34 @@
     "primary_estimand",
     "paired_comparisons",
     "multiplicity",
-    "bootstrap"
+    "bootstrap",
+    "mcnemar",
+    "companion_estimand"
   ],
   "properties": {
-    "schema_version": {"const": "0.1.0"},
-    "analysis_id": {"type": "string", "minLength": 1},
-    "status": {"enum": ["incomplete_template", "preregistered"]},
-    "created_at": {"type": ["string", "null"], "format": "date-time"},
-    "sealed_set_opened": {"const": false},
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "analysis_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "incomplete_template",
+        "preregistered"
+      ]
+    },
+    "created_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "sealed_set_opened": {
+      "const": false
+    },
     "frozen_inputs": {
       "type": "object",
       "additionalProperties": false,
@@ -36,9 +56,15 @@
           "type": "string",
           "pattern": "^[0-9a-fA-F]{7,40}$"
         },
-        "projectability_contract_sha256": {"$ref": "#/$defs/sha256"},
-        "structural_validity_policy_sha256": {"$ref": "#/$defs/sha256"},
-        "statistical_analysis_plan_sha256": {"$ref": "#/$defs/sha256"}
+        "projectability_contract_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "structural_validity_policy_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "statistical_analysis_plan_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
       }
     },
     "primary_estimand": {
@@ -51,9 +77,15 @@
         "semantic_condition"
       ],
       "properties": {
-        "name": {"const": "VUR"},
-        "direction": {"const": "FHIR_to_HL7v2"},
-        "structural_condition": {"const": "VALID"},
+        "name": {
+          "const": "VUR"
+        },
+        "direction": {
+          "const": "FHIR_to_HL7v2"
+        },
+        "structural_condition": {
+          "const": "VALID"
+        },
         "semantic_condition": {
           "const": "determinate_FAITHFUL_or_UNFAITHFUL"
         }
@@ -71,7 +103,10 @@
         "analysis_set_rule": {
           "const": "both_arms_VALID_and_semantic_determinate_for_VUR"
         },
-        "cluster_id_field": {"type": "string", "minLength": 1},
+        "cluster_id_field": {
+          "type": "string",
+          "minLength": 1
+        },
         "comparison_family": {
           "type": "array",
           "minItems": 1,
@@ -79,11 +114,24 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["comparison_id", "arm_a", "arm_b"],
+            "required": [
+              "comparison_id",
+              "arm_a",
+              "arm_b"
+            ],
             "properties": {
-              "comparison_id": {"type": "string", "minLength": 1},
-              "arm_a": {"type": "string", "minLength": 1},
-              "arm_b": {"type": "string", "minLength": 1}
+              "comparison_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "arm_a": {
+                "type": "string",
+                "minLength": 1
+              },
+              "arm_b": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           }
         }
@@ -92,38 +140,70 @@
     "multiplicity": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["secondary_pairwise_method"],
+      "required": [
+        "secondary_pairwise_method"
+      ],
       "properties": {
-        "secondary_pairwise_method": {"const": "Holm"}
+        "secondary_pairwise_method": {
+          "const": "Holm"
+        }
       }
     },
     "bootstrap": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["method", "iterations", "seed", "confidence_level"],
+      "required": [
+        "method",
+        "iterations",
+        "seed",
+        "confidence_level"
+      ],
       "properties": {
-        "method": {"const": "paired_cluster_percentile"},
-        "iterations": {"const": 10000},
-        "seed": {"type": "integer", "minimum": 0},
-        "confidence_level": {"const": 0.95}
+        "method": {
+          "const": "paired_cluster_percentile"
+        },
+        "iterations": {
+          "const": 10000
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "confidence_level": {
+          "const": 0.95
+        }
       }
     },
     "mcnemar": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["method", "sidedness"],
+      "required": [
+        "method",
+        "sidedness"
+      ],
       "properties": {
-        "method": {"const": "exact_binomial"},
-        "sidedness": {"const": "two_sided"}
+        "method": {
+          "const": "exact_binomial"
+        },
+        "sidedness": {
+          "const": "two_sided"
+        }
       }
     },
     "companion_estimand": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "denominator"],
+      "required": [
+        "name",
+        "denominator"
+      ],
       "properties": {
-        "name": {"const": "VFY"},
-        "denominator": {"const": "all_attempted_transformations"}
+        "name": {
+          "const": "VFY"
+        },
+        "denominator": {
+          "const": "all_attempted_transformations"
+        }
       }
     }
   },
