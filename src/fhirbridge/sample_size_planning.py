@@ -15,9 +15,10 @@ from statistics import NormalDist
 
 @dataclass(frozen=True)
 class PrecisionPlan:
-    independent_n: int
-    cluster_inflated_n: int
-    attempted_n: int
+    independent_row_n: int
+    cluster_inflated_row_n: int
+    attempted_row_n: int
+    planned_source_cluster_count: int
     expected_rate: float
     target_half_width: float
     confidence_level: float
@@ -27,9 +28,10 @@ class PrecisionPlan:
 
 @dataclass(frozen=True)
 class PairedMcNemarPlan:
-    pair_n_independent: int
-    cluster_inflated_pair_n: int
-    attempted_pair_n: int
+    independent_pair_row_n: int
+    cluster_inflated_pair_row_n: int
+    attempted_pair_row_n: int
+    planned_source_cluster_count: int
     p10: float
     p01: float
     absolute_risk_difference: float
@@ -170,9 +172,12 @@ def plan_proportion_precision(
         expected_analysis_retention=expected_analysis_retention,
     )
     return PrecisionPlan(
-        independent_n=independent_n,
-        cluster_inflated_n=clustered,
-        attempted_n=attempted,
+        independent_row_n=independent_n,
+        cluster_inflated_row_n=clustered,
+        attempted_row_n=attempted,
+        planned_source_cluster_count=math.ceil(
+            attempted / mean_cluster_size
+        ),
         expected_rate=expected_rate,
         target_half_width=target_half_width,
         confidence_level=confidence_level,
@@ -240,9 +245,12 @@ def plan_paired_mcnemar(
         expected_analysis_retention=expected_pair_retention,
     )
     return PairedMcNemarPlan(
-        pair_n_independent=independent_n,
-        cluster_inflated_pair_n=clustered,
-        attempted_pair_n=attempted,
+        independent_pair_row_n=independent_n,
+        cluster_inflated_pair_row_n=clustered,
+        attempted_pair_row_n=attempted,
+        planned_source_cluster_count=math.ceil(
+            attempted / mean_cluster_size
+        ),
         p10=p10,
         p01=p01,
         absolute_risk_difference=abs(p10 - p01),
