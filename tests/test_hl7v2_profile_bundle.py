@@ -6,8 +6,10 @@ import pytest
 from fhirbridge.hl7v2_profile_bundle import (
     assert_oru_r01_v251_profile,
     assert_single_oru_r01_profile,
+    assess_lri_target_reference_signals,
     compute_profile_bundle_manifest,
     inspect_profile_identity,
+    inspect_profile_reference_inventory,
     inspect_profile_messages,
 )
 
@@ -223,3 +225,117 @@ def test_nested_unknown_companion_is_part_of_scientific_hash(tmp_path: Path) -> 
         item.name for item in before.files
     }
     assert before.aggregate_sha256 != after.aggregate_sha256
+
+
+def test_profile_reference_inventory_collects_oids_and_named_tokens(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "PROFILE.xml").write_text(
+        (
+            '<ConformanceProfile HL7Version="2.5.1">'
+            '<Message ID="LRI_NG_FRU_Profile_V3" Type="ORU" Event="R01" '
+            'StructID="ORU_R01" ProfileOID="2.16.840.1.113883.9.195.3.25"/>'
+            '<Component Name="LRI_Common_Component_V3" '
+            'OID="2.16.840.1.113883.9.195.3.22"/>'
+            '<Component Name="LRI_NG_Component_R1" '
+            'OID="2.16.840.1.113883.9.13"/>'
+            '</ConformanceProfile>'
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "CONSTRAINTS.xml").write_text(
+        (
+            '<Constraints Component="LAB_FRU_Component" '
+            'OID="2.16.840.1.113883.9.83" '
+            'LegacyOID="2.16.840.1.113883.9.195.3.3"/>'
+        ),
+        encoding="utf-8",
+    )
+
+    inventory = inspect_profile_reference_inventory(tmp_path)
+    signals = assess_lri_target_reference_signals(inventory)
+
+    oid_values = {item.value for item in inventory.oids}
+    token_values = {item.value for item in inventory.named_tokens}
+    assert "LRI_NG_FRU_Profile_V3" in token_values
+    assert "LRI_Common_Component_V3" in token_values
+    assert "LRI_NG_Component_R1" in token_values
+    assert "LAB_FRU_Component" in token_values
+    assert {
+        "2.16.840.1.113883.9.195.3.22",
+        "2.16.840.1.113883.9.13",
+        "2.16.840.1.113883.9.83",
+        "2.16.840.1.113883.9.195.3.25",
+        "2.16.840.1.113883.9.195.3.3",
+    }.issubset(oid_values)
+
+    assert signals["selected_profile_name_observed"] is True
+    assert signals["all_required_component_oid_signals_observed"] is True
+    assert signals["pdf_candidate_precoordinated_oid_observed"] is True
+    assert signals["pdf_conflicting_precoordinated_oid_observed"] is True
+    assert (
+        signals["precoordinated_oid_required_for_acquisition_acceptance"]
+        is False
+    )
+    assert signals["provenance_conclusion"] == (
+        "not_established_by_lexical_signals"
+    )
+
+
+def test_reference_inventory_preserves_file_level_occurrence_evidence(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "PROFILE.xml").write_text(
+        (
+            '<ConformanceProfile HL7Version="2.5.1">'
+            '<Message ID="LRI_NG_FRU_Profile_V3" Type="ORU" Event="R01" '
+            'StructID="ORU_R01" OID="2.16.840.1.113883.9.13"/>'
+            '</ConformanceProfile>'
+        ),
+        encoding="utf-8",
+    )
+    nested = tmp_path / "resources"
+    nested.mkdir()
+    (nested / "components.xml").write_text(
+        (
+            '<Components Token="LRI_NG_Component_R1" '
+            'OID="2.16.840.1.113883.9.13"/>'
+        ),
+        encoding="utf-8",
+    )
+
+    inventory = inspect_profile_reference_inventory(tmp_path)
+
+    oid = next(
+        item
+        for item in inventory.oids
+        if item.value == "2.16.840.1.113883.9.13"
+    )
+    assert oid.files == ("PROFILE.xml", "resources/components.xml")
+    assert oid.occurrence_count == 2
+
+
+def test_missing_component_signals_are_reported_not_silently_inferred(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "PROFILE.xml").write_text(
+        (
+            '<ConformanceProfile HL7Version="2.5.1">'
+            '<Message ID="LRI_NG_FRU_Profile_V3" Type="ORU" Event="R01" '
+            'StructID="ORU_R01"/>'
+            '</ConformanceProfile>'
+        ),
+        encoding="utf-8",
+    )
+
+    signals = assess_lri_target_reference_signals(
+        inspect_profile_reference_inventory(tmp_path)
+    )
+
+    assert signals["selected_profile_name_observed"] is True
+    assert signals["all_required_component_oid_signals_observed"] is False
+    assert signals["missing_required_component_oids"] == [
+        "2.16.840.1.113883.9.13",
+        "2.16.840.1.113883.9.195.3.22",
+        "2.16.840.1.113883.9.83",
+    ]
