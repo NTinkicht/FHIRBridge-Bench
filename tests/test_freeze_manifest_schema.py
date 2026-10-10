@@ -20,7 +20,7 @@ def _write_yaml(tmp_path: Path, name: str, payload: dict) -> Path:
 def test_nonassertive_freeze_manifest_template_matches_schema() -> None:
     document = load_yaml(TEMPLATE)
 
-    assert document["schema_version"] == "0.3.0"
+    assert document["schema_version"] == "0.4.0"
     assert validate_document(TEMPLATE, SCHEMA) == []
 
 
@@ -146,7 +146,12 @@ def test_reviewer_roster_hash_must_be_sha256(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     "artifact_name",
-    ["reviewer_roster", "case_assignment_manifest", "analysis_preregistration"],
+    [
+        "reviewer_roster",
+        "case_assignment_manifest",
+        "analysis_preregistration",
+        "model_prompt_configuration",
+    ],
 )
 def test_freeze_manifest_requires_governance_artifacts(
     tmp_path: Path,
