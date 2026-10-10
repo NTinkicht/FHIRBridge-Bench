@@ -8,8 +8,8 @@ from pathlib import Path
 import fhirbridge.schema_validation
 from fhirbridge.contract_review_assignment import build_contract_review_assignment
 
-_CONTRACT = "contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml"
-_CANDIDATES = "contracts/review/relationship_candidates_v0.1.yaml"
+_CONTRACT = "contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml"
+_CANDIDATES = "contracts/review/relationship_candidates_v0.2.yaml"
 
 
 def main() -> int:
@@ -19,7 +19,7 @@ def main() -> int:
 
     output_dir = Path("contracts/review/generated")
     output_dir.mkdir(parents=True, exist_ok=True)
-    output = output_dir / "contract-review-assignment-v0.2.json"
+    output = output_dir / "contract-review-assignment-v0.3-blind.json"
     output.write_text(
         json.dumps(assignment, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
