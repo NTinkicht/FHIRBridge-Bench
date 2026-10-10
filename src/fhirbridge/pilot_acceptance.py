@@ -82,12 +82,31 @@ def assess_pilot_acceptance_preregistration(
         else:
             counts.append(value)
     case_count = pilot.get("case_count")
+    runtime_indeterminate_count = metrics.get("runtime_indeterminate_count")
+    if (
+        not isinstance(runtime_indeterminate_count, int)
+        or runtime_indeterminate_count < 0
+    ):
+        blockers.append(
+            "runtime_indeterminate_count must be a nonnegative integer"
+        )
+    elif isinstance(case_count, int) and runtime_indeterminate_count > case_count:
+        blockers.append("runtime_indeterminate_count exceeds case_count")
+
+    determinate_case_count = (
+        case_count - runtime_indeterminate_count
+        if isinstance(case_count, int)
+        and isinstance(runtime_indeterminate_count, int)
+        else None
+    )
     if (
         len(counts) == len(count_keys)
-        and isinstance(case_count, int)
-        and sum(counts) != case_count
+        and isinstance(determinate_case_count, int)
+        and sum(counts) != determinate_case_count
     ):
-        blockers.append("pilot confusion counts do not sum to case_count")
+        blockers.append(
+            "pilot confusion counts do not sum to determinate case count"
+        )
 
     positive_count = pilot.get("expert_major_error_positive_count")
     negative_count = pilot.get("expert_major_error_negative_count")
@@ -99,7 +118,14 @@ def assess_pilot_acceptance_preregistration(
                 "expert positive/negative counts do not sum to case_count"
             )
 
-    for metric_name in ("sensitivity", "specificity", "ppv", "npv", "accuracy"):
+    for metric_name in (
+        "sensitivity",
+        "specificity",
+        "ppv",
+        "npv",
+        "accuracy",
+        "runtime_indeterminate_rate",
+    ):
         metric = metrics.get(metric_name)
         if not isinstance(metric, dict):
             blockers.append(f"{metric_name} metric is missing")
@@ -115,18 +141,49 @@ def assess_pilot_acceptance_preregistration(
         if metric.get("method") != "Wilson_95_percent":
             blockers.append(f"{metric_name} does not use Wilson_95_percent")
 
+    indeterminate_metric = metrics.get("runtime_indeterminate_rate")
+    if (
+        isinstance(indeterminate_metric, dict)
+        and isinstance(case_count, int)
+        and case_count > 0
+        and isinstance(runtime_indeterminate_count, int)
+    ):
+        expected_rate = runtime_indeterminate_count / case_count
+        estimate = indeterminate_metric.get("estimate")
+        if (
+            not isinstance(estimate, (int, float))
+            or abs(float(estimate) - expected_rate) > 1e-12
+        ):
+            blockers.append(
+                "runtime_indeterminate_rate estimate does not match count/case_count"
+            )
+
     gate = document.get("acceptance_gate", {})
     if not isinstance(gate, dict):
         blockers.append("acceptance_gate is missing")
         gate = {}
-    for name in ("minimum_sensitivity", "minimum_ppv"):
+    for name in (
+        "minimum_sensitivity",
+        "minimum_ppv",
+        "maximum_runtime_indeterminate_rate",
+    ):
         value = gate.get(name)
         if not isinstance(value, (int, float)) or not 0 <= value <= 1:
             blockers.append(f"{name} must be numeric in [0,1]")
-    for name in ("sensitivity_rationale", "ppv_rationale"):
+    for name in (
+        "sensitivity_rationale",
+        "ppv_rationale",
+        "indeterminate_rationale",
+    ):
         value = gate.get(name)
         if not isinstance(value, str) or not value.strip() or _placeholder(value):
             blockers.append(f"{name} is missing or still a placeholder")
+
+    if gate.get("indeterminate_statistic") not in {
+        "point_estimate",
+        "upper_95_percent_confidence_bound",
+    }:
+        blockers.append("indeterminate_statistic is not frozen to an allowed value")
 
     timing = document.get("timing_attestation", {})
     if not isinstance(timing, dict):
