@@ -1,7 +1,7 @@
 policy:
   id: FHIRBRIDGE-FHIR-WARNINGS-001
   version: 0.1.0
-  status: candidate
+  status: frozen
   scope: FHIR_R4_US_CORE_9_0_0_structural_qualification
   purpose: >-
     Fail closed on previously unseen FHIR validator warnings while retaining
@@ -58,3 +58,27 @@ freeze_rules:
   accepted_categories_must_be_versioned: true
   warning_text_must_be_archived: true
   no_warning_may_be_promoted_to_semantic_equivalence: true
+
+freeze_evidence:
+  frozen_scope: pinned_offline_FHIR_CLI_log_classification
+  validator_version: "6.10.0"
+  validator_artifact_sha256: fc663ae55dd31bbfde19788dddfb49cacbeebc3c64498fa7b7779df90000434b
+  fhir_version: "4.0.1"
+  implementation_guide: hl7.fhir.us.core#9.0.0
+  terminology_server_mode: disabled_tx_n_a
+  combined_warning_audit:
+    github_actions_run_id: 38072689400
+    github_actions_job_id: 114273236072
+    result: success
+    baseline_and_order_context_directories_audited: true
+    primary_order_context_fixture_count: 11
+    unknown_warning_count_required_by_CI: 0
+    total_error_count_required_by_CI: 0
+  terminology_scope_justification: >-
+    Live terminology is intentionally disabled in the structural validator.
+    UCUM, LOINC, and THO-sensitive terminology requirements are handled by
+    separately pinned qualification paths; accepted offline-terminology
+    warnings cannot establish semantic equivalence.
+  classifier: src/fhirbridge/structural_validity_policy.py::classify_fhir_validator_log
+  unknown_warning_behavior: POLICY_UNRESOLVED
+  validator_execution_failure_behavior: MEASUREMENT_FAILURE
