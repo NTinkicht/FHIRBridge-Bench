@@ -279,7 +279,8 @@ def audit_confirmatory_execution(
                 )
             if record.get("source_execution_id") is not None:
                 blockers.append(
-                    "/".join(key) + ": provider strategy must not reference source_execution_id"
+                    "/".join(key)
+                    + ": provider strategy must not reference source_execution_id"
                 )
             prompt_hash = record.get("rendered_prompt_sha256")
             if not _valid_sha256(prompt_hash):
@@ -298,7 +299,8 @@ def audit_confirmatory_execution(
                 if not _valid_sha256(mapping_context_hash):
                     blockers.append(
                         "/".join(key)
-                        + ": mapping strategy mapping_context_sha256 is missing or invalid"
+                        + ": mapping strategy mapping_context_sha256 is missing "
+                        "or invalid"
                     )
             provider_calls += 1
         elif strategy_id == _REPAIR:
@@ -317,7 +319,8 @@ def audit_confirmatory_execution(
                 )
             if record.get("provider_request_id") is not None:
                 blockers.append(
-                    "/".join(key) + ": repair strategy must not have provider_request_id"
+                    "/".join(key)
+                    + ": repair strategy must not have provider_request_id"
                 )
             if record.get("rendered_prompt_sha256") is not None:
                 blockers.append(
