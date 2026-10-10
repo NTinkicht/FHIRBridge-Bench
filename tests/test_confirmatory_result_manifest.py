@@ -63,6 +63,13 @@ def _ready() -> dict:
             "record_count": 10,
         }
     )
+    document["execution_schema_validation"].update(
+        {
+            "path_or_ref": "runs/results/execution-schema-validation.json",
+            "sha256": "8" * 64,
+            "complete": True,
+        }
+    )
     document["execution_audit"].update(
         {
             "path_or_ref": "runs/results/execution-audit.json",
@@ -215,3 +222,11 @@ def test_result_manifest_rejects_incomplete_validation_or_verification_evidence(
 
     assert not readiness.ready
     assert any(expected_fragment in item for item in readiness.blockers)
+
+
+def test_execution_schema_validation_must_be_complete() -> None:
+    document = _ready()
+    document["execution_schema_validation"]["complete"] = False
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(_schema()).validate(document)
