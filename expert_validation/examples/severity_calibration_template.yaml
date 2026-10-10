@@ -1,0 +1,48 @@
+schema_version: "0.1.0"
+calibration_id: "SEVERITY-CALIBRATION-TO-BE-ASSIGNED"
+status: incomplete_template
+created_at: null
+severity_policy_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+reviewers:
+  - reviewer_id: "REVIEWER-A-TO-BE-ASSIGNED"
+    expertise:
+      - "TO_BE_COMPLETED"
+    conflicts_of_interest: "TO_BE_COMPLETED"
+    prior_project_involvement: "TO_BE_COMPLETED"
+  - reviewer_id: "REVIEWER-B-TO-BE-ASSIGNED"
+    expertise:
+      - "TO_BE_COMPLETED"
+    conflicts_of_interest: "TO_BE_COMPLETED"
+    prior_project_involvement: "TO_BE_COMPLETED"
+anchor_reviews:
+  - &placeholder_anchor
+    anchor_id: "ANCHOR-TO-BE-ASSIGNED"
+    anchor_description: "TO_BE_COMPLETED"
+    expected_boundary_role: S2_S3_boundary
+    reviewer_ratings:
+      - reviewer_id: "REVIEWER-A-TO-BE-ASSIGNED"
+        severity: INDETERMINATE
+        rationale: "TO_BE_COMPLETED"
+      - reviewer_id: "REVIEWER-B-TO-BE-ASSIGNED"
+        severity: INDETERMINATE
+        rationale: "TO_BE_COMPLETED"
+    adjudicated_severity: INDETERMINATE
+    adjudication_rationale: "TO_BE_COMPLETED"
+  - <<: *placeholder_anchor
+  - <<: *placeholder_anchor
+  - <<: *placeholder_anchor
+pre_adjudication_agreement:
+  anchor_count: 4
+  exact_agreement_count: 0
+  exact_agreement_rate: 0.0
+  disagreement_anchor_ids: []
+major_threshold_decision:
+  threshold: S2_or_higher
+  included_levels: [S2, S3]
+  rationale: "TO_BE_CONFIRMED_BY_EXPERT_CALIBRATION"
+  decision_status: frozen_for_confirmatory_endpoint
+attestation:
+  independent_initial_ratings: true
+  sealed_cases_used: false
+  adjudication_after_initial_ratings: true
+  all_disagreements_retained: true
