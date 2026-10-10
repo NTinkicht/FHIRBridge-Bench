@@ -10,6 +10,9 @@ import yaml
 from fhirbridge.analysis_design_consistency import (
     assess_analysis_design_consistency,
 )
+from fhirbridge.measurement_policy_readiness import (
+    assess_measurement_policies,
+)
 from fhirbridge.tooling_manifest import assess_freeze_readiness
 
 _TOOLING = Path("benchmark/tooling_versions.yaml")
@@ -21,6 +24,10 @@ _ANALYSIS_TEMPLATE = Path(
 )
 _SAMPLE_SIZE_METHOD = Path("analysis/sample_size_method.yaml")
 _EXECUTION_POLICY = Path("models/execution_policy.yaml")
+_CONTRACT = Path("contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml")
+_FAULT_TAXONOMY = Path("fault_injection/fault_taxonomy_v0.1.yaml")
+_SEVERITY_POLICY = Path("benchmark/severity_policy_candidate.yaml")
+_PRECEDENCE_POLICY = Path("benchmark/error_precedence_policy_candidate.yaml")
 
 
 def _load(path: Path) -> dict:
@@ -38,6 +45,12 @@ def build_report() -> dict:
         _load(_ANALYSIS_TEMPLATE),
         _load(_SAMPLE_SIZE_METHOD),
         _load(_EXECUTION_POLICY),
+    )
+    measurement_policies = assess_measurement_policies(
+        _load(_CONTRACT),
+        _load(_FAULT_TAXONOMY),
+        _load(_SEVERITY_POLICY),
+        _load(_PRECEDENCE_POLICY),
     )
     gates_doc = _load(_PROTOCOL_GATES)
     gates = gates_doc.get("gates")
@@ -86,6 +99,7 @@ def build_report() -> dict:
         tooling.ready
         and tooling.manifest_status == "frozen"
         and design_consistency.consistent
+        and measurement_policies.freeze_ready
         and not protocol_blockers
     )
     return {
@@ -101,6 +115,14 @@ def build_report() -> dict:
             "blocker_count": len(design_consistency.blockers),
             "blockers": list(design_consistency.blockers),
         },
+        "measurement_policy": {
+            "consistent": measurement_policies.consistent,
+            "freeze_ready": measurement_policies.freeze_ready,
+            "consistency_blockers": list(
+                measurement_policies.consistency_blockers
+            ),
+            "freeze_blockers": list(measurement_policies.freeze_blockers),
+        },
         "protocol_non_tooling": {
             "ready": not protocol_blockers,
             "gate_blocker_count": len(protocol_blockers),
@@ -111,6 +133,7 @@ def build_report() -> dict:
         "total_blocking_categories": (
             (1 if tooling_blockers or tooling.manifest_status != "frozen" else 0)
             + (0 if design_consistency.consistent else 1)
+            + (0 if measurement_policies.freeze_ready else 1)
             + len(protocol_blockers)
         ),
         "interpretation": (
