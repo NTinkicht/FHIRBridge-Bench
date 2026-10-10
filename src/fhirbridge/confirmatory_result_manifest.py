@@ -84,6 +84,7 @@ def assess_confirmatory_result_manifest(
 
     raw = document.get("raw_execution_records")
     baseline = document.get("deterministic_baseline_outputs")
+    schema_validation = document.get("execution_schema_validation")
     audit = document.get("execution_audit")
     structural = document.get("structural_validation_evidence")
     semantic = document.get("semantic_verification_evidence")
@@ -92,6 +93,11 @@ def assess_confirmatory_result_manifest(
     _artifact_blockers(
         baseline,
         label="deterministic_baseline_outputs",
+        blockers=blockers,
+    )
+    _artifact_blockers(
+        schema_validation,
+        label="execution_schema_validation",
         blockers=blockers,
     )
     _artifact_blockers(audit, label="execution_audit", blockers=blockers)
@@ -111,6 +117,11 @@ def assess_confirmatory_result_manifest(
         blockers=blockers,
     )
 
+    if (
+        isinstance(schema_validation, dict)
+        and schema_validation.get("complete") is not True
+    ):
+        blockers.append("execution schema validation is not complete")
     if isinstance(audit, dict) and audit.get("complete") is not True:
         blockers.append("execution audit is not complete")
 
