@@ -29,6 +29,7 @@ def test_complete_pilot_gate_record_can_be_ready() -> None:
         {
             "pilot_case_manifest_sha256": "1" * 64,
             "pilot_adjudication_bundle_sha256": "2" * 64,
+            "pilot_verifier_results_bundle_sha256": "5" * 64,
             "case_count": 10,
             "expert_major_error_positive_count": 4,
             "expert_major_error_negative_count": 6,
