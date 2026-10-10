@@ -24,7 +24,7 @@ def test_sample_size_template_is_schema_valid_and_nonassertive() -> None:
 
     jsonschema.Draft202012Validator(_schema()).validate(document)
 
-    assert document["schema_version"] == "0.4.0"
+    assert document["schema_version"] == "0.5.0"
     assert document["status"] == "incomplete_template"
     assert document["sealed_set_opened"] is False
 
@@ -66,6 +66,30 @@ def test_sample_size_schema_requires_source_cluster_attestation() -> None:
 def test_sample_size_schema_requires_frozen_method() -> None:
     document = _template()
     del document["frozen_method"]
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+def test_sample_size_schema_requires_model_keys() -> None:
+    document = _template()
+    del document["model_keys"]
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+def test_sample_size_schema_requires_multiplicity_record() -> None:
+    document = _template()
+    del document["multiplicity"]
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+def test_sample_size_schema_requires_model_config_hash() -> None:
+    document = _template()
+    del document["frozen_method"]["model_prompt_configuration_sha256"]
 
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.Draft202012Validator(_schema()).validate(document)
