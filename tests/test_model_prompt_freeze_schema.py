@@ -23,11 +23,15 @@ def test_model_prompt_freeze_template_is_schema_valid_but_nonassertive() -> None
 
     jsonschema.Draft202012Validator(_schema()).validate(document)
 
-    assert document["schema_version"] == "0.3.0"
+    assert document["schema_version"] == "0.4.0"
     policy = document["global_execution_policy"]
     assert policy["policy_id"] == "FHIRBRIDGE-MODEL-EXECUTION-001"
-    assert policy["policy_version"] == "0.1.0"
-    assert policy["logical_generation_attempts_per_case_arm_model"] == 1
+    assert policy["policy_version"] == "0.2.0"
+    assert policy["provider_generation_calls_per_case_model"] == {
+        "direct_structured_llm": 1,
+        "mapping_aware_llm": 1,
+        "mapping_aware_plus_syntax_repair": 0,
+    }
     assert policy["retry_policy"] == {"maximum_attempts": 1, "retry_on": []}
     assert policy["timeout_seconds"] == 120
     assert document["status"] == "incomplete_template"
@@ -96,6 +100,29 @@ def test_model_prompt_schema_forbids_retry_drift() -> None:
 def test_model_prompt_schema_forbids_timeout_drift() -> None:
     document = _template()
     document["global_execution_policy"]["timeout_seconds"] = 121
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+def test_model_prompt_schema_forbids_extra_repair_provider_call() -> None:
+    document = _template()
+    document["global_execution_policy"][
+        "provider_generation_calls_per_case_model"
+    ]["mapping_aware_plus_syntax_repair"] = 1
+
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+def test_model_prompt_schema_requires_repair_to_reuse_mapping_raw_output() -> None:
+    document = _template()
+    repair = next(
+        strategy
+        for strategy in document["llm_strategies"]
+        if strategy["strategy_id"] == "mapping_aware_plus_syntax_repair"
+    )
+    repair["generation_source"] = "provider_call"
 
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.Draft202012Validator(_schema()).validate(document)
