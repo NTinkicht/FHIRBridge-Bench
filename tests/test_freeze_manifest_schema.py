@@ -17,6 +17,9 @@ def _write_yaml(tmp_path: Path, name: str, payload: dict) -> Path:
 
 
 def test_nonassertive_freeze_manifest_template_matches_schema() -> None:
+    document = load_yaml(TEMPLATE)
+
+    assert document["schema_version"] == "0.2.0"
     assert validate_document(TEMPLATE, SCHEMA) == []
 
 
@@ -113,3 +116,28 @@ def test_postfreeze_amendment_disposition_is_constrained(tmp_path: Path) -> None
 
     assert problems
     assert any("IGNORE_AND_CONTINUE" in problem.message for problem in problems)
+
+
+def test_freeze_manifest_requires_pinned_reviewer_roster(tmp_path: Path) -> None:
+    manifest = deepcopy(load_yaml(TEMPLATE))
+    del manifest["reviewer_roster"]
+
+    problems = validate_document(
+        _write_yaml(tmp_path, "missing-reviewer-roster.yaml", manifest),
+        SCHEMA,
+    )
+
+    assert problems
+    assert any("reviewer_roster" in problem.message for problem in problems)
+
+
+def test_reviewer_roster_hash_must_be_sha256(tmp_path: Path) -> None:
+    manifest = deepcopy(load_yaml(TEMPLATE))
+    manifest["reviewer_roster"]["sha256"] = "not-a-hash"
+
+    problems = validate_document(
+        _write_yaml(tmp_path, "bad-reviewer-roster-hash.yaml", manifest),
+        SCHEMA,
+    )
+
+    assert problems
