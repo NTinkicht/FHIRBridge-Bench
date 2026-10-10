@@ -11,7 +11,7 @@ from .sample_size_planning import (
     plan_proportion_precision,
 )
 
-_EXPECTED_COMPARISONS = frozenset(
+_EXPECTED_BASE_COMPARISONS = frozenset(
     {
         "BASELINE_vs_DIRECT",
         "BASELINE_vs_MAPPING",
@@ -22,7 +22,8 @@ _EXPECTED_COMPARISONS = frozenset(
     }
 )
 _PLACEHOLDER_TOKENS = ("TO_BE_", "TO-BE-", "TO BE ")
-_PLANNING_ALPHA = 0.05 / 6.0
+_FAMILYWISE_ALPHA = 0.05
+_PLANNING_POWER = 0.80
 
 
 @dataclass(frozen=True)
@@ -76,6 +77,7 @@ def assess_sample_size_preregistration(
     for key in (
         "sample_size_method_sha256",
         "core_confirmatory_design_sha256",
+        "model_prompt_configuration_sha256",
     ):
         if _zero_hash(frozen_method.get(key)):
             blockers.append(f"{key} is still a zero placeholder")
@@ -103,6 +105,62 @@ def assess_sample_size_preregistration(
         blockers.append("mean_cluster_size must be >= 1")
     if not isinstance(icc, (int, float)) or not 0 <= icc <= 1:
         blockers.append("icc must be numeric in [0,1]")
+
+    model_keys = document.get("model_keys")
+    if not isinstance(model_keys, list) or not model_keys:
+        blockers.append("model_keys must be a non-empty list")
+        model_keys = []
+    normalized_model_keys: list[str] = []
+    for model_key in model_keys:
+        if (
+            not isinstance(model_key, str)
+            or not model_key
+            or _placeholder(model_key)
+        ):
+            blockers.append("model_keys contain missing or placeholder values")
+            continue
+        if model_key in normalized_model_keys:
+            blockers.append(f"duplicate model_key: {model_key}")
+        normalized_model_keys.append(model_key)
+
+    expected_family_size = 6 * len(normalized_model_keys)
+    expected_ids = {
+        f"{model_key}__{base_id}"
+        for model_key in normalized_model_keys
+        for base_id in _EXPECTED_BASE_COMPARISONS
+    }
+
+    multiplicity = document.get("multiplicity")
+    if not isinstance(multiplicity, dict):
+        blockers.append("multiplicity is missing")
+        multiplicity = {}
+    if multiplicity.get("method") != "Holm":
+        blockers.append("sample-size multiplicity method is not Holm")
+    if not _same_float(
+        multiplicity.get("familywise_alpha"),
+        _FAMILYWISE_ALPHA,
+    ):
+        blockers.append("sample-size familywise alpha is not 0.05")
+    if multiplicity.get("comparison_family_size") != expected_family_size:
+        blockers.append(
+            "comparison_family_size must equal six times frozen model count"
+        )
+    if multiplicity.get("planning_alpha_policy") != (
+        "Bonferroni_upper_bound_for_Holm_family"
+    ):
+        blockers.append("sample-size planning alpha policy is not frozen")
+    planning_alpha = (
+        _FAMILYWISE_ALPHA / expected_family_size
+        if expected_family_size > 0
+        else None
+    )
+    if planning_alpha is not None and not _same_float(
+        multiplicity.get("per_comparison_planning_alpha"),
+        planning_alpha,
+    ):
+        blockers.append(
+            "per-comparison planning alpha must equal 0.05/(6*model_count)"
+        )
 
     primary = document.get("primary_precision_plan")
     if not isinstance(primary, dict):
@@ -133,7 +191,9 @@ def assess_sample_size_preregistration(
                 confidence_level=float(confidence_level),
             )
         except ValueError as exc:
-            blockers.append(f"primary precision plan cannot be recomputed: {exc}")
+            blockers.append(
+                f"primary precision plan cannot be recomputed: {exc}"
+            )
         else:
             expected_values = {
                 "independent_row_n": recomputed_primary.independent_row_n,
@@ -166,6 +226,9 @@ def assess_sample_size_preregistration(
         pair_plans = []
 
     observed_ids: set[str] = set()
+    observed_count_by_model = {
+        model_key: 0 for model_key in normalized_model_keys
+    }
     source_cluster_requirements: list[int] = []
     primary_clusters = primary.get("planned_source_cluster_count")
     if isinstance(primary_clusters, int) and primary_clusters > 0:
@@ -176,12 +239,26 @@ def assess_sample_size_preregistration(
             blockers.append("paired comparison plan is malformed")
             continue
         comparison_id = item.get("comparison_id")
+        model_key = item.get("model_key")
         if not isinstance(comparison_id, str) or not comparison_id:
             blockers.append("paired comparison plan lacks comparison_id")
+            continue
+        if not isinstance(model_key, str) or not model_key:
+            blockers.append(f"{comparison_id}: paired plan lacks model_key")
             continue
         if comparison_id in observed_ids:
             blockers.append(f"duplicate paired comparison_id: {comparison_id}")
         observed_ids.add(comparison_id)
+        if model_key not in normalized_model_keys:
+            blockers.append(
+                f"{comparison_id}: model_key is not in frozen model_keys"
+            )
+        else:
+            observed_count_by_model[model_key] += 1
+        if not comparison_id.startswith(f"{model_key}__"):
+            blockers.append(
+                f"{comparison_id}: comparison_id must be prefixed by model_key"
+            )
 
         p10 = item.get("p10")
         p01 = item.get("p01")
@@ -196,15 +273,16 @@ def assess_sample_size_preregistration(
                 f"{comparison_id}: planning probabilities/parameters are incomplete"
             )
             continue
-        if not math.isclose(
-            float(alpha),
-            _PLANNING_ALPHA,
-            rel_tol=1e-12,
-            abs_tol=1e-12,
+        if planning_alpha is not None and not _same_float(
+            alpha,
+            planning_alpha,
         ):
             blockers.append(
-                f"{comparison_id}: planning alpha must equal 0.05/6 for the "
-                "six-comparison Holm family"
+                f"{comparison_id}: planning alpha must equal 0.05/(6*model_count)"
+            )
+        if not _same_float(power, _PLANNING_POWER):
+            blockers.append(
+                f"{comparison_id}: planning power must equal 0.80"
             )
         try:
             recomputed = plan_paired_mcnemar(
@@ -236,7 +314,10 @@ def assess_sample_size_preregistration(
                     f"{comparison_id}.{key} does not match deterministic "
                     "recomputation"
                 )
-        if not _same_float(item.get("design_effect"), recomputed.design_effect):
+        if not _same_float(
+            item.get("design_effect"),
+            recomputed.design_effect,
+        ):
             blockers.append(
                 f"{comparison_id}.design_effect does not match deterministic "
                 "recomputation"
@@ -245,11 +326,20 @@ def assess_sample_size_preregistration(
             recomputed.planned_source_cluster_count
         )
 
-    if observed_ids != _EXPECTED_COMPARISONS:
+    if observed_ids != expected_ids:
         blockers.append(
-            "paired comparison plans must cover exactly the six predeclared "
-            "strategy comparisons"
+            "paired comparison plans must cover exactly six contrasts for "
+            "every frozen model"
         )
+    if len(pair_plans) != expected_family_size:
+        blockers.append(
+            "paired comparison plan count must equal six times frozen model count"
+        )
+    for model_key, count in observed_count_by_model.items():
+        if count != 6:
+            blockers.append(
+                f"{model_key}: exactly six paired plans are required"
+            )
 
     final_count = document.get("final_source_cluster_count")
     if source_cluster_requirements:
