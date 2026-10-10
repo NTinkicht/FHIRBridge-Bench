@@ -9,6 +9,10 @@
     "execution_id",
     "case_id",
     "model_key",
+    "model_prompt_freeze_sha256",
+    "source_input_sha256",
+    "rendered_prompt_sha256",
+    "mapping_context_sha256",
     "strategy_id",
     "generation_source",
     "source_execution_id",
@@ -23,7 +27,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "0.2.0"
+      "const": "0.3.0"
     },
     "execution_id": {
       "type": "string",
@@ -127,6 +131,32 @@
       "type": [
         "string",
         "null"
+      ]
+    },
+    "model_prompt_freeze_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "source_input_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "rendered_prompt_sha256": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/sha256"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mapping_context_sha256": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/sha256"
+        },
+        {
+          "type": "null"
+        }
       ]
     }
   },
@@ -251,6 +281,63 @@
           },
           "generation_source": {
             "const": "reuse_mapping_aware_raw_output"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "strategy_id": {
+            "const": "direct_structured_llm"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "rendered_prompt_sha256": {
+            "$ref": "#/$defs/sha256"
+          },
+          "mapping_context_sha256": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "strategy_id": {
+            "const": "mapping_aware_llm"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "rendered_prompt_sha256": {
+            "$ref": "#/$defs/sha256"
+          },
+          "mapping_context_sha256": {
+            "$ref": "#/$defs/sha256"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "strategy_id": {
+            "const": "mapping_aware_plus_syntax_repair"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "rendered_prompt_sha256": {
+            "type": "null"
+          },
+          "mapping_context_sha256": {
+            "$ref": "#/$defs/sha256"
           }
         }
       }
