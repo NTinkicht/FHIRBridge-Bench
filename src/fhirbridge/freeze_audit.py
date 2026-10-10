@@ -97,6 +97,14 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
     if _zeroish_hex(manifest.get("repository_commit")):
         blockers.append("repository_commit is still a zero placeholder")
 
+    _artifact_blockers(
+        {
+            "instrument_component_manifest": manifest.get(
+                "instrument_component_manifest"
+            )
+        },
+        blockers,
+    )
     _artifact_blockers(manifest.get("instrument_components", {}), blockers)
     _artifact_blockers(
         {
