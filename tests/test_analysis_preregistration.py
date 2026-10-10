@@ -59,8 +59,8 @@ def test_analysis_template_is_schema_valid_but_not_ready() -> None:
     assert not readiness.ready
     assert any("not marked preregistered" in item for item in readiness.blockers)
     assert any("zero placeholder" in item for item in readiness.blockers)
-    assert any("comparison_family" in item for item in readiness.blockers)
-    assert any("bootstrap seed" in item for item in readiness.blockers)
+    assert not any("comparison_family" in item for item in readiness.blockers)
+    assert not any("bootstrap seed" in item for item in readiness.blockers)
 
 
 def test_complete_analysis_preregistration_can_be_ready() -> None:
