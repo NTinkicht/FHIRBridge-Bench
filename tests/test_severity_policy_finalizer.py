@@ -55,11 +55,18 @@ def _anchor(
 
 def _calibration(candidate_hash: str) -> dict:
     return {
-        "schema_version": "0.1.0",
+        "schema_version": "0.2.0",
         "calibration_id": "SEVERITY-CAL-001",
         "status": "completed",
         "created_at": "2026-10-20T18:00:00Z",
         "candidate_policy_sha256": candidate_hash,
+        "blind_stage_evidence": {
+            "assignment_id": "FHIRBRIDGE-SEVERITY-BLIND-001",
+            "reviewer_a_response_sha256": "b" * 64,
+            "reviewer_b_response_sha256": "c" * 64,
+            "original_responses_retained": True,
+            "boundary_roles_hidden_initially": True,
+        },
         "reviewers": [_reviewer("R-A"), _reviewer("R-B")],
         "anchor_reviews": [
             _anchor("A1", "S1_S2_boundary", "S1", "S2", "S2"),
@@ -131,6 +138,12 @@ def test_finalizer_freezes_reviewed_candidate_without_changing_level_definitions
         "S2_or_higher"
     )
     assert frozen["expert_calibration"]["status"] == "completed"
+    assert frozen["expert_calibration"]["blind_assignment_id"] == (
+        "FHIRBRIDGE-SEVERITY-BLIND-001"
+    )
+    assert frozen["expert_calibration"]["reviewer_a_response_sha256"] == "b" * 64
+    assert frozen["expert_calibration"]["reviewer_b_response_sha256"] == "c" * 64
+    assert frozen["expert_calibration"]["boundary_roles_hidden_initially"] is True
     assert frozen["expert_calibration"]["record_sha256"] == _MODULE._sha256(
         calibration_path
     )
