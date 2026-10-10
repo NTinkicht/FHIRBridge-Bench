@@ -1,4 +1,4 @@
-schema_version: "0.4.0"
+schema_version: "0.5.0"
 analysis_id: "ANALYSIS-TO-BE-ASSIGNED"
 status: incomplete_template
 created_at: null
@@ -10,11 +10,21 @@ frozen_inputs:
   statistical_analysis_plan_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
   model_prompt_configuration_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
   sample_size_preregistration_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  primary_vur_hypothesis_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
 primary_estimand:
   name: VUR
   direction: FHIR_to_HL7v2
   structural_condition: VALID
   semantic_condition: determinate_FAITHFUL_or_UNFAITHFUL
+primary_hypothesis:
+  record_id: "PRIMARY-VUR-TO-BE-FROZEN"
+  nontrivial_vur_threshold: 0.01
+  model_strategy_aggregation_policy: "TO_BE_FROZEN"
+  inference_method: "TO_BE_FROZEN"
+  alpha: 0.05
+  sidedness: one_sided
+  cluster_id_field: analysis_cluster_id
+  decision_rule: "TO_BE_FROZEN"
 paired_comparisons:
   analysis_set_rule: both_arms_VALID_and_semantic_determinate_for_VUR
   cluster_id_field: "analysis_cluster_id"
