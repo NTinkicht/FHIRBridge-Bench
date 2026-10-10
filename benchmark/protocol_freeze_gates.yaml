@@ -205,6 +205,12 @@ gates:
     evidence:
       method: analysis/sample_size_method.yaml
       planning_implementation: src/fhirbridge/sample_size_planning.py
+      pilot_input_schema: analysis/schema/pilot_sample_size_inputs.schema.json
+      pilot_input_template: analysis/examples/pilot_sample_size_inputs_template.yaml
+      deterministic_record_builder: analysis/build_sample_size_preregistration.py
+      frozen_method_hashes:
+        - sample_size_method_sha256
+        - core_confirmatory_design_sha256
       preregistration_schema: analysis/schema/sample_size_preregistration.schema.json
       incomplete_template: analysis/examples/sample_size_preregistration_template.yaml
       readiness_check: src/fhirbridge/sample_size_readiness.py
