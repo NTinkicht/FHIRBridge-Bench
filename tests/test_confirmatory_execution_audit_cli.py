@@ -2,6 +2,7 @@ import importlib.util
 import json
 from pathlib import Path
 
+import pytest
 import yaml
 
 _MODULE_PATH = Path("runs/audit_confirmatory_execution.py")
@@ -122,6 +123,7 @@ def _fixture(tmp_path: Path) -> dict[str, Path]:
             {
                 "frozen_artifacts": {
                     "model_prompt_configuration_sha256": _MODEL_FREEZE_HASH,
+                    "deterministic_baseline_renderer_sha256": "d" * 64,
                 },
                 "sealed_set": {"case_count": 2},
                 "model_keys": ["M1"],
@@ -174,8 +176,28 @@ def _fixture(tmp_path: Path) -> dict[str, Path]:
     _write_jsonl(
         baseline,
         [
-            {"case_id": "C1", "output_sha256": "8" * 64},
-            {"case_id": "C2", "output_sha256": "9" * 64},
+            {
+                "schema_version": "0.1.0",
+                "execution_id": "BASE-C1",
+                "case_id": "C1",
+                "source_input_sha256": _SOURCE_HASHES["C1"],
+                "model_prompt_freeze_sha256": _MODEL_FREEZE_HASH,
+                "renderer_component_sha256": "d" * 64,
+                "outcome_class": "RESPONSE_RECEIVED",
+                "output_sha256": "8" * 64,
+                "error_summary": None,
+            },
+            {
+                "schema_version": "0.1.0",
+                "execution_id": "BASE-C2",
+                "case_id": "C2",
+                "source_input_sha256": _SOURCE_HASHES["C2"],
+                "model_prompt_freeze_sha256": _MODEL_FREEZE_HASH,
+                "renderer_component_sha256": "d" * 64,
+                "outcome_class": "RESPONSE_RECEIVED",
+                "output_sha256": "9" * 64,
+                "error_summary": None,
+            },
         ],
     )
     return {
@@ -236,7 +258,19 @@ def test_execution_audit_cli_requires_baseline_exact_case_coverage(
     paths = _fixture(tmp_path)
     _write_jsonl(
         paths["baseline"],
-        [{"case_id": "C1", "output_sha256": "8" * 64}],
+        [
+            {
+                "schema_version": "0.1.0",
+                "execution_id": "BASE-C1",
+                "case_id": "C1",
+                "source_input_sha256": _SOURCE_HASHES["C1"],
+                "model_prompt_freeze_sha256": _MODEL_FREEZE_HASH,
+                "renderer_component_sha256": "d" * 64,
+                "outcome_class": "RESPONSE_RECEIVED",
+                "output_sha256": "8" * 64,
+                "error_summary": None,
+            }
+        ],
     )
 
     report = _MODULE.build_execution_audit(
@@ -251,3 +285,45 @@ def test_execution_audit_cli_requires_baseline_exact_case_coverage(
         "deterministic baseline missing cases: C2" in blocker
         for blocker in report["blockers"]
     )
+
+
+def test_execution_audit_cli_rejects_wrong_baseline_source_hash(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    records = [
+        json.loads(line)
+        for line in paths["baseline"].read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    records[0]["source_input_sha256"] = "f" * 64
+    _write_jsonl(paths["baseline"], records)
+
+    with pytest.raises(ValueError, match="baseline source hash"):
+        _MODULE.build_execution_audit(
+            run_plan_path=paths["run_plan"],
+            sealed_case_manifest_path=paths["manifest"],
+            execution_records_path=paths["executions"],
+            deterministic_baseline_path=paths["baseline"],
+        )
+
+
+def test_execution_audit_cli_rejects_wrong_baseline_renderer_hash(
+    tmp_path: Path,
+) -> None:
+    paths = _fixture(tmp_path)
+    records = [
+        json.loads(line)
+        for line in paths["baseline"].read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    records[0]["renderer_component_sha256"] = "f" * 64
+    _write_jsonl(paths["baseline"], records)
+
+    with pytest.raises(ValueError, match="baseline renderer hash"):
+        _MODULE.build_execution_audit(
+            run_plan_path=paths["run_plan"],
+            sealed_case_manifest_path=paths["manifest"],
+            execution_records_path=paths["executions"],
+            deterministic_baseline_path=paths["baseline"],
+        )
