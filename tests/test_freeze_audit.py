@@ -76,6 +76,15 @@ def _ready_manifest() -> dict:
             "sha256": "8" * 64,
         }
     )
+    manifest["primary_vur_hypothesis"].update(
+        {
+            "version": "0.1.0",
+            "path_or_ref": (
+                "analysis/primary_vur_hypothesis_preregistration.yaml"
+            ),
+            "sha256": "4" * 64,
+        }
+    )
     manifest["analysis_preregistration"].update(
         {
             "version": "1.0.0",
@@ -400,5 +409,19 @@ def test_missing_artifact_identity_fields_block_opening() -> None:
     )
     assert any(
         "analysis_preregistration has missing/placeholder path_or_ref" in blocker
+        for blocker in report.blockers
+    )
+
+
+def test_unfrozen_primary_vur_hypothesis_blocks_sealed_opening() -> None:
+    manifest = _ready_manifest()
+    manifest["primary_vur_hypothesis"]["version"] = "TO_BE_FROZEN"
+    manifest["primary_vur_hypothesis"]["sha256"] = "0" * 64
+
+    report = assess_presealed_freeze(manifest)
+
+    assert not report.ready_to_open_sealed_set
+    assert any(
+        "primary_vur_hypothesis" in blocker
         for blocker in report.blockers
     )
