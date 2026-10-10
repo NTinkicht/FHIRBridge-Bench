@@ -52,10 +52,13 @@ def test_proportion_precision_plan_combines_all_inflations() -> None:
         expected_analysis_retention=0.8,
     )
 
-    assert plan.independent_n > 0
+    assert plan.independent_row_n > 0
     assert plan.design_effect == pytest.approx(1.2)
-    assert plan.cluster_inflated_n >= plan.independent_n
-    assert plan.attempted_n >= plan.cluster_inflated_n
+    assert plan.cluster_inflated_row_n >= plan.independent_row_n
+    assert plan.attempted_row_n >= plan.cluster_inflated_row_n
+    assert plan.planned_source_cluster_count == (
+        -(-plan.attempted_row_n // 3)
+    )
 
 
 def test_mcnemar_required_n_increases_as_discordant_difference_shrinks() -> None:
@@ -76,9 +79,18 @@ def test_paired_mcnemar_plan_is_labeled_planning_approximation() -> None:
         power=0.80,
     )
 
-    assert plan.pair_n_independent > 0
-    assert plan.cluster_inflated_pair_n >= plan.pair_n_independent
-    assert plan.attempted_pair_n >= plan.cluster_inflated_pair_n
+    assert plan.independent_pair_row_n > 0
+    assert (
+        plan.cluster_inflated_pair_row_n
+        >= plan.independent_pair_row_n
+    )
+    assert (
+        plan.attempted_pair_row_n
+        >= plan.cluster_inflated_pair_row_n
+    )
+    assert plan.planned_source_cluster_count == (
+        -(-plan.attempted_pair_row_n // 2)
+    )
     assert plan.method == "normal_approximation_for_planning_only"
 
 
