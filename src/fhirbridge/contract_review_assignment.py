@@ -98,7 +98,7 @@ def build_contract_review_assignment(
 
     assignment = {
         "assignment_id": "FHIRBRIDGE-CONTRACT-REVIEW-001",
-        "schema_version": "0.1.0",
+        "schema_version": "0.2.0",
         "contract": {
             "id": header.get("id"),
             "version": header.get("version"),
