@@ -22,8 +22,13 @@ def _sha256(document: dict[str, Any]) -> str:
 def build_contract_review_assignment(
     contract: dict[str, Any],
     relationship_candidates: dict[str, Any],
+    *,
+    stage: str = "blind",
 ) -> dict[str, Any]:
-    """Create review inputs without fabricating any reviewer decision."""
+    """Create an anti-anchoring two-stage external review assignment."""
+
+    if stage not in {"blind", "unblinded"}:
+        raise ValueError("stage must be 'blind' or 'unblinded'")
 
     header = contract.get("contract")
     if not isinstance(header, dict):
@@ -112,5 +117,34 @@ def build_contract_review_assignment(
         ),
         "human_decisions_included": False,
     }
+    assignment["review_stage"] = stage
+    assignment["proposal_disclosure"] = (
+        "withheld_for_independent_initial_classification"
+        if stage == "blind"
+        else "revealed_after_blind_response_lock"
+    )
+    assignment["review_independence"].update(
+        {
+            "blind_response_must_be_retained_before_unblinding": True,
+            "reviewer_must_not_have_authored_project_rules": True,
+            "reviewer_project_involvement_must_be_disclosed": True,
+            "reviewer_lri_authoring_involvement_must_be_disclosed": True,
+        }
+    )
+    if stage == "blind":
+        proposal_keys = {
+            "target_paths",
+            "target_semantics",
+            "proposed_projectability",
+            "proposed_allowed_operations",
+            "proposed_equivalence",
+            "proposed_failure_types",
+            "proposed_severity",
+            "status",
+        }
+        for item in assignment["items"]:
+            for key in proposal_keys:
+                item.pop(key, None)
+
     assignment["assignment_sha256"] = _sha256(assignment)
     return assignment
