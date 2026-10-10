@@ -12,6 +12,11 @@ _EXPECTED_PRECEDENCE = (
     "OMISSION",
     "FABRICATION",
 )
+_THRESHOLD_LEVELS = {
+    "S1_or_higher": ["S1", "S2", "S3"],
+    "S2_or_higher": ["S2", "S3"],
+    "S3_only": ["S3"],
+}
 
 
 @dataclass(frozen=True)
@@ -122,14 +127,34 @@ def assess_measurement_policies(
         consistency.append("primary endpoint major candidate is missing")
         major = {}
     major_levels = major.get("levels")
-    if major_levels != ["S2", "S3"]:
+    severity_header = severity_policy.get("severity_policy")
+    if not isinstance(severity_header, dict):
+        consistency.append("severity policy metadata is missing")
+        severity_header = {}
+    severity_status = severity_header.get("status")
+
+    if severity_status == "frozen":
+        threshold = major.get("threshold")
+        expected_levels = _THRESHOLD_LEVELS.get(str(threshold))
+        if expected_levels is None:
+            consistency.append(
+                "frozen severity policy has unsupported major threshold"
+            )
+        elif major_levels != expected_levels:
+            consistency.append(
+                "frozen major levels do not match expert-selected threshold"
+            )
+    elif major_levels != ["S2", "S3"]:
         consistency.append(
             "current major endpoint candidate must be exactly S2 and S3"
         )
-    elif not set(major_levels).issubset(level_ids):
-        consistency.append("major endpoint candidate uses undefined severity")
 
-    severity_header = severity_policy.get("severity_policy")
+    if (
+        isinstance(major_levels, list)
+        and not set(major_levels).issubset(level_ids)
+    ):
+        consistency.append("major endpoint policy uses undefined severity")
+
     if not isinstance(severity_header, dict):
         freeze.append("severity policy metadata is missing")
         severity_header = {}
@@ -153,6 +178,22 @@ def assess_measurement_policies(
 
     if policy_header.get("status") != "frozen":
         freeze.append("error precedence policy status is not frozen")
+    else:
+        expert_review = precedence_policy.get("expert_review")
+        if not isinstance(expert_review, dict):
+            freeze.append("precedence expert review evidence is missing")
+        else:
+            if expert_review.get("status") != "completed":
+                freeze.append("precedence expert review is not completed")
+            if (
+                not isinstance(expert_review.get("review_ref"), str)
+                or not expert_review.get("review_ref")
+            ):
+                freeze.append("precedence review_ref is missing")
+            if not _sha256(expert_review.get("review_sha256")):
+                freeze.append("precedence review SHA-256 is not frozen")
+            if expert_review.get("adjudicated_decision") != "ACCEPT":
+                freeze.append("precedence expert review did not accept policy")
 
     consistent = not consistency
     freeze_ready = consistent and not freeze
