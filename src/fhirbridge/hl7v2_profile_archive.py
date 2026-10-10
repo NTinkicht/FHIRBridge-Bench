@@ -12,9 +12,12 @@ from .hl7v2_profile_bundle import (
     Hl7ProfileIdentity,
     Hl7ProfileMessage,
     ProfileBundleManifest,
+    ProfileReferenceInventory,
     assert_single_oru_r01_profile,
     compute_profile_bundle_manifest,
+    assess_lri_target_reference_signals,
     inspect_profile_identity,
+    inspect_profile_reference_inventory,
 )
 
 
@@ -25,6 +28,8 @@ class ProfileArchiveInspection:
     manifest: ProfileBundleManifest
     identity: Hl7ProfileIdentity
     selected_message: Hl7ProfileMessage
+    reference_inventory: ProfileReferenceInventory
+    target_reference_signals: dict[str, object]
 
 
 def _sha256_file(path: Path) -> str:
@@ -101,6 +106,10 @@ def inspect_profile_archive(path: Path) -> ProfileArchiveInspection:
             manifest = compute_profile_bundle_manifest(root)
             identity = inspect_profile_identity(root)
             selected = assert_single_oru_r01_profile(root)
+            reference_inventory = inspect_profile_reference_inventory(root)
+            target_reference_signals = assess_lri_target_reference_signals(
+                reference_inventory
+            )
 
     return ProfileArchiveInspection(
         archive_sha256=_sha256_file(path),
@@ -108,4 +117,6 @@ def inspect_profile_archive(path: Path) -> ProfileArchiveInspection:
         manifest=manifest,
         identity=identity,
         selected_message=selected,
+        reference_inventory=reference_inventory,
+        target_reference_signals=target_reference_signals,
     )
