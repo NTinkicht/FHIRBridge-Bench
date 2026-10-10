@@ -46,6 +46,30 @@ def assess_precedence_review(
     if not _sha256(document.get("candidate_policy_sha256")):
         blockers.append("precedence candidate-policy SHA-256 is not frozen")
 
+    blind = document.get("blind_stage_evidence")
+    if not isinstance(blind, dict):
+        blockers.append("independent precedence-stage evidence is missing")
+    else:
+        if blind.get("assignment_id") != "FHIRBRIDGE-PRECEDENCE-BLIND-001":
+            blockers.append("precedence blind assignment_id is invalid")
+        for key in (
+            "reviewer_a_response_sha256",
+            "reviewer_b_response_sha256",
+        ):
+            if not _sha256(blind.get(key)):
+                blockers.append(f"{key} is not a frozen SHA-256")
+        if blind.get("original_responses_retained") is not True:
+            blockers.append(
+                "precedence initial responses are not attested as retained"
+            )
+        if (
+            blind.get("other_reviewer_decisions_hidden_initially")
+            is not True
+        ):
+            blockers.append(
+                "precedence reviewer decisions were not hidden initially"
+            )
+
     reviewers = document.get("reviewers")
     if not isinstance(reviewers, list) or len(reviewers) < 2:
         blockers.append("at least two precedence reviewers are required")
