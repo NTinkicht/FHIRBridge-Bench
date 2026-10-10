@@ -20,7 +20,7 @@ def _write_yaml(tmp_path: Path, name: str, payload: dict) -> Path:
 def test_nonassertive_freeze_manifest_template_matches_schema() -> None:
     document = load_yaml(TEMPLATE)
 
-    assert document["schema_version"] == "0.6.0"
+    assert document["schema_version"] == "0.7.0"
     assert validate_document(TEMPLATE, SCHEMA) == []
 
 
@@ -184,5 +184,23 @@ def test_freeze_manifest_requires_component_boundary_artifact(
     assert problems
     assert any(
         "instrument_component_manifest" in problem.message
+        for problem in problems
+    )
+
+
+def test_freeze_manifest_requires_deterministic_baseline_component(
+    tmp_path: Path,
+) -> None:
+    manifest = deepcopy(load_yaml(TEMPLATE))
+    del manifest["instrument_components"]["deterministic_baseline_renderer"]
+
+    problems = validate_document(
+        _write_yaml(tmp_path, "missing-baseline-renderer.yaml", manifest),
+        SCHEMA,
+    )
+
+    assert problems
+    assert any(
+        "deterministic_baseline_renderer" in problem.message
         for problem in problems
     )
