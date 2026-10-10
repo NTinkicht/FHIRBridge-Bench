@@ -86,26 +86,30 @@ def assess_model_prompt_freeze(
         blockers.append("silent model fallback must be disabled")
     if global_policy.get("silent_prompt_fallback") is not False:
         blockers.append("silent prompt fallback must be disabled")
+    if global_policy.get("policy_id") != "FHIRBRIDGE-MODEL-EXECUTION-001":
+        blockers.append("global execution policy_id is not frozen")
+    if global_policy.get("policy_version") != "0.1.0":
+        blockers.append("global execution policy_version is not frozen")
+    _artifact_blockers(
+        global_policy.get("policy_artifact"),
+        label="global_execution_policy.policy_artifact",
+        blockers=blockers,
+    )
+    if global_policy.get("logical_generation_attempts_per_case_arm_model") != 1:
+        blockers.append("logical generation attempts must equal one")
     retry = global_policy.get("retry_policy")
     if not isinstance(retry, dict):
         blockers.append("retry_policy is missing")
     else:
         maximum_attempts = retry.get("maximum_attempts")
-        if (
-            not isinstance(maximum_attempts, int)
-            or isinstance(maximum_attempts, bool)
-            or maximum_attempts < 1
-        ):
-            blockers.append(
-                "retry maximum_attempts must be a positive integer"
-            )
+        if maximum_attempts != 1:
+            blockers.append("retry maximum_attempts must equal one")
+        retry_on = retry.get("retry_on")
+        if retry_on != []:
+            blockers.append("retry_on must be empty for confirmatory execution")
     timeout = global_policy.get("timeout_seconds")
-    if (
-        not isinstance(timeout, int)
-        or isinstance(timeout, bool)
-        or timeout < 1
-    ):
-        blockers.append("timeout_seconds must be a positive integer")
+    if timeout != 120:
+        blockers.append("timeout_seconds must equal the frozen value 120")
 
     baseline = document.get("deterministic_baseline")
     if not isinstance(baseline, dict):
