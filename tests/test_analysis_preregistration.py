@@ -36,18 +36,37 @@ def _ready() -> dict:
             "sample_size_preregistration_sha256": "5" * 64,
         }
     )
+    document["paired_comparisons"]["model_keys"] = ["M1"]
+    base = [
+        ("BASELINE_vs_DIRECT", "deterministic_baseline", "direct_structured_llm"),
+        ("BASELINE_vs_MAPPING", "deterministic_baseline", "mapping_aware_llm"),
+        (
+            "BASELINE_vs_REPAIR",
+            "deterministic_baseline",
+            "mapping_aware_plus_syntax_repair",
+        ),
+        ("DIRECT_vs_MAPPING", "direct_structured_llm", "mapping_aware_llm"),
+        (
+            "DIRECT_vs_REPAIR",
+            "direct_structured_llm",
+            "mapping_aware_plus_syntax_repair",
+        ),
+        (
+            "MAPPING_vs_REPAIR",
+            "mapping_aware_llm",
+            "mapping_aware_plus_syntax_repair",
+        ),
+    ]
     document["paired_comparisons"]["comparison_family"] = [
         {
-            "comparison_id": "DIRECT_vs_MAPPING",
-            "arm_a": "direct_structured_llm",
-            "arm_b": "mapping_aware_llm",
-        },
-        {
-            "comparison_id": "MAPPING_vs_REPAIR",
-            "arm_a": "mapping_aware_llm",
-            "arm_b": "mapping_aware_plus_syntax_repair",
-        },
+            "comparison_id": f"M1__{comparison_id}",
+            "model_key": "M1",
+            "arm_a": arm_a,
+            "arm_b": arm_b,
+        }
+        for comparison_id, arm_a, arm_b in base
     ]
+    document["multiplicity"]["comparison_family_size"] = 6
     document["bootstrap"]["seed"] = 20261020
     return document
 
@@ -61,7 +80,7 @@ def test_analysis_template_is_schema_valid_but_not_ready() -> None:
     assert not readiness.ready
     assert any("not marked preregistered" in item for item in readiness.blockers)
     assert any("zero placeholder" in item for item in readiness.blockers)
-    assert not any("comparison_family" in item for item in readiness.blockers)
+    assert any("comparison_family" in item for item in readiness.blockers)
     assert not any("bootstrap seed" in item for item in readiness.blockers)
 
 
@@ -79,7 +98,8 @@ def test_duplicate_unordered_comparison_pair_is_rejected() -> None:
     document = _ready()
     document["paired_comparisons"]["comparison_family"].append(
         {
-            "comparison_id": "REVERSED_DUPLICATE",
+            "comparison_id": "M1__REVERSED_DUPLICATE",
+            "model_key": "M1",
             "arm_a": "mapping_aware_llm",
             "arm_b": "direct_structured_llm",
         }
@@ -88,7 +108,10 @@ def test_duplicate_unordered_comparison_pair_is_rejected() -> None:
     readiness = assess_analysis_preregistration(document)
 
     assert not readiness.ready
-    assert any("duplicate unordered comparison pair" in item for item in readiness.blockers)
+    assert any(
+        "duplicate unordered comparison pair within model" in item
+        for item in readiness.blockers
+    )
 
 
 def test_same_arm_comparison_is_rejected() -> None:
