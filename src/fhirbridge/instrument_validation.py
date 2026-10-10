@@ -60,6 +60,24 @@ class QualificationGate:
     ppv_value: float
 
 
+@dataclass(frozen=True)
+class AbstainingInstrumentQualification:
+    total_cases: int
+    determinate_cases: int
+    indeterminate_count: int
+    indeterminate_rate: ConfidenceInterval
+    determinate_binary: InstrumentQualification
+
+
+@dataclass(frozen=True)
+class AbstainingQualificationGate:
+    passed: bool
+    binary_gate: QualificationGate
+    maximum_indeterminate_rate: float
+    use_upper_confidence_bound_for_indeterminate: bool
+    indeterminate_value: float
+
+
 def _validate_binary(values: list[bool], name: str) -> None:
     if not values:
         raise ValueError(f"{name} must not be empty")
@@ -155,6 +173,95 @@ def qualify_instrument(
             counts.true_positive + counts.true_negative,
             counts.total,
         ),
+    )
+
+
+def qualify_instrument_with_abstention(
+    expert_major_error: Iterable[bool],
+    verifier_semantic_verdicts: Iterable[str],
+) -> AbstainingInstrumentQualification:
+    """Qualify a tri-state verifier without silently resolving abstentions."""
+
+    expert = list(expert_major_error)
+    verdicts = list(verifier_semantic_verdicts)
+    _validate_binary(expert, "expert_major_error")
+    if len(expert) != len(verdicts):
+        raise ValueError("expert and verifier vectors must have equal length")
+    if not verdicts:
+        raise ValueError("verifier_semantic_verdicts must not be empty")
+
+    allowed = {"FAITHFUL", "UNFAITHFUL", "INDETERMINATE"}
+    unknown = sorted({value for value in verdicts if value not in allowed})
+    if unknown:
+        raise ValueError(f"unsupported verifier semantic verdict(s): {unknown}")
+
+    determinate_expert: list[bool] = []
+    determinate_verifier: list[bool] = []
+    indeterminate_count = 0
+    for truth, verdict in zip(expert, verdicts, strict=True):
+        if verdict == "INDETERMINATE":
+            indeterminate_count += 1
+            continue
+        determinate_expert.append(truth)
+        determinate_verifier.append(verdict == "UNFAITHFUL")
+
+    if not determinate_expert:
+        raise ValueError(
+            "binary qualification is undefined because every verifier verdict "
+            "is INDETERMINATE"
+        )
+
+    binary = qualify_instrument(
+        determinate_expert,
+        determinate_verifier,
+    )
+    return AbstainingInstrumentQualification(
+        total_cases=len(expert),
+        determinate_cases=len(determinate_expert),
+        indeterminate_count=indeterminate_count,
+        indeterminate_rate=_wilson(indeterminate_count, len(expert)),
+        determinate_binary=binary,
+    )
+
+
+def evaluate_gate_with_abstention(
+    qualification: AbstainingInstrumentQualification,
+    *,
+    minimum_sensitivity: float,
+    minimum_ppv: float,
+    maximum_indeterminate_rate: float,
+    use_lower_confidence_bound: bool = False,
+    use_upper_confidence_bound_for_indeterminate: bool = False,
+) -> AbstainingQualificationGate:
+    """Evaluate sensitivity/PPV plus a preregistered abstention ceiling."""
+
+    if not 0.0 <= maximum_indeterminate_rate <= 1.0:
+        raise ValueError(
+            "maximum_indeterminate_rate must be between 0 and 1"
+        )
+
+    binary_gate = evaluate_gate(
+        qualification.determinate_binary,
+        minimum_sensitivity=minimum_sensitivity,
+        minimum_ppv=minimum_ppv,
+        use_lower_confidence_bound=use_lower_confidence_bound,
+    )
+    indeterminate_value = (
+        qualification.indeterminate_rate.upper
+        if use_upper_confidence_bound_for_indeterminate
+        else qualification.indeterminate_rate.estimate
+    )
+    return AbstainingQualificationGate(
+        passed=(
+            binary_gate.passed
+            and indeterminate_value <= maximum_indeterminate_rate
+        ),
+        binary_gate=binary_gate,
+        maximum_indeterminate_rate=maximum_indeterminate_rate,
+        use_upper_confidence_bound_for_indeterminate=(
+            use_upper_confidence_bound_for_indeterminate
+        ),
+        indeterminate_value=indeterminate_value,
     )
 
 
