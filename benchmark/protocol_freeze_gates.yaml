@@ -134,6 +134,7 @@ gates:
     status: blocked
     blockers:
       - hl7v2_structural_warning_alert_policy_pending_exact_profile
+      - primary_vur_hypothesis_preregistration_not_locked
       - confirmatory_analysis_preregistration_not_locked
     evidence:
       unconditional_companion_estimand: docs/statistical_analysis_plan.md
@@ -144,6 +145,10 @@ gates:
       fhir_warning_policy_status: frozen_for_pinned_offline_CLI_log_path
       fhir_warning_policy_evidence_run_id: 38072689400
       statistical_reference_implementation: src/fhirbridge/analysis_statistics.py
+      primary_vur_hypothesis_schema: analysis/schema/primary_vur_hypothesis_preregistration.schema.json
+      primary_vur_hypothesis_template: analysis/examples/primary_vur_hypothesis_preregistration_template.yaml
+      primary_vur_hypothesis_readiness: src/fhirbridge/primary_vur_hypothesis.py
+      primary_vur_hypothesis_builder: analysis/build_primary_vur_hypothesis.py
       analysis_preregistration_schema: analysis/schema/analysis_preregistration.schema.json
       analysis_preregistration_template: analysis/examples/analysis_preregistration_template.yaml
       analysis_preregistration_readiness: src/fhirbridge/analysis_preregistration.py
@@ -152,7 +157,8 @@ gates:
       status: >-
         VFY and exact statistical procedures are preregistered and implemented;
         the FHIR CLI warning policy is frozen, while the HL7 v2 warning/alert
-        policy and final model-specific comparison preregistration remain blocked
+        policy, pilot-derived primary VUR threshold, and final model-specific
+        comparison preregistration remain blocked
     completion_rule: >-
       Report VUR conditional on structural validity and an unconditional
       valid-and-faithful yield across all attempts, with the structural-validity
@@ -303,10 +309,11 @@ gates:
       confirmatory_execution_audit_cli: runs/audit_confirmatory_execution.py
       confirmatory_result_manifest: runs/schema/confirmatory_result_manifest.schema.json
       confirmatory_result_manifest_builder: runs/build_confirmatory_result_manifest.py
-      freeze_manifest_schema_version: "0.7.0"
+      freeze_manifest_schema_version: "0.8.0"
       final_freeze_manifest_builder: expert_validation/build_freeze_manifest.py
       reviewer_roster_manifest_binding: required_and_sha256_pinned
       case_assignment_manifest_binding: required_and_sha256_pinned
+      primary_vur_hypothesis_binding: required_and_sha256_pinned
       analysis_preregistration_binding: required_and_sha256_pinned
       sample_size_preregistration_binding: required_and_sha256_pinned
       model_prompt_configuration_binding: required_and_sha256_pinned
