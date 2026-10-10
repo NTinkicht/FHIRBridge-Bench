@@ -108,6 +108,18 @@ jobs:
           retention-days: 90
 
 
+      - name: Report full protocol freeze readiness
+        run: python qualification/freeze/report_protocol_readiness.py
+
+      - name: Archive protocol freeze-readiness report
+        uses: actions/upload-artifact@v4
+        with:
+          name: protocol-freeze-readiness-${{ github.run_id }}
+          path: qualification/freeze/results/protocol-freeze-readiness.json
+          if-no-files-found: error
+          retention-days: 90
+
+
   ucum-qualification:
     runs-on: ubuntu-latest
     steps:
