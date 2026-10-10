@@ -52,6 +52,11 @@ def test_profile_pin_candidate_copies_only_machine_verifiable_fields(
         == "ORU_R01"
     )
     assert record["identity_verification"]["profile_identity_guard_passed"] is True
+    assert "reference_inventory" in record["bundle"]
+    assert "target_reference_signals" in record["bundle"]
+    assert record["bundle"]["target_reference_signals"][
+        "provenance_conclusion"
+    ] == "not_established_by_lexical_signals"
 
     # These claims require human/provenance evidence beyond archive structure.
     assert record["identity_verification"]["edition_5_evidence_checked"] is False
