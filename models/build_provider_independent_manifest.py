@@ -17,6 +17,8 @@ _ARTIFACTS = (
     Path("src/fhirbridge/syntax_repair.py"),
     Path("src/fhirbridge/mapping_context.py"),
     Path("models/build_frozen_mapping_context.py"),
+    Path("models/schema/model_execution_record.schema.json"),
+    Path("src/fhirbridge/model_execution.py"),
 )
 
 
