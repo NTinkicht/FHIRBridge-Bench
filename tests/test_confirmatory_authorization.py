@@ -41,11 +41,19 @@ def _freeze_manifest() -> dict:
             key: {"sha256": value}
             for key, value in hashes.items()
         },
+        "instrument_component_manifest": {
+            "sha256": "7" * 64,
+        },
+        "instrument_components": {
+            "verifier": {"sha256": "a" * 64},
+            "deterministic_baseline_renderer": {"sha256": "b" * 64},
+        },
         "acceptance_gate": {
             "preregistration_sha256": "6" * 64,
         },
         "sealed_set": {
             "case_count": 2,
+            "case_manifest_sha256": "8" * 64,
         },
     }
 
@@ -58,6 +66,15 @@ def _hashes() -> dict[str, str]:
         "sample_size_preregistration": "4" * 64,
         "model_prompt_configuration": "5" * 64,
         "pilot_acceptance_preregistration": "6" * 64,
+        "instrument_component_manifest": "7" * 64,
+        "sealed_case_manifest": "8" * 64,
+    }
+
+
+def _component_hashes() -> dict[str, str]:
+    return {
+        "verifier": "a" * 64,
+        "deterministic_baseline_renderer": "b" * 64,
     }
 
 
@@ -118,6 +135,7 @@ def _authorize(
     protocol: dict | None = None,
     freeze: dict | None = None,
     hashes: dict[str, str] | None = None,
+    component_hashes: dict[str, str] | None = None,
     sealed_case_ids: set[str] | None = None,
 ):
     return authorization.assess_confirmatory_authorization(
@@ -131,6 +149,7 @@ def _authorize(
         model_prompt_configuration={},
         pilot_acceptance_preregistration={},
         actual_artifact_sha256=hashes or _hashes(),
+        actual_component_sha256=component_hashes or _component_hashes(),
         sealed_case_ids=sealed_case_ids or {"C1", "C2"},
     )
 
@@ -210,3 +229,48 @@ def test_protocol_freeze_top_level_status_must_be_frozen(
 
     assert not result.authorized
     assert "protocol freeze status is not frozen" in result.blockers
+
+
+def test_changed_instrument_component_blocks_authorization(
+    ready_dependencies,
+) -> None:
+    components = _component_hashes()
+    components["deterministic_baseline_renderer"] = "f" * 64
+
+    result = _authorize(component_hashes=components)
+
+    assert not result.authorized
+    assert any(
+        "component SHA-256 mismatch for deterministic_baseline_renderer" in item
+        for item in result.blockers
+    )
+
+
+def test_changed_sealed_case_manifest_file_blocks_authorization(
+    ready_dependencies,
+) -> None:
+    hashes = _hashes()
+    hashes["sealed_case_manifest"] = "f" * 64
+
+    result = _authorize(hashes=hashes)
+
+    assert not result.authorized
+    assert any(
+        "SHA-256 mismatch for sealed_case_manifest" in item
+        for item in result.blockers
+    )
+
+
+def test_missing_actual_component_hash_blocks_authorization(
+    ready_dependencies,
+) -> None:
+    components = _component_hashes()
+    del components["verifier"]
+
+    result = _authorize(component_hashes=components)
+
+    assert not result.authorized
+    assert (
+        "actual component SHA-256 is missing: verifier"
+        in result.blockers
+    )
