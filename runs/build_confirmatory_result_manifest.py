@@ -119,6 +119,14 @@ def build_result_manifest(
     schema_report = _load_document(execution_schema_validation_path)
     if schema_report.get("passed") is not True:
         raise ValueError("execution schema validation did not pass")
+    if schema_report.get("invalid_record_count") != 0:
+        raise ValueError("execution schema validation reports invalid records")
+    if schema_report.get("batch_errors") not in ([], None):
+        raise ValueError("execution schema validation reports batch errors")
+    if schema_report.get("valid_record_count") != raw_count:
+        raise ValueError(
+            "execution schema-validation valid count does not match raw records"
+        )
     if schema_report.get("record_count") != raw_count:
         raise ValueError(
             "execution schema-validation record count does not match raw records"
@@ -142,6 +150,8 @@ def build_result_manifest(
     audit_report = _load_document(execution_audit_path)
     if audit_report.get("complete") is not True:
         raise ValueError("confirmatory execution audit did not pass")
+    if audit_report.get("blockers") not in ([], None):
+        raise ValueError("confirmatory execution audit still lists blockers")
     if audit_report.get("source_hash_binding_verified") is not True:
         raise ValueError("execution audit did not verify sealed source hashes")
     audit_inputs = audit_report.get("inputs")
@@ -157,6 +167,31 @@ def build_result_manifest(
     for key, expected in expected_audit_inputs.items():
         if audit_inputs.get(key) != expected:
             raise ValueError(f"execution audit input hash mismatch: {key}")
+
+    expected_counts = run_plan.get("expected_execution_counts")
+    audit_counts = audit_report.get("counts")
+    if not isinstance(expected_counts, dict) or not isinstance(audit_counts, dict):
+        raise ValueError("run plan or execution audit counts are missing")
+    count_bindings = {
+        "provider_call_count": "provider_generation_calls",
+        "derived_repair_count": "derived_repair_outputs",
+        "deterministic_baseline_count": "deterministic_baseline_outputs",
+        "total_arm_output_count": "total_arm_outputs",
+    }
+    for audit_key, plan_key in count_bindings.items():
+        if audit_counts.get(audit_key) != expected_counts.get(plan_key):
+            raise ValueError(
+                f"execution audit count does not match run plan: {audit_key}"
+            )
+    if raw_count != (
+        int(expected_counts["provider_generation_calls"])
+        + int(expected_counts["derived_repair_outputs"])
+    ):
+        raise ValueError("raw execution record count does not match run plan")
+    if baseline_count != int(
+        expected_counts["deterministic_baseline_outputs"]
+    ):
+        raise ValueError("baseline output count does not match run plan")
 
     result = {
         "schema_version": "0.2.0",
