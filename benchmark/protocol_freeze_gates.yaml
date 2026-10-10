@@ -160,18 +160,18 @@ gates:
       incomplete_template: models/examples/model_prompt_freeze_template.yaml
       readiness_check: src/fhirbridge/model_config_readiness.py
       core_arm_design: analysis/core_confirmatory_design.yaml
-      fairness_policy: same_provider_model_snapshot_and_decoding_across_LLM_strategy_arms
+      fairness_policy: every_frozen_LLM_model_crossed_with_all_three_strategy_conditions_using_one_model_specific_decoding_configuration
       silent_model_fallback: prohibited
       silent_prompt_fallback: prohibited
       hosted_model_data_scope: synthetic_only
       status: infrastructure_ready_actual_model_prompt_artifacts_pending
     completion_rule: >-
-      The four core confirmatory arms must be frozen with cryptographic hashes
-      for implementations, prompts, mapping context, and syntax repair, with
-      provider/model/snapshot and decoding parameters fixed before confirmatory
-      inference. The three LLM strategy arms use the same frozen model and
-      decoding settings unless a protocol amendment explicitly changes the
-      scientific comparison.
+      The deterministic baseline plus all frozen LLM model families and the
+      three LLM strategy conditions must be frozen with cryptographic hashes for
+      implementations, prompts, mapping context, and syntax repair. Every frozen
+      LLM model is crossed with direct, mapping-aware, and mapping-aware-plus-
+      repair strategies using the same model-specific decoding configuration
+      across those strategies.
 
   - gate_id: sealed_expert_validation
     category: confirmatory_governance
