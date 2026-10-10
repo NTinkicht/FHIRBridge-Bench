@@ -121,7 +121,8 @@ benchmark_source_requirements:
   - source_grounded_ordering_provider
   - US_Core_ServiceRequest_projection
   - DiagnosticReport_basedOn_order_reference
-  - no_DiagnosticReport_identifier_repurposing_as_order_identifier
+  - explicit_single_canonical_order_identifier_semantics
+  - ServiceRequest_vs_DiagnosticReport_identifier_locus_independent_review
 
 scoring_boundary:
   structural_gate_now:
@@ -133,14 +134,15 @@ scoring_boundary:
     - required_presence_of_ORC_12
     - required_presence_of_OBR_3
     - required_presence_of_OBR_16
+    - ORC_2_equals_OBR_2_when_present
+    - ORC_3_equals_OBR_3
+    - ORC_12_equals_OBR_16
   semantic_endpoint_after_independent_review:
     - order_control_value_equivalence
     - placer_order_identifier_value_equivalence
     - filler_order_identifier_value_equivalence
     - ordering_provider_identity_equivalence
-    - ORC_2_OBR_2_value_equality_semantics
-    - ORC_3_OBR_3_value_equality_semantics
-    - ORC_12_OBR_16_value_equality_semantics
+    - identifier_target_locus_equivalence_class
     - DiagnosticReport_basedOn_to_order_linkage
 
 freeze_requirements:
