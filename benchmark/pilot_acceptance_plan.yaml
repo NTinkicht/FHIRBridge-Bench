@@ -1,0 +1,83 @@
+pilot_acceptance_plan:
+  id: FHIRBRIDGE-PILOT-GATE-PLAN-001
+  version: 0.1.0
+  status: method_preregistered_numeric_thresholds_pending_pilot
+  purpose: >-
+    Freeze the procedure used to turn pilot expert-validation evidence into the
+    verifier acceptance gate before the sealed confirmatory set is opened.
+  prohibition: >-
+    This plan does not authorize choosing thresholds from sealed-set outcomes or
+    changing the verifier after thresholds are recorded without restarting the
+    freeze process.
+
+pilot_evidence:
+  split: pilot
+  sealed_test_data_permitted: false
+  reference_standard: adjudicated_expert_major_semantic_error
+  primary_reviewer_labels_retained: true
+  adjudication_required_before_gate_derivation: true
+  seeded_faults:
+    role: supplementary_responsiveness_evidence_only
+    may_define_numeric_acceptance_thresholds: false
+
+gate_metrics:
+  primary:
+    - sensitivity
+    - positive_predictive_value
+  diagnostic_only:
+    - specificity
+    - negative_predictive_value
+    - accuracy
+  confidence_interval: Wilson_95_percent
+  implementation: src/fhirbridge/instrument_validation.py
+
+threshold_semantics:
+  numeric_thresholds_may_be_set_only_after_pilot: true
+  numeric_thresholds_must_be_recorded_before_sealed_opening: true
+  permitted_gate_statistic:
+    - point_estimate
+    - lower_95_percent_confidence_bound
+  selected_statistic_must_be_preregistered: true
+  same_statistic_required_for_sensitivity_and_ppv: false
+  threshold_range: "[0,1]"
+  no_automatic_threshold_defaults: true
+  rationale_required_for_each_threshold: true
+  rationale_must_address:
+    - clinical_and_interoperability_consequence_of_false_negative_verifier_decisions
+    - consequence_of_false_positive_verifier_decisions
+    - pilot_sample_size_and_confidence_interval_width
+    - observed_prevalence_and_any_sampling_enrichment
+  threshold_selection_from_sealed_results: prohibited
+
+required_pilot_record:
+  schema: expert_validation/schema/pilot_acceptance_preregistration.schema.json
+  template: expert_validation/examples/pilot_acceptance_preregistration_template.yaml
+  required_hashes:
+    - pilot_case_manifest_sha256
+    - pilot_adjudication_bundle_sha256
+    - verifier_sha256
+    - projectability_contract_sha256
+  required_timing_attestation:
+    - sealed_set_opened_false
+    - thresholds_recorded_before_sealed_opening
+  required_metrics:
+    - pilot_confusion_counts
+    - sensitivity_with_95_percent_CI
+    - PPV_with_95_percent_CI
+    - specificity_with_95_percent_CI
+    - NPV_with_95_percent_CI
+    - accuracy_with_95_percent_CI
+
+post_threshold_policy:
+  material_verifier_change_requires:
+    - invalidate_existing_gate
+    - rerun_pilot_or_use_new_untouched_calibration_set
+    - issue_new_preregistration_hash
+  threshold_change_after_sealed_opening: prohibited
+  failed_sealed_gate_disposition:
+    - confirmatory_semantic_fidelity_claims_not_authorized
+    - revised_instrument_requires_fresh_sealed_set_or_exploratory_label
+
+current_blocker:
+  numeric_thresholds_available: false
+  reason: pilot_expert_validation_not_yet_completed
