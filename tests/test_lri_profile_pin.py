@@ -14,9 +14,13 @@ def _archive(path: Path) -> None:
     profile = (
         '<ConformanceProfile HL7Version="2.5.1">'
         '<Messages>'
-        '<Message ID="ORU-R01-ONLY" Description="Laboratory Results Interface" '
+        '<Message ID="LRI_NG_FRU_Profile_V3" '
+        'Description="Laboratory Results Interface" '
         'Type="ORU" Event="R01" StructID="ORU_R01"/>'
         '</Messages>'
+        '<Component OID="2.16.840.1.113883.9.195.3.22"/>'
+        '<Component OID="2.16.840.1.113883.9.13"/>'
+        '<Component OID="2.16.840.1.113883.9.83"/>'
         '</ConformanceProfile>'
     )
     with ZipFile(path, "w") as archive:
@@ -52,6 +56,10 @@ def test_profile_pin_candidate_copies_only_machine_verifiable_fields(
         == "ORU_R01"
     )
     assert record["identity_verification"]["profile_identity_guard_passed"] is True
+    assert (
+        record["identity_verification"]["target_reference_signal_guard_passed"]
+        is True
+    )
     assert "reference_inventory" in record["bundle"]
     assert "target_reference_signals" in record["bundle"]
     assert record["bundle"]["target_reference_signals"][
@@ -92,3 +100,57 @@ def test_profile_acquisition_metadata_rejects_blank_values(field_name: str) -> N
 
     with pytest.raises(ValueError, match=field_name):
         LriAcquisitionMetadata(**values)
+
+
+def test_profile_pin_candidate_rejects_legacy_or_wrong_profile_identity(
+    tmp_path: Path,
+) -> None:
+    archive = tmp_path / "legacy.zip"
+    profile = (
+        '<ConformanceProfile HL7Version="2.5.1"><Messages>'
+        '<Message ID="LRI_NG_FRU_OLD" Type="ORU" Event="R01" '
+        'StructID="ORU_R01"/>'
+        '</Messages>'
+        '<Component OID="2.16.840.1.113883.9.16"/>'
+        '<Component OID="2.16.840.1.113883.9.13"/>'
+        '<Component OID="2.16.840.1.113883.9.83"/>'
+        '</ConformanceProfile>'
+    )
+    with ZipFile(archive, "w") as output:
+        output.writestr("PROFILE.xml", profile)
+
+    inspection = inspect_profile_archive(archive)
+    acquisition = LriAcquisitionMetadata(
+        source_url_or_record="record://legacy",
+        igamt_export_identifier="LEGACY",
+        acquired_at="2026-10-10T00:00:00+04:00",
+        acquired_by_role_id="reviewer-A",
+        redistribution_status="metadata_only",
+    )
+
+    with pytest.raises(ValueError, match="cannot generate an LRI Edition 5"):
+        build_lri_profile_pin_candidate(inspection, acquisition)
+
+
+def test_profile_pin_does_not_require_disputed_precoordinated_oid(
+    tmp_path: Path,
+) -> None:
+    archive = tmp_path / "component-grounded.zip"
+    _archive(archive)
+    inspection = inspect_profile_archive(archive)
+    assert inspection.target_reference_signals[
+        "pdf_candidate_precoordinated_oid_observed"
+    ] is False
+
+    acquisition = LriAcquisitionMetadata(
+        source_url_or_record="record://component-grounded",
+        igamt_export_identifier="COMPONENT-GROUNDED",
+        acquired_at="2026-10-10T00:00:00+04:00",
+        acquired_by_role_id="reviewer-A",
+        redistribution_status="metadata_only",
+    )
+    record = build_lri_profile_pin_candidate(inspection, acquisition)
+
+    assert record["identity_verification"][
+        "target_reference_signal_guard_passed"
+    ] is True
