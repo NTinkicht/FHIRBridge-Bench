@@ -44,6 +44,14 @@ Before implementation begins, generate the shared development input package with
 python renderer_validation/build_renderer_b_challenge.py
 ```
 
+The project custodian must also generate and retain a schema-valid expected-input
+record with `renderer_validation/build_renderer_b_expected_inputs.py`. That
+record pins the exact `renderer-b-cleanroom` starting commit, challenge
+manifest SHA-256, and contract SHA-256. The implementer copies the
+`clean_room_inputs` block verbatim into the final declaration; it is input
+identity, not an independence claim.
+
+
 The package contains one deterministic canonical development graph for each
 `LAB-001` through `LAB-012`, plus a manifest with graph hashes. The v0.3
 challenge now includes one source-grounded canonical `order` fact per case and
@@ -164,6 +172,19 @@ Before differential comparison, the implementer must record:
 The declaration must validate against:
 
 - `renderer_validation/schema/renderer_implementation_declaration.schema.json`
+
+Differential comparison additionally requires the custodian's original handoff
+record, validated against
+`renderer_validation/schema/renderer_b_expected_inputs.schema.json`. Run:
+
+```bash
+python renderer_validation/validate_renderer_b_declaration.py \
+  renderer-b-declaration.yaml \
+  --expected-inputs renderer-b-expected-inputs.yaml
+```
+
+A mismatch in starting commit, challenge hash, or contract hash blocks the
+comparison.
 
 A non-assertive completion template is provided at:
 
