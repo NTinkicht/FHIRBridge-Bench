@@ -68,3 +68,26 @@ shows how the validator encodes/enforces them. A green local qualification must
 therefore use the exact pinned bundle, a source-grounded reference message, and
 frozen negative controls with expected error locations/classifications rather
 than accepting any nonzero error as sufficient evidence.
+
+
+## Structural-validity policy
+
+The local qualification harness now preserves the entry-level NIST validation
+report as well as compact counts for Error, Warning, Alert, and Informational
+classifications.
+
+Pre-freeze qualification is deliberately fail-closed:
+
+- any Error blocks structural validity;
+- any Warning or Alert remains `POLICY_UNRESOLVED` until an explicit
+  Edition-5-specific policy or allowlist is frozen;
+- Informational entries are retained as evidence but do not block;
+- validator execution/profile-load/report-parsing failures are
+  `MEASUREMENT_FAILURE`, never valid;
+- a structural negative control passes only when an Error is observed at its
+  preregistered expected locus, not merely because some unrelated error exists.
+
+The machine-readable candidate policy is
+`benchmark/structural_validity_policy.yaml`. Confirmatory inference remains
+blocked until the exact Edition 5 profile has been qualified and its
+warning/alert behavior has been reviewed and frozen.
