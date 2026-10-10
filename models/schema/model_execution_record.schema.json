@@ -23,7 +23,9 @@
     "raw_response_sha256",
     "final_response_sha256",
     "syntax_repair_applied",
-    "provider_request_id"
+    "provider_request_id",
+    "syntax_repair_operations",
+    "error_summary"
   ],
   "properties": {
     "schema_version": {
