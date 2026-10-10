@@ -16,13 +16,24 @@
     "timing_attestation"
   ],
   "properties": {
-    "schema_version": {"const": "0.1.0"},
-    "record_id": {"type": "string", "minLength": 1},
+    "schema_version": {
+      "const": "0.2.0"
+    },
+    "record_id": {
+      "type": "string",
+      "minLength": 1
+    },
     "status": {
-      "enum": ["incomplete_template", "preregistered"]
+      "enum": [
+        "incomplete_template",
+        "preregistered"
+      ]
     },
     "created_at": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date-time"
     },
     "pilot_evidence": {
@@ -36,12 +47,30 @@
         "expert_major_error_negative_count"
       ],
       "properties": {
-        "pilot_case_manifest_sha256": {"$ref": "#/$defs/sha256"},
-        "pilot_adjudication_bundle_sha256": {"$ref": "#/$defs/sha256"},
-        "case_count": {"type": "integer", "minimum": 1},
-        "expert_major_error_positive_count": {"type": "integer", "minimum": 1},
-        "expert_major_error_negative_count": {"type": "integer", "minimum": 1},
-        "sampling_enrichment_or_weighting_notes": {"type": ["string", "null"]}
+        "pilot_case_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "pilot_adjudication_bundle_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "case_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "expert_major_error_positive_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "expert_major_error_negative_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sampling_enrichment_or_weighting_notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "frozen_instrument": {
@@ -57,8 +86,12 @@
           "type": "string",
           "pattern": "^[0-9a-fA-F]{7,40}$"
         },
-        "verifier_sha256": {"$ref": "#/$defs/sha256"},
-        "projectability_contract_sha256": {"$ref": "#/$defs/sha256"}
+        "verifier_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "projectability_contract_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
       }
     },
     "metrics": {
@@ -73,18 +106,49 @@
         "specificity",
         "ppv",
         "npv",
-        "accuracy"
+        "accuracy",
+        "runtime_indeterminate_count",
+        "runtime_indeterminate_rate"
       ],
       "properties": {
-        "true_positive": {"type": "integer", "minimum": 0},
-        "true_negative": {"type": "integer", "minimum": 0},
-        "false_positive": {"type": "integer", "minimum": 0},
-        "false_negative": {"type": "integer", "minimum": 0},
-        "sensitivity": {"$ref": "#/$defs/metric"},
-        "specificity": {"$ref": "#/$defs/metric"},
-        "ppv": {"$ref": "#/$defs/metric"},
-        "npv": {"$ref": "#/$defs/metric"},
-        "accuracy": {"$ref": "#/$defs/metric"}
+        "true_positive": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "true_negative": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "false_positive": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "false_negative": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/metric"
+        },
+        "specificity": {
+          "$ref": "#/$defs/metric"
+        },
+        "ppv": {
+          "$ref": "#/$defs/metric"
+        },
+        "npv": {
+          "$ref": "#/$defs/metric"
+        },
+        "accuracy": {
+          "$ref": "#/$defs/metric"
+        },
+        "runtime_indeterminate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "runtime_indeterminate_rate": {
+          "$ref": "#/$defs/metric"
+        }
       }
     },
     "acceptance_gate": {
@@ -96,19 +160,57 @@
         "sensitivity_rationale",
         "minimum_ppv",
         "ppv_statistic",
-        "ppv_rationale"
+        "ppv_rationale",
+        "maximum_runtime_indeterminate_rate",
+        "indeterminate_statistic",
+        "indeterminate_rationale"
       ],
       "properties": {
-        "minimum_sensitivity": {"type": "number", "minimum": 0, "maximum": 1},
+        "minimum_sensitivity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
         "sensitivity_statistic": {
-          "enum": ["point_estimate", "lower_95_percent_confidence_bound"]
+          "enum": [
+            "point_estimate",
+            "lower_95_percent_confidence_bound"
+          ]
         },
-        "sensitivity_rationale": {"type": "string", "minLength": 1},
-        "minimum_ppv": {"type": "number", "minimum": 0, "maximum": 1},
+        "sensitivity_rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "minimum_ppv": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
         "ppv_statistic": {
-          "enum": ["point_estimate", "lower_95_percent_confidence_bound"]
+          "enum": [
+            "point_estimate",
+            "lower_95_percent_confidence_bound"
+          ]
         },
-        "ppv_rationale": {"type": "string", "minLength": 1}
+        "ppv_rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "maximum_runtime_indeterminate_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "indeterminate_statistic": {
+          "enum": [
+            "point_estimate",
+            "upper_95_percent_confidence_bound"
+          ]
+        },
+        "indeterminate_rationale": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "timing_attestation": {
@@ -120,9 +222,15 @@
         "sealed_results_used_to_choose_thresholds"
       ],
       "properties": {
-        "sealed_set_opened": {"const": false},
-        "thresholds_recorded_before_sealed_opening": {"const": true},
-        "sealed_results_used_to_choose_thresholds": {"const": false}
+        "sealed_set_opened": {
+          "const": false
+        },
+        "thresholds_recorded_before_sealed_opening": {
+          "const": true
+        },
+        "sealed_results_used_to_choose_thresholds": {
+          "const": false
+        }
       }
     }
   },
@@ -134,12 +242,31 @@
     "metric": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["estimate", "lower", "upper", "method"],
+      "required": [
+        "estimate",
+        "lower",
+        "upper",
+        "method"
+      ],
       "properties": {
-        "estimate": {"type": "number", "minimum": 0, "maximum": 1},
-        "lower": {"type": "number", "minimum": 0, "maximum": 1},
-        "upper": {"type": "number", "minimum": 0, "maximum": 1},
-        "method": {"const": "Wilson_95_percent"}
+        "estimate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "lower": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "upper": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "method": {
+          "const": "Wilson_95_percent"
+        }
       }
     }
   }
