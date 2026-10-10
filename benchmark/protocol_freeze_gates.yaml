@@ -102,6 +102,10 @@ gates:
       severity_candidate: benchmark/severity_policy_candidate.yaml
       precedence_candidate: benchmark/error_precedence_policy_candidate.yaml
       readiness_check: src/fhirbridge/measurement_policy_readiness.py
+      severity_blind_anchor_set: expert_validation/severity_anchor_set.yaml
+      severity_blind_response_schema: expert_validation/schema/severity_blind_response.schema.json
+      severity_blind_packet_builder: expert_validation/build_severity_blind_packet.py
+      severity_blind_pair_scorer: expert_validation/score_severity_blind_pair.py
       severity_calibration_schema: expert_validation/schema/severity_calibration.schema.json
       severity_calibration_template: expert_validation/examples/severity_calibration_template.yaml
       severity_calibration_readiness: src/fhirbridge/severity_calibration.py
@@ -115,6 +119,7 @@ gates:
       source_rubric: docs/expert_validation_protocol.md
       current_major_candidate: [S2, S3]
       current_policy_consistency: internally_consistent_not_freeze_ready
+      severity_external_handoff_status: blind_stage1_packet_and_pair_pipeline_ready
     completion_rule: >-
       Severity anchors, the primary-endpoint definition of major semantic error,
       and the canonical-fact error-precedence policy must be expert calibrated,
