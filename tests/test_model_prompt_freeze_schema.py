@@ -23,10 +23,10 @@ def test_model_prompt_freeze_template_is_schema_valid_but_nonassertive() -> None
 
     jsonschema.Draft202012Validator(_schema()).validate(document)
 
-    assert document["schema_version"] == "0.4.0"
+    assert document["schema_version"] == "0.5.0"
     policy = document["global_execution_policy"]
     assert policy["policy_id"] == "FHIRBRIDGE-MODEL-EXECUTION-001"
-    assert policy["policy_version"] == "0.2.0"
+    assert policy["policy_version"] == "0.3.0"
     assert policy["provider_generation_calls_per_case_model"] == {
         "direct_structured_llm": 1,
         "mapping_aware_llm": 1,
