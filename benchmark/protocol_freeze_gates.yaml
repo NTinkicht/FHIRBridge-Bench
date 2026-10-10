@@ -109,6 +109,8 @@ gates:
       analysis_preregistration_schema: analysis/schema/analysis_preregistration.schema.json
       analysis_preregistration_template: analysis/examples/analysis_preregistration_template.yaml
       analysis_preregistration_readiness: src/fhirbridge/analysis_preregistration.py
+      analysis_preregistration_builder: analysis/build_analysis_preregistration.py
+      cross_file_design_consistency: src/fhirbridge/analysis_design_consistency.py
       status: >-
         VFY and exact statistical procedures are preregistered and implemented;
         the FHIR CLI warning policy is frozen, while the HL7 v2 warning/alert
