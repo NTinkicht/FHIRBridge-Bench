@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/contract_review_blind_response.schema.json",
+  "title": "FHIRBridge-Bench Blind External Contract Review Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "review_stage",
+    "reviewer",
+    "contract",
+    "rule_reviews",
+    "attestation"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.2.0"},
+    "review_stage": {"const": "blind"},
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_id",
+        "expertise",
+        "review_date",
+        "conflicts_of_interest",
+        "prior_project_involvement",
+        "lri_authoring_involvement"
+      ],
+      "properties": {
+        "reviewer_id": {"type": "string", "minLength": 1},
+        "expertise": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "review_date": {"type": "string", "format": "date"},
+        "conflicts_of_interest": {"type": "string"},
+        "prior_project_involvement": {"type": "string"},
+        "lri_authoring_involvement": {"type": "string"}
+      }
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {"const": "F2V-LAB-ORU-R01-001"},
+        "version": {"const": "0.3.0"}
+      }
+    },
+    "rule_reviews": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/blindRuleReview"}
+    },
+    "attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "independent_initial_classification",
+        "no_model_outputs_used",
+        "no_verifier_outputs_used",
+        "no_renderer_outputs_used_as_correctness_evidence",
+        "study_proposals_not_seen",
+        "reviewer_did_not_author_project_rules",
+        "not_universal_mapping_endorsement"
+      ],
+      "properties": {
+        "independent_initial_classification": {"const": true},
+        "no_model_outputs_used": {"const": true},
+        "no_verifier_outputs_used": {"const": true},
+        "no_renderer_outputs_used_as_correctness_evidence": {"const": true},
+        "study_proposals_not_seen": {"const": true},
+        "reviewer_did_not_author_project_rules": {"const": true},
+        "not_universal_mapping_endorsement": {"const": true}
+      }
+    }
+  },
+  "$defs": {
+    "projectability": {
+      "enum": [
+        "MUST_PRESERVE",
+        "MAY_TRANSFORM",
+        "MAY_LOSE",
+        "MUST_NOT_INFER",
+        "INDETERMINATE"
+      ]
+    },
+    "blindRuleReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rule_id",
+        "projectability_decision",
+        "evidence_sufficient",
+        "evidence_references",
+        "confidence"
+      ],
+      "properties": {
+        "rule_id": {"type": "string", "minLength": 1},
+        "projectability_decision": {"$ref": "#/$defs/projectability"},
+        "evidence_sufficient": {"enum": ["YES", "NO", "PARTLY"]},
+        "evidence_references": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "main_concern": {"type": "string"},
+        "confidence": {"enum": ["HIGH", "MODERATE", "LOW"]}
+      }
+    }
+  }
+}
