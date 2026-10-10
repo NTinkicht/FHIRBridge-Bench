@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 import jsonschema
+import pytest
 import yaml
 
 _MODULE_PATH = Path("runs/build_confirmatory_run_plan.py")
