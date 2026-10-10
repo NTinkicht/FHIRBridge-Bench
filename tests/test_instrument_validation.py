@@ -119,8 +119,15 @@ def test_abstaining_verifier_reports_indeterminate_rate_separately() -> None:
     assert result.determinate_cases == 4
     assert result.indeterminate_count == 2
     assert result.indeterminate_rate.estimate == pytest.approx(2 / 6)
+    assert result.expert_positive_indeterminate_count == 1
+    assert result.expert_negative_indeterminate_count == 1
+    assert result.expert_positive_indeterminate_rate.estimate == pytest.approx(1 / 3)
+    assert result.expert_negative_indeterminate_rate.estimate == pytest.approx(1 / 3)
     assert result.determinate_binary.sensitivity.estimate == 1.0
     assert result.determinate_binary.specificity.estimate == 1.0
+    assert result.effective_sensitivity.estimate == pytest.approx(2 / 3)
+    assert result.effective_specificity.estimate == pytest.approx(2 / 3)
+    assert result.effective_accuracy.estimate == pytest.approx(4 / 6)
 
 
 def test_abstention_gate_can_fail_even_when_binary_metrics_pass() -> None:
@@ -202,3 +209,35 @@ def test_abstention_gate_rejects_invalid_ceiling() -> None:
             minimum_ppv=0.8,
             maximum_indeterminate_rate=1.1,
         )
+
+
+def test_positive_selective_abstention_cannot_hide_behind_perfect_determinate_sensitivity() -> None:
+    result = qualify_instrument_with_abstention(
+        [True, True, True, True, False, False, False, False],
+        [
+            "INDETERMINATE",
+            "INDETERMINATE",
+            "UNFAITHFUL",
+            "UNFAITHFUL",
+            "FAITHFUL",
+            "FAITHFUL",
+            "FAITHFUL",
+            "FAITHFUL",
+        ],
+    )
+
+    assert result.determinate_binary.sensitivity.estimate == 1.0
+    assert result.effective_sensitivity.estimate == pytest.approx(0.5)
+    assert result.indeterminate_rate.estimate == pytest.approx(0.25)
+
+    gate = evaluate_gate_with_abstention(
+        result,
+        minimum_sensitivity=0.8,
+        minimum_ppv=0.8,
+        maximum_indeterminate_rate=0.3,
+    )
+
+    assert gate.binary_gate.passed
+    assert gate.indeterminate_value <= 0.3
+    assert gate.effective_sensitivity_value == pytest.approx(0.5)
+    assert not gate.passed
