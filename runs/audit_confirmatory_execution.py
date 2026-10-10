@@ -8,6 +8,7 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
+import jsonschema
 import yaml
 
 from fhirbridge.confirmatory_execution_audit import audit_confirmatory_execution
@@ -17,6 +18,9 @@ from fhirbridge.sealed_case_manifest import (
 )
 
 _DEFAULT_OUTPUT = Path("runs/results/execution-audit.json")
+_BASELINE_SCHEMA = Path(
+    "models/schema/deterministic_baseline_execution_record.schema.json"
+)
 
 
 def _sha256(path: Path) -> str:
@@ -55,20 +59,57 @@ def _load_jsonl(path: Path) -> list[dict[str, Any]]:
     return records
 
 
-def _baseline_case_ids(path: Path) -> set[str]:
+def _baseline_case_ids(
+    path: Path,
+    *,
+    expected_source_input_sha256: dict[str, str],
+    expected_model_freeze_sha256: str,
+    expected_renderer_sha256: str,
+) -> set[str]:
+    schema = json.loads(_BASELINE_SCHEMA.read_text(encoding="utf-8"))
+    validator = jsonschema.Draft202012Validator(schema)
     records = _load_jsonl(path)
     result: set[str] = set()
     for index, record in enumerate(records, start=1):
-        case_id = record.get("case_id")
-        if not isinstance(case_id, str) or not case_id:
+        errors = sorted(
+            validator.iter_errors(record),
+            key=lambda error: list(error.absolute_path),
+        )
+        if errors:
             raise ValueError(
-                f"baseline record {index} lacks a non-empty case_id"
+                f"baseline record {index} fails frozen schema: "
+                + "; ".join(error.message for error in errors)
             )
+        case_id = str(record["case_id"])
         if case_id in result:
             raise ValueError(
                 f"duplicate deterministic baseline case_id: {case_id}"
             )
         result.add(case_id)
+
+        expected_source = expected_source_input_sha256.get(case_id)
+        if expected_source is None:
+            raise ValueError(
+                f"baseline record references unknown sealed case: {case_id}"
+            )
+        if str(record["source_input_sha256"]).lower() != expected_source.lower():
+            raise ValueError(
+                f"{case_id}: baseline source hash does not match sealed manifest"
+            )
+        if (
+            str(record["model_prompt_freeze_sha256"]).lower()
+            != expected_model_freeze_sha256.lower()
+        ):
+            raise ValueError(
+                f"{case_id}: baseline model/config freeze hash does not match run plan"
+            )
+        if (
+            str(record["renderer_component_sha256"]).lower()
+            != expected_renderer_sha256.lower()
+        ):
+            raise ValueError(
+                f"{case_id}: baseline renderer hash does not match run plan"
+            )
     return result
 
 
@@ -84,7 +125,25 @@ def build_execution_audit(
     records = _load_jsonl(execution_records_path)
     case_ids = sealed_case_ids(sealed_manifest)
     source_hashes = source_input_sha256_by_case(sealed_manifest)
-    baseline_case_ids = _baseline_case_ids(deterministic_baseline_path)
+
+    frozen = run_plan.get("frozen_artifacts")
+    if not isinstance(frozen, dict):
+        raise ValueError("run plan lacks frozen_artifacts")
+    model_freeze_sha256 = frozen.get("model_prompt_configuration_sha256")
+    baseline_renderer_sha256 = frozen.get(
+        "deterministic_baseline_renderer_sha256"
+    )
+    if not isinstance(model_freeze_sha256, str):
+        raise ValueError("run plan lacks model_prompt_configuration_sha256")
+    if not isinstance(baseline_renderer_sha256, str):
+        raise ValueError("run plan lacks deterministic baseline renderer SHA-256")
+
+    baseline_case_ids = _baseline_case_ids(
+        deterministic_baseline_path,
+        expected_source_input_sha256=source_hashes,
+        expected_model_freeze_sha256=model_freeze_sha256,
+        expected_renderer_sha256=baseline_renderer_sha256,
+    )
 
     result = audit_confirmatory_execution(
         run_plan,
