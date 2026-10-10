@@ -23,3 +23,17 @@ was never supplied.
 
 A schema-valid declaration is therefore necessary but not sufficient to open
 the A/B comparison phase.
+
+
+## Current synchronization point
+
+The active clean-room synchronization point is Contract `v0.3.0`.
+
+The generated challenge package now contains source-grounded canonical order
+context. Renderer B may implement the FHIR ServiceRequest/basedOn side from the
+shared v0.3 specification, but the HL7 v2 Edition 5 order projection remains
+explicitly unsupported/fail-closed until the exact machine-readable Edition 5
+profile and blind external review resolve the remaining MSH-21/ORC/OBR details.
+
+A returned declaration referencing Contract v0.2 is rejected by the scientific
+readiness gate.
