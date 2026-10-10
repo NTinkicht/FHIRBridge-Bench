@@ -513,11 +513,13 @@ def _order_fact(
             "lifecycle_status": "completed",
             "request_intent": "order",
             "requester": {
-                "identifier": {
-                    "system": "urn:fhirbridge:provider",
-                    "value": f"PROV-{seed:08d}",
-                    "type": "provider",
-                },
+                "identifiers": [
+                    {
+                        "system": "urn:fhirbridge:provider",
+                        "value": f"PROV-{seed:08d}",
+                        "type": "provider",
+                    }
+                ],
                 "display": f"Synthetic Ordering Provider {seed}",
             },
         },
