@@ -1,8 +1,14 @@
-schema_version: "0.1.0"
+schema_version: "0.2.0"
 calibration_id: "SEVERITY-CALIBRATION-TO-BE-ASSIGNED"
 status: incomplete_template
 created_at: null
 candidate_policy_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+blind_stage_evidence:
+  assignment_id: FHIRBRIDGE-SEVERITY-BLIND-001
+  reviewer_a_response_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  reviewer_b_response_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  original_responses_retained: true
+  boundary_roles_hidden_initially: true
 reviewers:
   - reviewer_id: "REVIEWER-A-TO-BE-ASSIGNED"
     expertise:
