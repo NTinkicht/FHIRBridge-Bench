@@ -57,6 +57,13 @@ def _ready() -> dict:
     document["status"] = "completed"
     document["created_at"] = "2026-10-20T18:00:00Z"
     document["candidate_policy_sha256"] = "a" * 64
+    document["blind_stage_evidence"] = {
+        "assignment_id": "FHIRBRIDGE-SEVERITY-BLIND-001",
+        "reviewer_a_response_sha256": "b" * 64,
+        "reviewer_b_response_sha256": "c" * 64,
+        "original_responses_retained": True,
+        "boundary_roles_hidden_initially": True,
+    }
     document["reviewers"] = [_reviewer("R-A"), _reviewer("R-B")]
     document["anchor_reviews"] = [
         _anchor("A1", "S1_S2_boundary", "S1", "S2", "S2"),
@@ -153,5 +160,31 @@ def test_each_anchor_must_be_rated_by_exact_calibration_roster() -> None:
     assert not readiness.ready
     assert any(
         "do not match calibration roster" in item
+        for item in readiness.blockers
+    )
+
+
+def test_completed_severity_calibration_requires_blind_response_hashes() -> None:
+    document = _ready()
+    document["blind_stage_evidence"]["reviewer_a_response_sha256"] = "0" * 64
+
+    readiness = assess_severity_calibration(document)
+
+    assert not readiness.ready
+    assert any(
+        "reviewer_a_response_sha256" in item
+        for item in readiness.blockers
+    )
+
+
+def test_completed_severity_calibration_requires_hidden_boundary_roles() -> None:
+    document = _ready()
+    document["blind_stage_evidence"]["boundary_roles_hidden_initially"] = False
+
+    readiness = assess_severity_calibration(document)
+
+    assert not readiness.ready
+    assert any(
+        "boundary roles were not hidden" in item
         for item in readiness.blockers
     )
