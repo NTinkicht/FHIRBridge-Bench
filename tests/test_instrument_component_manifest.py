@@ -67,3 +67,17 @@ def test_final_measurement_policy_bundles_never_point_to_candidates() -> None:
     assert document["components"]["precedence_policy"]["paths"] == [
         "benchmark/error_precedence_policy_frozen.yaml"
     ]
+
+
+def test_deterministic_baseline_bundle_matches_imported_renderer_package() -> None:
+    document = _manifest()
+    configured = set(
+        document["components"]["deterministic_baseline_renderer"]["paths"]
+    )
+    actual = {
+        path.as_posix()
+        for path in Path("src/fhirbridge/renderers").glob("*.py")
+    }
+
+    assert configured == actual
+    assert "src/fhirbridge/renderers/hl7v251_oru_a.py" in configured
