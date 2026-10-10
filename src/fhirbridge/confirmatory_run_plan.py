@@ -92,6 +92,10 @@ def assess_confirmatory_run_plan(
             blockers.append(
                 "mapping-to-repair execution lineage is not required"
             )
+        if execution_contract.get("schema_validation_required") is not True:
+            blockers.append(
+                "execution-record schema validation is not required"
+            )
 
     sealed = document.get("sealed_set")
     if not isinstance(sealed, dict):
