@@ -23,6 +23,7 @@ def _schema() -> dict:
 
 def _run_plan() -> dict:
     return {
+        "repository_commit": "abcdef1",
         "sealed_set": {
             "bundle_sha256": "a" * 64,
             "case_count": 10,
@@ -230,3 +231,56 @@ def test_execution_schema_validation_must_be_complete() -> None:
 
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+def test_result_manifest_repository_commit_must_match_run_plan() -> None:
+    document = _ready()
+    document["repository_commit"] = "deadbee"
+
+    readiness = assess_confirmatory_result_manifest(
+        document,
+        run_plan=_run_plan(),
+        run_plan_sha256="1" * 64,
+    )
+
+    assert not readiness.ready
+    assert any(
+        "result repository_commit does not match run plan" in item
+        for item in readiness.blockers
+    )
+
+
+def test_result_manifest_rejects_malformed_hashes() -> None:
+    document = _ready()
+    document["analysis_ready_dataset"]["sha256"] = "g" * 64
+
+    readiness = assess_confirmatory_result_manifest(
+        document,
+        run_plan=_run_plan(),
+        run_plan_sha256="1" * 64,
+    )
+
+    assert not readiness.ready
+    assert any(
+        "analysis_ready_dataset.sha256 is missing, malformed, or placeholder"
+        in item
+        for item in readiness.blockers
+    )
+
+
+def test_result_manifest_rejects_malformed_run_plan_commit() -> None:
+    document = _ready()
+    run_plan = _run_plan()
+    run_plan["repository_commit"] = "not-a-commit"
+
+    readiness = assess_confirmatory_result_manifest(
+        document,
+        run_plan=run_plan,
+        run_plan_sha256="1" * 64,
+    )
+
+    assert not readiness.ready
+    assert any(
+        "run plan repository_commit is missing or malformed" in item
+        for item in readiness.blockers
+    )
