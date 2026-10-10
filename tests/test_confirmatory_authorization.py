@@ -10,15 +10,11 @@ def _protocol() -> dict:
         "protocol_freeze": {"status": "frozen"},
         "gates": [
             {
-                "gate_id": "A",
+                "gate_id": gate_id,
                 "status": "passed",
                 "blockers": [],
-            },
-            {
-                "gate_id": "B",
-                "status": "passed",
-                "blockers": [],
-            },
+            }
+            for gate_id in sorted(authorization._REQUIRED_PROTOCOL_GATE_IDS)
         ],
         "confirmatory_run_policy": {
             "allowed_when_all_protocol_gates_passed": True,
@@ -37,6 +33,7 @@ def _freeze_manifest() -> dict:
         "model_prompt_configuration": "5" * 64,
     }
     return {
+        "repository_commit": "abcdef1",
         **{
             key: {"sha256": value}
             for key, value in hashes.items()
@@ -151,6 +148,7 @@ def _authorize(
         actual_artifact_sha256=hashes or _hashes(),
         actual_component_sha256=component_hashes or _component_hashes(),
         sealed_case_ids=sealed_case_ids or {"C1", "C2"},
+        actual_repository_commit="abcdef1",
     )
 
 
@@ -167,8 +165,9 @@ def test_any_unpassed_protocol_gate_blocks_authorization(
     ready_dependencies,
 ) -> None:
     protocol = _protocol()
+    gate_id = protocol["gates"][1]["gate_id"]
     protocol["gates"][1] = {
-        "gate_id": "B",
+        "gate_id": gate_id,
         "status": "blocked",
         "blockers": ["external_review_pending"],
     }
@@ -176,8 +175,14 @@ def test_any_unpassed_protocol_gate_blocks_authorization(
     result = _authorize(protocol=protocol)
 
     assert not result.authorized
-    assert any("protocol gate is not passed: B" == item for item in result.blockers)
-    assert any("still lists blocker items: B" in item for item in result.blockers)
+    assert any(
+        f"protocol gate is not passed: {gate_id}" == item
+        for item in result.blockers
+    )
+    assert any(
+        f"still lists blocker items: {gate_id}" in item
+        for item in result.blockers
+    )
 
 
 def test_freeze_manifest_hash_mismatch_blocks_authorization(
@@ -303,4 +308,57 @@ def test_missing_component_from_actual_digest_set_blocks_authorization(
     assert any(
         "missing frozen components: deterministic_baseline_renderer" in item
         for item in result.blockers
+    )
+
+
+def test_missing_required_protocol_gate_blocks_authorization(
+    ready_dependencies,
+) -> None:
+    protocol = _protocol()
+    removed = protocol["gates"].pop()["gate_id"]
+
+    result = _authorize(protocol=protocol)
+
+    assert not result.authorized
+    assert any(
+        "protocol gate ledger is missing required gates" in item
+        and removed in item
+        for item in result.blockers
+    )
+
+
+def test_unexpected_protocol_gate_blocks_authorization(
+    ready_dependencies,
+) -> None:
+    protocol = _protocol()
+    protocol["gates"].append(
+        {
+            "gate_id": "UNREVIEWED_NEW_GATE",
+            "status": "passed",
+            "blockers": [],
+        }
+    )
+
+    result = _authorize(protocol=protocol)
+
+    assert not result.authorized
+    assert any(
+        "protocol gate ledger contains unexpected gates" in item
+        and "UNREVIEWED_NEW_GATE" in item
+        for item in result.blockers
+    )
+
+
+def test_repository_commit_must_match_freeze_manifest(
+    ready_dependencies,
+) -> None:
+    freeze = _freeze_manifest()
+    freeze["repository_commit"] = "deadbee"
+
+    result = _authorize(freeze=freeze)
+
+    assert not result.authorized
+    assert (
+        "actual repository commit does not match freeze manifest"
+        in result.blockers
     )
