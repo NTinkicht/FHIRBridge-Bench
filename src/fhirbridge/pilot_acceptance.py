@@ -244,7 +244,8 @@ def assess_pilot_acceptance_preregistration(
             or abs(float(estimate) - expected_rate) > 1e-12
         ):
             blockers.append(
-                "runtime_indeterminate_rate estimate does not match count/determinate reference count"
+                "runtime_indeterminate_rate estimate does not match "
+                "count/determinate reference count"
             )
 
     if (
