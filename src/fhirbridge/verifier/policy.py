@@ -56,6 +56,19 @@ class FactComparisonPolicy:
 
 
 @dataclass(frozen=True)
+class GroundingGuard:
+    """Representation-independent source-grounding invariant."""
+
+    guard_id: str
+    source_fact_type: str
+    source_field: str
+    target_fact_type: str
+    target_field: str
+    match_type: str
+    primary_endpoint_eligible: bool = True
+
+
+@dataclass(frozen=True)
 class VerificationPolicy:
     """Contract-derived semantic comparison policy."""
 
@@ -63,6 +76,7 @@ class VerificationPolicy:
     contract_version: str
     by_fact_type: dict[str, FactComparisonPolicy]
     must_not_infer_rule_ids: tuple[str, ...]
+    grounding_guards: tuple[GroundingGuard, ...] = ()
 
     def scores(self, fact_type: str, field: str) -> bool:
         policy = self.by_fact_type.get(fact_type)
@@ -235,9 +249,48 @@ def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
         for fact_type, fields in fields_by_type.items()
     }
 
+    grounding_guards: list[GroundingGuard] = []
+    for guard in contract.get("grounding_guards", []):
+        if not isinstance(guard, dict):
+            raise ValueError("grounding_guards entries must be objects")
+        status = guard.get("status", "draft")
+        if status == "disabled":
+            continue
+        fields = {
+            key: guard.get(key)
+            for key in (
+                "guard_id",
+                "source_fact_type",
+                "source_field",
+                "target_fact_type",
+                "target_field",
+                "match_type",
+            )
+        }
+        if not all(isinstance(value, str) and value for value in fields.values()):
+            raise ValueError("grounding guard identity/field values must be strings")
+        if fields["match_type"] != "exact_scalar_membership":
+            raise ValueError(
+                f"unsupported grounding guard match_type: {fields['match_type']!r}"
+            )
+        grounding_guards.append(
+            GroundingGuard(
+                guard_id=fields["guard_id"],
+                source_fact_type=fields["source_fact_type"],
+                source_field=fields["source_field"],
+                target_fact_type=fields["target_fact_type"],
+                target_field=fields["target_field"],
+                match_type=fields["match_type"],
+                primary_endpoint_eligible=bool(
+                    guard.get("primary_endpoint_eligible", True)
+                ),
+            )
+        )
+
     return VerificationPolicy(
         contract_id=str(header.get("id", "unknown")),
         contract_version=str(header.get("version", "unknown")),
         by_fact_type=by_fact_type,
         must_not_infer_rule_ids=tuple(sorted(must_not_infer_rule_ids)),
+        grounding_guards=tuple(grounding_guards),
     )
