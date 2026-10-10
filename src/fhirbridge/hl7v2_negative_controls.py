@@ -11,6 +11,7 @@ class Hl7NegativeControl:
     description: str
     artifact: str
     expected_structural_error: bool = True
+    expected_error_location_tokens: tuple[str, ...] = ()
 
 
 def _segments(message: str) -> list[str]:
@@ -62,15 +63,18 @@ def build_structural_negative_controls(message: str) -> tuple[Hl7NegativeControl
             control_id="NEG-HL7-VERSION",
             description="Change MSH-12 from 2.5.1 to 2.3.1.",
             artifact=_replace_msh_field(message, 12, "2.3.1"),
+            expected_error_location_tokens=("MSH", "12"),
         ),
         Hl7NegativeControl(
             control_id="NEG-MESSAGE-STRUCTURE",
             description="Change MSH-9 to a non-ORU message identity.",
             artifact=_replace_msh_field(message, 9, "ADT^A01^ADT_A01"),
+            expected_error_location_tokens=("MSH", "9"),
         ),
         Hl7NegativeControl(
             control_id="NEG-MISSING-PID",
             description="Remove the PID segment from the patient-result message.",
             artifact=_drop_segment(message, "PID"),
+            expected_error_location_tokens=("PID",),
         ),
     )
