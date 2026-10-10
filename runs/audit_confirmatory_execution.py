@@ -133,10 +133,17 @@ def build_execution_audit(
     baseline_renderer_sha256 = frozen.get(
         "deterministic_baseline_renderer_sha256"
     )
+    baseline_schema_sha256 = frozen.get(
+        "deterministic_baseline_execution_schema_sha256"
+    )
     if not isinstance(model_freeze_sha256, str):
         raise ValueError("run plan lacks model_prompt_configuration_sha256")
     if not isinstance(baseline_renderer_sha256, str):
         raise ValueError("run plan lacks deterministic baseline renderer SHA-256")
+    if baseline_schema_sha256 != _sha256(_BASELINE_SCHEMA):
+        raise ValueError(
+            "baseline execution schema bytes do not match confirmatory run plan"
+        )
 
     baseline_case_ids = _baseline_case_ids(
         deterministic_baseline_path,
