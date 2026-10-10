@@ -27,25 +27,22 @@ def _bundle() -> dict:
     }
 
 
-def test_mapping_and_repair_arms_use_identical_generation_prompt() -> None:
+def test_repair_arm_cannot_prepare_a_second_provider_prompt() -> None:
     mapping = prepare_strategy_prompt(
         MAPPING_STRATEGY,
         _bundle(),
         mapping_context="RULE A -> FIELD X",
         repository_root=Path("."),
     )
-    repair = prepare_strategy_prompt(
-        REPAIR_STRATEGY,
-        _bundle(),
-        mapping_context="RULE A -> FIELD X",
-        repository_root=Path("."),
-    )
 
-    assert mapping.rendered_prompt == repair.rendered_prompt
-    assert mapping.template_path == repair.template_path
-    assert mapping.source_json == repair.source_json
     assert mapping.mapping_context_included
-    assert repair.mapping_context_included
+    with pytest.raises(ValueError, match="does not make a provider call"):
+        prepare_strategy_prompt(
+            REPAIR_STRATEGY,
+            _bundle(),
+            mapping_context="RULE A -> FIELD X",
+            repository_root=Path("."),
+        )
 
 
 def test_direct_strategy_rejects_mapping_context() -> None:
