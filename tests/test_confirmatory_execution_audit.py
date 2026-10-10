@@ -313,7 +313,10 @@ def test_baseline_must_cover_exact_sealed_case_set() -> None:
     )
 
     assert not result.complete
-    assert any("deterministic baseline missing cases" in item for item in result.blockers)
+    assert any(
+        "deterministic baseline missing cases" in item
+        for item in result.blockers
+    )
     assert any("deterministic_baseline_outputs" in item for item in result.blockers)
 
 
