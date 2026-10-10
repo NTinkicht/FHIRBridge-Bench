@@ -221,6 +221,18 @@ jobs:
             fi
           done
 
+      - name: Render draft v0.3 FHIR order-context fixture
+        run: python qualification/fhir/render_order_context_fixture.py
+
+      - name: Validate draft order context against US Core 9.0.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -jar qualification/fhir/validator_cli.jar             qualification/fhir/order-context/LAB-001-9491-order-context.json             -version 4.0.1             -ig hl7.fhir.us.core#9.0.0             -tx n/a             > qualification/fhir/order-context/validator.log 2>&1 || {
+              cat qualification/fhir/order-context/validator.log
+              exit 1
+            }
+
       - name: Summarize FHIR qualification outcomes
         run: python qualification/fhir/summarize_validation.py qualification/fhir/results
 
@@ -250,6 +262,7 @@ jobs:
           path: |
             qualification/fhir/out/**
             qualification/fhir/results/**
+            qualification/fhir/order-context/**
           if-no-files-found: warn
           retention-days: 90
 
