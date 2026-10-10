@@ -1,31 +1,39 @@
-schema_version: "0.1.0"
+schema_version: "0.2.0"
 expected_vur: 0.0
 valid_determinate_retention: 1.0
 mean_cluster_size: 1.0
 icc: 0.0
 target_half_width: 0.05
+model_keys:
+  - "MODEL-TO-BE-FROZEN"
 paired_comparisons:
-  - comparison_id: BASELINE_vs_DIRECT
+  - model_key: "MODEL-TO-BE-FROZEN"
+    comparison_id: "MODEL-TO-BE-FROZEN__BASELINE_vs_DIRECT"
     p10: 0.10
     p01: 0.05
     expected_pair_retention: 1.0
-  - comparison_id: BASELINE_vs_MAPPING
+  - model_key: "MODEL-TO-BE-FROZEN"
+    comparison_id: "MODEL-TO-BE-FROZEN__BASELINE_vs_MAPPING"
     p10: 0.10
     p01: 0.05
     expected_pair_retention: 1.0
-  - comparison_id: BASELINE_vs_REPAIR
+  - model_key: "MODEL-TO-BE-FROZEN"
+    comparison_id: "MODEL-TO-BE-FROZEN__BASELINE_vs_REPAIR"
     p10: 0.10
     p01: 0.05
     expected_pair_retention: 1.0
-  - comparison_id: DIRECT_vs_MAPPING
+  - model_key: "MODEL-TO-BE-FROZEN"
+    comparison_id: "MODEL-TO-BE-FROZEN__DIRECT_vs_MAPPING"
     p10: 0.10
     p01: 0.05
     expected_pair_retention: 1.0
-  - comparison_id: DIRECT_vs_REPAIR
+  - model_key: "MODEL-TO-BE-FROZEN"
+    comparison_id: "MODEL-TO-BE-FROZEN__DIRECT_vs_REPAIR"
     p10: 0.10
     p01: 0.05
     expected_pair_retention: 1.0
-  - comparison_id: MAPPING_vs_REPAIR
+  - model_key: "MODEL-TO-BE-FROZEN"
+    comparison_id: "MODEL-TO-BE-FROZEN__MAPPING_vs_REPAIR"
     p10: 0.10
     p01: 0.05
     expected_pair_retention: 1.0
