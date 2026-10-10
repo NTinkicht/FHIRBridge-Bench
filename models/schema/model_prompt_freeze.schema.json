@@ -176,7 +176,8 @@
         "top_p",
         "max_output_tokens",
         "seed_policy",
-        "structured_output_mode"
+        "structured_output_mode",
+        "seed"
       ],
       "properties": {
         "model_key": {
@@ -222,10 +223,44 @@
           "minimum": 0
         },
         "structured_output_mode": {
-          "type": "string",
-          "minLength": 1
+          "const": "plain_text_hl7_message"
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "seed_policy": {
+                "const": "fixed_supported_seed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "seed": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "seed_policy": {
+                "const": "provider_does_not_support_seed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "seed": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
     },
     "strategy": {
       "type": "object",
