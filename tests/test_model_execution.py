@@ -207,6 +207,7 @@ def test_provider_failure_cannot_be_recorded_as_repair_failure() -> None:
             execution_id="EXEC-008",
             case_id="CASE-007",
             model_key="M1",
+            **_bindings(REPAIR_STRATEGY),
             strategy_id=REPAIR_STRATEGY,
             outcome_class="MEASUREMENT_FAILURE_TIMEOUT",
             request_started_at="2026-10-10T10:00:00Z",
