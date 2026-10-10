@@ -6,7 +6,7 @@ Status: **Draft reviewer packet — required before Contract v1.0 freeze**
 
 FHIRBridge-Bench is a measurement study of semantic fidelity in AI-mediated healthcare interoperability transformations. The project does **not** ask reviewers to judge an LLM, select a preferred converter, or define a new HL7 standard.
 
-This review asks whether the study's proposed FHIR R4 → HL7 v2.5.1 laboratory **projectability contract** is a defensible measurement instrument for a deliberately narrow use case.
+This review asks whether the study's FHIR R4 → HL7 v2.5.1 laboratory **projectability construct** can be operationalized as a defensible measurement instrument for a deliberately narrow use case. Stage 1 intentionally withholds the study team's proposed rule answers.
 
 The contract must establish, before confirmatory model experiments, which source clinical facts:
 
@@ -27,6 +27,8 @@ Unresolved ambiguity is expected and should be labelled `INDETERMINATE`; reviewe
 - US Core Laboratory Result Observation
 - US Core Patient
 - FHIR Specimen where present
+- US Core ServiceRequest for source-grounded laboratory order context
+- DiagnosticReport.basedOn linkage to the originating request
 
 **Target**
 - HL7 v2.5.1
@@ -38,7 +40,7 @@ Unresolved ambiguity is expected and should be labelled `INDETERMINATE`; reviewe
 - general chemistry / hematology-style laboratory reporting;
 - atomic results;
 - simple panels;
-- patient, report, observation, and specimen facts represented by the frozen study schema.
+- patient, order, report, observation, and specimen facts represented by the study schema.
 
 Out of scope for the first confirmatory slice include microbiology susceptibility, genomics, newborn screening, unrestricted narrative reports, unreviewed local FHIR extensions, and arbitrary Z-segment conventions.
 
@@ -46,12 +48,12 @@ Out of scope for the first confirmatory slice include microbiology susceptibilit
 
 Review against the following versioned artifacts on the `protocol-v1` branch:
 
-1. `contracts/fhir_to_v2/lab_oru_r01_v0.2.yaml` — proposed machine-readable rules.
+1. `contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml` — draft machine-readable rules and order-context candidates.
 2. `docs/field_mapping_audit_lab_oru_r01.md` — field-level evidence ledger and unresolved mappings.
 3. `docs/contract_review_protocol.md` — independence, agreement, adjudication, and freeze procedure.
 4. `docs/projectability_contract.md` — construct-level projectability definitions.
 5. `canonical/schema/` — canonical fact definitions where a rule's source semantics require clarification.
-6. `contracts/review/relationship_candidates_v0.1.yaml` — explicitly
+6. `contracts/review/relationship_candidates_v0.2.yaml` — explicitly
    non-scored relationship/grouping candidates surfaced by the multi-OBR/SPM
    development slice. Review these for possible Contract v1.0 promotion; do not
    assume they are correct because a renderer can implement them.
@@ -62,6 +64,11 @@ The official HL7 v2→FHIR mappings are evidence of semantic correspondence only
 
 Please make your initial classifications independently.
 
+Before assignment, disclose any conflict of interest, prior project involvement,
+recent collaboration/co-authorship with the study team, and any involvement in
+authoring the relevant LRI material. Initial agreement reviewers must not have
+authored the project rules or implemented Renderer A or Renderer B.
+
 During initial review, do **not** use:
 
 - outputs from any LLM evaluated in this project;
@@ -71,7 +78,15 @@ During initial review, do **not** use:
 
 External converters may later be used for differential disagreement analysis, but converter agreement does not establish truth.
 
-## Required decision for every scored rule
+## Stage 1 — blind independent classification
+
+During Stage 1, you will **not** receive the study team's proposed target locus,
+projectability label, allowed operations, equivalence rule, failure class,
+severity, or renderer behavior. Classify the supplied source fact/relation from
+the standards evidence independently. Your original response is retained and
+hashed before Stage 2.
+
+## Required Stage-1 decision for every reviewed rule
 
 Choose exactly one projectability state:
 
@@ -90,9 +105,17 @@ The target must not assert the fact unless it is grounded in the source or in an
 ### `INDETERMINATE`
 The evidence, implementation profile, or competing legitimate representations are insufficient to support a stable primary-endpoint rule.
 
+## Stage 2 — proposal-aware critique
+
+Only after your Stage-1 response has been locked may the study team's proposal
+be disclosed. The Stage-2 response records the SHA-256 of the locked blind
+response and may critique the proposed target locus, operations, equivalence
+rule, failure class, and severity. Stage-2 responses are not used to calculate
+inter-rater agreement.
+
 ## Allowed-operation review
 
-For rules classified `MAY_TRANSFORM`, separately indicate whether each proposed operation is acceptable:
+During Stage 2, separately indicate whether each disclosed proposed operation is acceptable:
 
 - `COPY`
 - `NORMALIZE`
@@ -105,26 +128,22 @@ For rules classified `MAY_TRANSFORM`, separately indicate whether each proposed 
 
 An operation should be accepted only when semantic equivalence is defensible under the named profiles and the rule states enough constraints to prevent clinically meaningful drift.
 
-## Rule-review form
+## Stage-1 review form
 
-Complete one row per rule. Preserve your initial decision before adjudication.
+Complete one blind row per rule before seeing the study proposal.
 
 | Field | Reviewer response |
 |---|---|
 | Reviewer ID | |
 | Rule ID | |
-| Proposed canonical fact | |
 | Independent projectability decision | MUST_PRESERVE / MAY_TRANSFORM / MAY_LOSE / MUST_NOT_INFER / INDETERMINATE |
-| Proposed target locus defensible? | Yes / No / Partly / Indeterminate |
-| Alternative legal target locus? | None / specify |
-| Allowed operations accepted | list |
-| Allowed operations rejected | list + reason |
-| Equivalence rule adequate? | Yes / No / Partly |
-| Severity assignment plausible? | Yes / No / Not qualified to judge |
 | Evidence sufficient? | Yes / No / Partly |
 | Evidence or standard section relied on | citation/section |
 | Main concern | free text |
 | Confidence | High / Moderate / Low |
+
+The proposal-aware target-locus, operation, equivalence, and severity fields are
+completed only in the separate Stage-2 response.
 
 ## Core rules requiring explicit review
 
@@ -134,6 +153,20 @@ At minimum, independently review the current candidate rules for:
 - patient identifier → PID-3;
 - patient name → PID-5;
 - patient birth date → PID-7.
+
+### Order context / ServiceRequest / ORC-OBR
+
+The following are explicit review candidates, not pre-accepted mappings:
+
+- canonical order identifier ↔ ServiceRequest.identifier / DiagnosticReport.identifier ↔ ORC-3 / OBR-3;
+- canonical ordering requester ↔ ServiceRequest.requester ↔ ORC-12 / OBR-16;
+- ServiceRequest.code and DiagnosticReport.code relationship to OBR-4;
+- DiagnosticReport.basedOn/order grouping semantics.
+
+A separate grounding-only invariant already asks whether an asserted order or
+requester identifier value exists anywhere in the authored source order fact.
+That invariant does **not** decide which field is the uniquely correct target
+locus.
 
 ### DiagnosticReport / OBR
 - report/order code → OBR-4;
@@ -180,7 +213,7 @@ At minimum, independently review the current candidate rules for:
 ## Relationship/grouping candidates requiring explicit review
 
 The grouped ORU development slice and seeded wrong-patient diagnostics now make four attribution questions testable,
-but they remain outside the current v0.2 primary endpoint:
+but they remain outside the current v0.3 draft primary endpoint:
 
 - `REPORT_RESULT_MEMBERSHIP_001`: whether a source
   `DiagnosticReport.result` relationship must be preserved as OBX membership in
@@ -211,7 +244,7 @@ candidate rule is standards-correct.
 
 The study currently treats the following as unresolved rather than guessing:
 
-- DiagnosticReport identifiers versus v2 placer/filler/order identifiers;
+- exact ServiceRequest/DiagnosticReport identifier roles versus v2 placer/filler/order identifiers;
 - encounter context;
 - performer/results-interpreter representation;
 - panel/component topology and OBX-4/group semantics;
@@ -222,7 +255,7 @@ Please state whether any of these can be safely promoted into the scored core fo
 
 ## Agreement and adjudication
 
-Two external reviewers should complete the initial review independently. The project will retain and report both original decisions before adjudication.
+Two external reviewers should complete Stage 1 independently. The project will retain and hash both original blind responses before proposal disclosure or adjudication.
 
 Planned reporting:
 
@@ -251,8 +284,10 @@ After confirmatory model runs begin, no rule may be weakened because a model per
 
 Please confirm:
 
-- I completed my initial rule classifications independently.
-- I did not use study model outputs or verifier outputs to determine correctness.
+- I completed my Stage-1 rule classifications independently.
+- I did not see the study team's proposed rule answers before completing Stage 1.
+- I did not use study model outputs, verifier outputs, or renderer outputs as correctness evidence.
+- I did not author the project rules or implement either reference renderer.
 - I understand that I am reviewing a scoped study instrument, not endorsing a universal FHIR→HL7 v2 mapping standard.
 - I have declared any relevant conflict of interest or project involvement.
 
