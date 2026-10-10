@@ -12,6 +12,7 @@
     "sealed_set_opened",
     "frozen_inputs",
     "primary_estimand",
+    "primary_hypothesis",
     "paired_comparisons",
     "multiplicity",
     "bootstrap",
@@ -20,7 +21,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "0.4.0"
+      "const": "0.5.0"
     },
     "analysis_id": {
       "type": "string",
@@ -51,7 +52,8 @@
         "structural_validity_policy_sha256",
         "statistical_analysis_plan_sha256",
         "model_prompt_configuration_sha256",
-        "sample_size_preregistration_sha256"
+        "sample_size_preregistration_sha256",
+        "primary_vur_hypothesis_sha256"
       ],
       "properties": {
         "repository_commit": {
@@ -71,6 +73,9 @@
           "$ref": "#/$defs/sha256"
         },
         "sample_size_preregistration_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "primary_vur_hypothesis_sha256": {
           "$ref": "#/$defs/sha256"
         }
       }
@@ -234,6 +239,52 @@
         },
         "denominator": {
           "const": "all_attempted_transformations"
+        }
+      }
+    },
+    "primary_hypothesis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_id",
+        "nontrivial_vur_threshold",
+        "model_strategy_aggregation_policy",
+        "inference_method",
+        "alpha",
+        "sidedness",
+        "cluster_id_field",
+        "decision_rule"
+      ],
+      "properties": {
+        "record_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nontrivial_vur_threshold": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 1
+        },
+        "model_strategy_aggregation_policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inference_method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "alpha": {
+          "const": 0.05
+        },
+        "sidedness": {
+          "const": "one_sided"
+        },
+        "cluster_id_field": {
+          "const": "analysis_cluster_id"
+        },
+        "decision_rule": {
+          "type": "string",
+          "minLength": 1
         }
       }
     }
