@@ -96,20 +96,38 @@ def _fixture_paths(tmp_path: Path) -> dict[str, Path]:
     _write_yaml(model, _ready_model_config())
     paths["model_config"] = model
 
-    case_ids = tmp_path / "case-ids.json"
-    case_ids.write_text(
-        json.dumps(["C1", "C2"]) + "\n",
-        encoding="utf-8",
-    )
-    paths["sealed_case_ids"] = case_ids
-
     bundle = tmp_path / "sealed.zip"
     bundle.write_bytes(b"sealed-bundle")
     paths["sealed_bundle"] = bundle
 
-    case_manifest = tmp_path / "case-manifest.json"
+    case_manifest = tmp_path / "sealed-case-manifest.json"
     case_manifest.write_text(
-        json.dumps({"cases": ["C1", "C2"]}) + "\n",
+        json.dumps(
+            {
+                "schema_version": "0.1.0",
+                "manifest_id": "SEALED-CASES-001",
+                "status": "sealed",
+                "created_at": "2026-10-20T15:30:00Z",
+                "split": "sealed_test",
+                "case_count": 2,
+                "cases": [
+                    {
+                        "case_id": "C1",
+                        "scenario_family": "LAB-001",
+                        "source_input_sha256": "1" * 64,
+                        "canonical_graph_sha256": "2" * 64,
+                    },
+                    {
+                        "case_id": "C2",
+                        "scenario_family": "LAB-006",
+                        "source_input_sha256": "3" * 64,
+                        "canonical_graph_sha256": "4" * 64,
+                    },
+                ],
+            },
+            sort_keys=True,
+        )
+        + "\n",
         encoding="utf-8",
     )
     paths["sealed_case_manifest"] = case_manifest
@@ -222,7 +240,6 @@ def _build(tmp_path: Path, paths: dict[str, Path]) -> dict:
         pilot_acceptance_path=paths["pilot_acceptance"],
         sealed_bundle_path=paths["sealed_bundle"],
         sealed_case_manifest_path=paths["sealed_case_manifest"],
-        sealed_case_ids_path=paths["sealed_case_ids"],
         sealed_bundle_id="SEALED-001",
         run_plan_id="RUN-PLAN-001",
         created_at="2026-10-20T17:00:00Z",
@@ -277,8 +294,7 @@ def test_run_plan_assembler_rejects_artifact_changed_after_authorization(
             pilot_acceptance_path=paths["pilot_acceptance"],
             sealed_bundle_path=paths["sealed_bundle"],
             sealed_case_manifest_path=paths["sealed_case_manifest"],
-            sealed_case_ids_path=paths["sealed_case_ids"],
-            sealed_bundle_id="SEALED-001",
+                sealed_bundle_id="SEALED-001",
             run_plan_id="RUN-PLAN-001",
             created_at="2026-10-20T17:00:00Z",
             repository_commit="abcdef1",
@@ -294,8 +310,12 @@ def test_run_plan_assembler_rejects_changed_sealed_case_set(
 ) -> None:
     paths = _fixture_paths(tmp_path)
     authorization = _write_authorization(tmp_path, paths)
-    paths["sealed_case_ids"].write_text(
-        json.dumps(["C1", "C3"]) + "\n",
+    manifest = json.loads(
+        paths["sealed_case_manifest"].read_text(encoding="utf-8")
+    )
+    manifest["cases"][1]["case_id"] = "C3"
+    paths["sealed_case_manifest"].write_text(
+        json.dumps(manifest, sort_keys=True) + "\n",
         encoding="utf-8",
     )
 
@@ -311,8 +331,7 @@ def test_run_plan_assembler_rejects_changed_sealed_case_set(
             pilot_acceptance_path=paths["pilot_acceptance"],
             sealed_bundle_path=paths["sealed_bundle"],
             sealed_case_manifest_path=paths["sealed_case_manifest"],
-            sealed_case_ids_path=paths["sealed_case_ids"],
-            sealed_bundle_id="SEALED-001",
+                sealed_bundle_id="SEALED-001",
             run_plan_id="RUN-PLAN-001",
             created_at="2026-10-20T17:00:00Z",
             repository_commit="abcdef1",
@@ -345,8 +364,7 @@ def test_run_plan_assembler_rejects_denied_authorization(
             pilot_acceptance_path=paths["pilot_acceptance"],
             sealed_bundle_path=paths["sealed_bundle"],
             sealed_case_manifest_path=paths["sealed_case_manifest"],
-            sealed_case_ids_path=paths["sealed_case_ids"],
-            sealed_bundle_id="SEALED-001",
+                sealed_bundle_id="SEALED-001",
             run_plan_id="RUN-PLAN-001",
             created_at="2026-10-20T17:00:00Z",
             repository_commit="abcdef1",
@@ -376,8 +394,7 @@ def test_run_plan_assembler_rejects_sealed_bundle_changed_after_freeze(
             pilot_acceptance_path=paths["pilot_acceptance"],
             sealed_bundle_path=paths["sealed_bundle"],
             sealed_case_manifest_path=paths["sealed_case_manifest"],
-            sealed_case_ids_path=paths["sealed_case_ids"],
-            sealed_bundle_id="SEALED-001",
+                sealed_bundle_id="SEALED-001",
             run_plan_id="RUN-PLAN-001",
             created_at="2026-10-20T17:00:00Z",
             repository_commit="abcdef1",
@@ -402,8 +419,7 @@ def test_run_plan_assembler_rejects_wrong_sealed_bundle_id(
             pilot_acceptance_path=paths["pilot_acceptance"],
             sealed_bundle_path=paths["sealed_bundle"],
             sealed_case_manifest_path=paths["sealed_case_manifest"],
-            sealed_case_ids_path=paths["sealed_case_ids"],
-            sealed_bundle_id="SEALED-WRONG",
+                sealed_bundle_id="SEALED-WRONG",
             run_plan_id="RUN-PLAN-001",
             created_at="2026-10-20T17:00:00Z",
             repository_commit="abcdef1",
@@ -415,8 +431,12 @@ def test_run_plan_assembler_rejects_case_manifest_changed_after_authorization(
 ) -> None:
     paths = _fixture_paths(tmp_path)
     authorization = _write_authorization(tmp_path, paths)
+    manifest = json.loads(
+        paths["sealed_case_manifest"].read_text(encoding="utf-8")
+    )
+    manifest["cases"][0]["source_input_sha256"] = "f" * 64
     paths["sealed_case_manifest"].write_text(
-        json.dumps({"cases": ["C1", "C2"], "changed": True}) + "\n",
+        json.dumps(manifest, sort_keys=True) + "\n",
         encoding="utf-8",
     )
 
@@ -432,8 +452,7 @@ def test_run_plan_assembler_rejects_case_manifest_changed_after_authorization(
             pilot_acceptance_path=paths["pilot_acceptance"],
             sealed_bundle_path=paths["sealed_bundle"],
             sealed_case_manifest_path=paths["sealed_case_manifest"],
-            sealed_case_ids_path=paths["sealed_case_ids"],
-            sealed_bundle_id="SEALED-001",
+                sealed_bundle_id="SEALED-001",
             run_plan_id="RUN-PLAN-001",
             created_at="2026-10-20T17:00:00Z",
             repository_commit="abcdef1",
