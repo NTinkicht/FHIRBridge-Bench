@@ -66,7 +66,12 @@ def _binary(values: Iterable[bool | int], name: str) -> list[int]:
     return result
 
 
-def wilson_interval(successes: int, total: int, *, z: float = 1.959963984540054) -> IntervalEstimate:
+def wilson_interval(
+    successes: int,
+    total: int,
+    *,
+    z: float = 1.959963984540054,
+) -> IntervalEstimate:
     """Wilson score interval for a binomial proportion."""
 
     if type(successes) is not int or type(total) is not int:
@@ -230,7 +235,10 @@ def holm_adjust(p_values: Iterable[float]) -> tuple[float, ...]:
     values = list(p_values)
     if not values:
         raise ValueError("p_values must not be empty")
-    if any(not isinstance(value, (int, float)) or not 0 <= value <= 1 for value in values):
+    if any(
+        not isinstance(value, (int, float)) or not 0 <= value <= 1
+        for value in values
+    ):
         raise ValueError("all p-values must be numeric in [0,1]")
 
     ordered = sorted(enumerate(values), key=lambda item: item[1])
