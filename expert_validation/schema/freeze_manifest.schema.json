@@ -25,7 +25,7 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "0.6.0"
+      "const": "0.7.0"
     },
     "manifest_id": {
       "type": "string",
@@ -57,6 +57,7 @@
         "fhir_lifter",
         "hl7v2_lifter",
         "canonical_schema",
+        "deterministic_baseline_renderer",
         "severity_policy",
         "precedence_policy"
       ],
@@ -80,6 +81,9 @@
           "$ref": "#/$defs/frozenArtifact"
         },
         "precedence_policy": {
+          "$ref": "#/$defs/frozenArtifact"
+        },
+        "deterministic_baseline_renderer": {
           "$ref": "#/$defs/frozenArtifact"
         }
       },
