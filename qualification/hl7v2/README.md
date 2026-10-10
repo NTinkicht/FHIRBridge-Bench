@@ -12,8 +12,8 @@ python qualification/hl7v2/inspect_profile.py /absolute/path/to/profile-bundle
 
 The command:
 
-- requires the case-sensitive `PROFILE.xml` file expected by the CDC/NIST wrapper;
-- includes known IGAMT companion files when present;
+- requires the case-sensitive `PROFILE.xml` file expected by the current CDC/NIST wrapper; do not rename an acquired source artifact merely to satisfy this assumption;
+- preserves and hashes every safe file in the selected profile subtree, including previously unknown companion artifacts, while excluding only explicit operating-system junk;
 - computes per-file and aggregate SHA-256;
 - verifies HL7 version 2.5.1 and ORU^R01 / ORU_R01 identity;
 - requires exactly one selected ORU^R01 message profile so the validator cannot silently choose among multiple variants;
@@ -30,7 +30,7 @@ If HL7/IGAMT provides the resource bundle as a ZIP, inspect it directly without 
 python qualification/hl7v2/inspect_profile_archive.py /absolute/path/to/igamt-export.zip
 ```
 
-The ZIP inspector is intentionally conservative: it requires exactly one `PROFILE.xml`, copies only known scientific companion files from the same archive directory into a temporary workspace, rejects ambiguous multi-ORU exports, and records the archive SHA-256 in addition to the deterministic bundle hash. Unknown files and archive paths are never extracted.
+The ZIP inspector is intentionally conservative: it requires exactly one `PROFILE.xml`, preserves every safe file in that profile directory/subtree for the deterministic scientific bundle hash, rejects ambiguous multi-ORU exports, and records the archive SHA-256 in addition to the bundle hash. Path-traversal members are ignored rather than extracted. If an official Edition 5 export uses a different profile filename or contains several selectable ORU profiles, do not rename or edit it; preserve the original package and extend the selector-capable intake path before freeze.
 
 
 ## End-to-end local qualification
@@ -61,7 +61,10 @@ The runner:
 - writes a machine-readable qualification report under
   `qualification/hl7v2/results/local-profile/`.
 
-The initial negative controls intentionally avoid disputed Edition 5 order
-semantics. ORC/OBR-specific controls are added only after the exact profile has
-resolved Issue #9. A green local qualification therefore requires both a
-zero-error baseline and positive detection of every frozen negative control.
+The authoritative Edition 5 publication now establishes the base ORC/OBR
+requiredness, key order fields, and equality constraints. Machine-level negative
+controls for those rules remain blocked until the exact Edition 5 profile bundle
+shows how the validator encodes/enforces them. A green local qualification must
+therefore use the exact pinned bundle, a source-grounded reference message, and
+frozen negative controls with expected error locations/classifications rather
+than accepting any nonzero error as sufficient evidence.
