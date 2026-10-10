@@ -90,6 +90,7 @@ def build_result_manifest(
     execution_audit_path: Path,
     structural_validation_path: Path,
     semantic_verification_path: Path,
+    analysis_dataset_build_path: Path,
     analysis_ready_dataset_path: Path,
     result_manifest_id: str,
     created_at: str,
@@ -193,8 +194,28 @@ def build_result_manifest(
     ):
         raise ValueError("baseline output count does not match run plan")
 
+    analysis_build = _load_document(analysis_dataset_build_path)
+    if analysis_build.get("no_silent_exclusion_verified") is not True:
+        raise ValueError("analysis dataset build did not verify no-silent-exclusion")
+    if analysis_build.get("run_plan_sha256") != run_plan_sha256:
+        raise ValueError("analysis dataset build run-plan hash mismatch")
+    if analysis_build.get("structural_evidence_sha256") != _sha256(
+        structural_validation_path
+    ):
+        raise ValueError("analysis dataset build structural-evidence hash mismatch")
+    if analysis_build.get("semantic_evidence_sha256") != _sha256(
+        semantic_verification_path
+    ):
+        raise ValueError("analysis dataset build semantic-evidence hash mismatch")
+    if analysis_build.get("analysis_dataset_sha256") != _sha256(
+        analysis_ready_dataset_path
+    ):
+        raise ValueError("analysis dataset build output hash mismatch")
+    if analysis_build.get("analysis_row_count") != analysis_count:
+        raise ValueError("analysis dataset build row count mismatch")
+
     result = {
-        "schema_version": "0.2.0",
+        "schema_version": "0.3.0",
         "result_manifest_id": result_manifest_id,
         "status": "execution_complete_audited",
         "created_at": created_at,
@@ -225,6 +246,10 @@ def build_result_manifest(
             semantic_verification_path,
             semantic_count,
         ),
+        "analysis_dataset_build": {
+            **_artifact(analysis_dataset_build_path),
+            "complete": True,
+        },
         "analysis_ready_dataset": _artifact(
             analysis_ready_dataset_path,
             analysis_count,
@@ -260,6 +285,7 @@ def main() -> int:
     parser.add_argument("--execution-audit", type=Path, required=True)
     parser.add_argument("--structural-validation", type=Path, required=True)
     parser.add_argument("--semantic-verification", type=Path, required=True)
+    parser.add_argument("--analysis-dataset-build", type=Path, required=True)
     parser.add_argument("--analysis-ready-dataset", type=Path, required=True)
     parser.add_argument("--result-manifest-id", required=True)
     parser.add_argument("--created-at", required=True)
@@ -276,6 +302,7 @@ def main() -> int:
         execution_audit_path=args.execution_audit,
         structural_validation_path=args.structural_validation,
         semantic_verification_path=args.semantic_verification,
+        analysis_dataset_build_path=args.analysis_dataset_build,
         analysis_ready_dataset_path=args.analysis_ready_dataset,
         result_manifest_id=args.result_manifest_id,
         created_at=args.created_at,
