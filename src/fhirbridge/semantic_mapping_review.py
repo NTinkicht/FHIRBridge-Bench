@@ -161,9 +161,10 @@ def mapping_review_pair_to_dict(
             "cohens_kappa": result.cohens_kappa,
             "gwets_ac1": result.gwets_ac1,
             "labels": list(result.labels),
-            "confusion_matrix": [
-                list(row) for row in result.confusion_matrix
-            ],
+            "confusion_matrix": {
+                left: dict(right_counts)
+                for left, right_counts in result.confusion_matrix.items()
+            },
         }
 
     return {
