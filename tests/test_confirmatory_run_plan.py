@@ -52,6 +52,7 @@ def test_repository_run_plan_template_is_schema_valid_but_not_ready() -> None:
     jsonschema.Draft202012Validator(_schema()).validate(document)
     readiness = assess_confirmatory_run_plan(document)
 
+    assert document["schema_version"] == "0.2.0"
     assert not readiness.ready
     assert any("not prepared_authorized" in item for item in readiness.blockers)
     assert any("placeholder" in item for item in readiness.blockers)
@@ -106,3 +107,31 @@ def test_schema_forbids_opened_sealed_set_or_started_inference() -> None:
 
         with pytest.raises(jsonschema.ValidationError):
             jsonschema.Draft202012Validator(_schema()).validate(document)
+
+
+def test_run_plan_rejects_older_execution_record_contract() -> None:
+    document = _ready()
+    document["execution_record_contract"]["schema_version"] = "0.2.0"
+
+    readiness = assess_confirmatory_run_plan(document)
+
+    assert not readiness.ready
+    assert any(
+        "schema_version is not frozen to 0.3.0" in item
+        for item in readiness.blockers
+    )
+
+
+def test_run_plan_rejects_missing_execution_binding() -> None:
+    document = _ready()
+    document["execution_record_contract"]["required_bindings"].remove(
+        "mapping_context_sha256"
+    )
+
+    readiness = assess_confirmatory_run_plan(document)
+
+    assert not readiness.ready
+    assert any(
+        "required_bindings do not match" in item
+        for item in readiness.blockers
+    )
