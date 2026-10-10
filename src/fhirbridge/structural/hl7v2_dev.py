@@ -12,7 +12,7 @@ import re
 from .base import StructuralFinding, StructuralValidationResult
 
 _VALIDATOR_ID = "hl7v251-oru-development-structural-gate"
-_VALIDATOR_VERSION = "0.2.0-dev"
+_VALIDATOR_VERSION = "0.3.0-dev"
 _PROFILE = "HL7_v2.5.1_ORU_R01_development_slice_not_LRI_certification"
 _TS = re.compile(r"^\d{8}(?:\d{6}(?:[+-]\d{4})?)?$")
 
@@ -121,6 +121,25 @@ class Hl7V251OruDevelopmentValidator:
                             f"OBR[{start}]",
                         )
                     )
+                # The benchmark result slice does not use specimen-observation
+                # OBXs. Once SPM begins, a later OBX is therefore not a report
+                # result and indicates the old renderer/lifter grouping error.
+                spm_seen = False
+                for index in range(start + 1, end):
+                    segment = segments[index]
+                    if segment[0] == "SPM":
+                        spm_seen = True
+                    elif segment[0] == "OBX" and spm_seen:
+                        findings.append(
+                            _finding(
+                                "RESULT_OBX_AFTER_SPM",
+                                (
+                                    "Result-slice OBX must precede SPM; OBX after "
+                                    "SPM belongs to the specimen-observation group."
+                                ),
+                                f"segment[{index}]",
+                            )
+                        )
 
         for index, segment in enumerate(segments):
             name = segment[0]

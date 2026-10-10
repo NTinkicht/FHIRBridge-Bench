@@ -62,6 +62,12 @@ def test_specimen_relationships_survive_v2_lifting() -> None:
     _, rendered, lifted, result = _round_trip("LAB-006", 9203)
 
     assert "\rSPM|" in rendered.artifact
+    segment_names = [
+        segment.split("|", 1)[0]
+        for segment in rendered.artifact.split("\r")
+        if segment
+    ]
+    assert segment_names.index("OBX") < segment_names.index("SPM")
     specimen = next(fact for fact in lifted.facts if fact.fact_type == "specimen")
     observation = next(fact for fact in lifted.facts if fact.fact_type == "observation")
     report = next(
@@ -125,3 +131,18 @@ def test_primary_v2_reference_slice_has_no_indeterminate_decisions() -> None:
             decision.classification != "INDETERMINATE"
             for decision in result.decisions
         )
+
+
+def test_grammar_ordered_obx_before_spm_keeps_single_specimen_attribution() -> None:
+    _, rendered, lifted, result = _round_trip("LAB-006", 9299)
+
+    segment_names = [
+        segment.split("|", 1)[0]
+        for segment in rendered.artifact.split("\r")
+        if segment
+    ]
+    assert segment_names.index("OBR") < segment_names.index("OBX") < segment_names.index("SPM")
+    observation = next(fact for fact in lifted.facts if fact.fact_type == "observation")
+    specimen = next(fact for fact in lifted.facts if fact.fact_type == "specimen")
+    assert ("specimen", specimen.lifted_fact_id) in observation.relationships
+    assert result.faithful

@@ -15,7 +15,7 @@ from typing import Any
 from .base import RenderManifest, RenderResult, RenderWarning
 
 _RENDERER_ID = "hl7v251-lri-oru-renderer-a"
-_RENDERER_VERSION = "0.2.0-dev"
+_RENDERER_VERSION = "0.3.0-dev"
 
 
 def _segment(name: str, fields: dict[int, str]) -> str:
@@ -315,7 +315,18 @@ class Hl7V251OruRendererA:
                     if specimen_id not in report_specimen_ids:
                         report_specimen_ids.append(specimen_id)
 
+            # ORU_R01 result observations belong to the OBSERVATION group and
+            # therefore precede the trailing SPECIMEN group. An OBX following
+            # SPM is a specimen observation, not a report result.
             obx_set_id = 1
+            for observation in report_observations:
+                observation_id = str(observation.get("fact_id"))
+                if observation_id in rendered_observation_ids:
+                    continue
+                segments.append(self._render_obx(observation, set_id=obx_set_id))
+                rendered_observation_ids.add(observation_id)
+                obx_set_id += 1
+
             for spm_set_id, specimen_id in enumerate(report_specimen_ids, start=1):
                 specimen = specimens_by_id.get(specimen_id)
                 if specimen is None:
@@ -377,29 +388,6 @@ class Hl7V251OruRendererA:
                     )
                 )
                 rendered_specimen_ids.add(specimen_id)
-
-                for observation in report_observations:
-                    observation_id = str(observation.get("fact_id"))
-                    if observation_id in rendered_observation_ids:
-                        continue
-                    if specimen_id not in _relation_targets(
-                        observation,
-                        "specimen",
-                    ):
-                        continue
-                    segments.append(
-                        self._render_obx(observation, set_id=obx_set_id)
-                    )
-                    rendered_observation_ids.add(observation_id)
-                    obx_set_id += 1
-
-            for observation in report_observations:
-                observation_id = str(observation.get("fact_id"))
-                if observation_id in rendered_observation_ids:
-                    continue
-                segments.append(self._render_obx(observation, set_id=obx_set_id))
-                rendered_observation_ids.add(observation_id)
-                obx_set_id += 1
 
         for observation in observations:
             observation_id = str(observation.get("fact_id"))

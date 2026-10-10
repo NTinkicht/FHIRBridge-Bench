@@ -14,7 +14,7 @@ from fhirbridge.verifier.model import LiftedFact
 from .base import LiftResult, LiftWarning
 
 _LIFTER_ID = "hl7v251-lri-oru-lifter"
-_LIFTER_VERSION = "0.2.0-dev"
+_LIFTER_VERSION = "0.3.0-dev"
 
 
 def _unescape(value: str) -> str:
@@ -453,17 +453,16 @@ class Hl7V251OruLifter:
             ]
 
             specimen_entries: list[tuple[int, list[str], str]] = []
-            observation_entries: list[
-                tuple[int, list[str], str, str | None]
-            ] = []
-            current_specimen_id: str | None = None
+            raw_result_observations: list[tuple[int, list[str], str]] = []
             used_observation_ids: set[str] = set()
             used_specimen_ids: set[str] = set()
             spm_counter = 0
             obx_counter = 0
+            specimen_group_started = False
 
             for segment_index, segment in group_segments:
                 if segment[0] == "SPM":
+                    specimen_group_started = True
                     spm_counter += 1
                     token = _field(segment, 1) or str(spm_counter)
                     specimen_id = (
@@ -474,11 +473,22 @@ class Hl7V251OruLifter:
                     if specimen_id in used_specimen_ids:
                         specimen_id = f"{specimen_id}::{spm_counter}"
                     used_specimen_ids.add(specimen_id)
-                    current_specimen_id = specimen_id
                     specimen_entries.append(
                         (segment_index, segment, specimen_id)
                     )
                 elif segment[0] == "OBX":
+                    if specimen_group_started:
+                        warnings.append(
+                            LiftWarning(
+                                code="SPECIMEN_OBX_OUTSIDE_RESULT_SLICE",
+                                message=(
+                                    "OBX after SPM belongs to the specimen group and "
+                                    "is not lifted as a report-result observation."
+                                ),
+                                target_paths=(f"OBX[{segment_index}]",),
+                            )
+                        )
+                        continue
                     obx_counter += 1
                     token = _field(segment, 1) or str(obx_counter)
                     observation_id = (
@@ -489,14 +499,36 @@ class Hl7V251OruLifter:
                     if observation_id in used_observation_ids:
                         observation_id = f"{observation_id}::{obx_counter}"
                     used_observation_ids.add(observation_id)
-                    observation_entries.append(
-                        (
-                            segment_index,
-                            segment,
-                            observation_id,
-                            current_specimen_id,
-                        )
+                    raw_result_observations.append(
+                        (segment_index, segment, observation_id)
                     )
+
+            # In the current bounded benchmark slice an ORDER_OBSERVATION has
+            # at most one source specimen. With exactly one SPM, that specimen
+            # is the source specimen context for each result OBX in the same
+            # OBR group. Multiple SPMs are intentionally left un-attributed
+            # rather than guessed.
+            inferred_specimen_id = (
+                specimen_entries[0][2] if len(specimen_entries) == 1 else None
+            )
+            if len(specimen_entries) > 1 and raw_result_observations:
+                warnings.append(
+                    LiftWarning(
+                        code="MULTIPLE_SPECIMENS_RESULT_LINK_INDETERMINATE",
+                        message=(
+                            "Multiple SPM segments prevent deterministic specimen "
+                            "attribution for result OBXs in the bounded lifter."
+                        ),
+                        target_paths=(f"OBR[{obr_index}]",),
+                    )
+                )
+            observation_entries: list[
+                tuple[int, list[str], str, str | None]
+            ] = [
+                (segment_index, segment, observation_id, inferred_specimen_id)
+                for segment_index, segment, observation_id
+                in raw_result_observations
+            ]
 
             observation_ids = [
                 observation_id

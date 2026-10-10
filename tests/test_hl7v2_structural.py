@@ -125,3 +125,20 @@ def test_f018_syntax_only_fault_is_a_structural_negative_control() -> None:
     assert clean_result.valid
     assert not malformed_result.valid
     assert "WRONG_VERSION" in _codes(malformed_result)
+
+
+def test_result_obx_after_spm_is_rejected_in_bounded_development_slice() -> None:
+    artifact = _artifact("LAB-006", 9599)
+    segments = [segment for segment in artifact.split("\r") if segment]
+    obx_index = next(i for i, segment in enumerate(segments) if segment.startswith("OBX|"))
+    spm_index = next(i for i, segment in enumerate(segments) if segment.startswith("SPM|"))
+    obx = segments.pop(obx_index)
+    if obx_index < spm_index:
+        spm_index -= 1
+    segments.insert(spm_index + 1, obx)
+    malformed = "\r".join(segments) + "\r"
+
+    result = _validator().validate(malformed)
+
+    assert not result.valid
+    assert "RESULT_OBX_AFTER_SPM" in _codes(result)
