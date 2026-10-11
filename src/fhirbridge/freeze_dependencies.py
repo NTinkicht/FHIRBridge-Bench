@@ -30,6 +30,14 @@ def build_freeze_dependencies(
     fhir = validation["fhir"]
     v2 = validation["hl7v2"]
 
+    v2_validator_version = _string(
+        v2.get("validator_version"), label="HL7v2 validator_version"
+    )
+    v2_validator_commit = _string(
+        v2.get("validator_repository_commit"),
+        label="HL7v2 validator_repository_commit",
+    )
+
     dependencies = [
         {
             "name": "LOINC local terminology snapshot",
@@ -116,13 +124,13 @@ def build_freeze_dependencies(
             "version": (
                 f"{_string(v2.get('target'), label='HL7v2 target')}"
                 f"+{_string(v2.get('errata'), label='HL7v2 errata')}"
-                f"|validator={_string(v2.get('validator_version'), label='HL7v2 validator_version')}"
+                f"|validator={v2_validator_version}"
             ),
             "purpose": "hl7v2_validation",
             "source_or_ref": (
                 f"{_string(v2.get('profile_artifact'), label='HL7v2 profile_artifact')}"
                 f"|{_string(v2.get('source_repository'), label='HL7v2 source_repository')}"
-                f"@{_string(v2.get('validator_repository_commit'), label='HL7v2 validator_repository_commit')}"
+                f"@{v2_validator_commit}"
             ),
             "sha256": _string(
                 v2.get("profile_artifact_sha256"),
