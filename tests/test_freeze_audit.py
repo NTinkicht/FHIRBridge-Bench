@@ -145,7 +145,7 @@ def test_template_is_schema_valid_but_not_operationally_ready() -> None:
 
     assert not report.ready_to_open_sealed_set
     assert any("freeze_complete" in blocker for blocker in report.blockers)
-    assert any("zero placeholder hash" in blocker for blocker in report.blockers)
+    assert any("SHA-256" in blocker for blocker in report.blockers)
     assert any("acceptance gate" in blocker for blocker in report.blockers)
     assert any("dependencies" in blocker for blocker in report.blockers)
 
