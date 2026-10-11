@@ -110,3 +110,30 @@ def test_order_checks_cover_multiple_groups_without_using_renderer_a() -> None:
     assert result.checked_order_groups == 2
     assert result.candidate_error_codes == set()
     assert result.G1_qualified is False
+
+
+def test_orc_before_patient_group_cannot_satisfy_current_obr() -> None:
+    segments = [segment for segment in _msg(orc=False).split("\r") if segment]
+    segments.insert(1, _seg("ORC", {1: "RE", 3: "FILLER-1^LOCAL", 12: "PROV-1^Clinician"}))
+    artifact = "\r".join(segments) + "\r"
+
+    result = inspect_order_context_candidate(artifact)
+
+    assert "ORC_CARDINALITY" in result.candidate_error_codes
+    assert result.G1_qualified is False
+
+
+def test_orc_from_previous_patient_cannot_fill_next_group() -> None:
+    first = _msg().rstrip("\r")
+    second = _msg(orc=False).split("\r")
+    later_patient_group = [segment for segment in second if segment.startswith(("PID|", "OBR|", "OBX|"))]
+    artifact = first + "\r" + "\r".join(later_patient_group) + "\r"
+
+    result = inspect_order_context_candidate(artifact)
+
+    assert result.checked_order_groups == 2
+    assert any(
+        finding.code == "ORC_CARDINALITY"
+        and finding.locus == "ORDER_OBSERVATION[2]/ORC"
+        for finding in result.findings
+    )
