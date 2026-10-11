@@ -91,6 +91,7 @@ def _fixture(tmp_path: Path) -> dict[str, Path]:
                     {
                         "case_id": "C1",
                         "scenario_family": "LAB-001",
+                        "analysis_cluster_id": "SOURCE-C1",
                         "source_input_sha256": _SOURCE,
                         "canonical_graph_sha256": "2" * 64,
                     }
