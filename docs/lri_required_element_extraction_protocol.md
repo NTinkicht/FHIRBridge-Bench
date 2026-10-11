@@ -68,7 +68,16 @@ For every in-scope locus, record at minimum:
 - exact page/table/profile evidence.
 
 An extraction is not freeze-ready while any included locus remains UNKNOWN or
-UNRESOLVED.
+UNRESOLVED. The extraction readiness function also fails closed on placeholder
+extractor/extraction IDs, invalid source SHA-256 syntax, wrong target component
+metadata, unfinished cardinality/conditional predicates, and placeholder
+evidence or rationale. Schema-valid responses and a full pairwise agreement
+rate are **not** evidence that the selected published specification has been
+completely enumerated. Independent coverage review of the bounded target
+remains mandatory.
+
+Never mark extraction complete merely because the checker returns no metadata
+blockers: it checks declared entries, not omissions from the standards PDF.
 
 ## Comparison
 
