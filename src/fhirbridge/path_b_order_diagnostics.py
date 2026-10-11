@@ -75,9 +75,21 @@ def inspect_order_context_candidate(artifact: str) -> CandidateOrderDiagnostics:
     previous_obr = -1
     for group_number, obr_index in enumerate(obr_indices, start=1):
         obr = segments[obr_index]
+        # Do not borrow an ORC from before the current PID or from a
+        # previous ORDER_OBSERVATION group. An unrelated earlier ORC cannot
+        # satisfy the ORC 1..1 candidate constraint for this OBR.
+        last_patient_index = max(
+            (
+                i
+                for i in range(obr_index)
+                if segments[i][0] == "PID"
+            ),
+            default=-1,
+        )
+        group_start = max(previous_obr, last_patient_index) + 1
         preceding_orcs = [
             s
-            for s in segments[previous_obr + 1 : obr_index]
+            for s in segments[group_start:obr_index]
             if s[0] == "ORC"
         ]
         previous_obr = obr_index
