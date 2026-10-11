@@ -544,17 +544,19 @@ rules:
 grounding_guards:
   - guard_id: ORDER_IDENTIFIER_SOURCE_GROUNDING_001
     source_fact_type: order
+    additional_source_fact_types: [diagnostic_report]
     source_field: identifiers.value
     target_fact_type: order
     target_field: identifiers.value
     match_type: exact_scalar_membership
     primary_endpoint_eligible: true
     rationale: >-
-      Any order identifier value asserted in a grounded target order fact must
-      exist in an authored canonical order fact. This invariant does not decide
-      whether ServiceRequest.identifier, DiagnosticReport.identifier, ORC-3, or
-      OBR-3 is the unique correct representation; it only prevents structural
-      repair from inventing a business identifier.
+      Any placer/filler identifier asserted in a grounded target order fact
+      must occur in an authored canonical order OR diagnostic_report identifier.
+      This avoids calling an authored accession fabricated when it appears in
+      a filler slot. It does not license the particular placer/filler assignment;
+      those mappings remain INDETERMINATE pending blind expert contract review.
+      Patient and specimen identifiers are deliberately not admissible here.
     evidence:
       - benchmark/lri_order_context_evidence.yaml
       - benchmark/lri_profile_selection.yaml
