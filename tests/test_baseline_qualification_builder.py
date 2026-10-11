@@ -2,7 +2,6 @@ import importlib.util
 import json
 from pathlib import Path
 
-import yaml
 
 _MODULE_PATH = Path("models/build_baseline_qualification.py")
 _SPEC = importlib.util.spec_from_file_location(
