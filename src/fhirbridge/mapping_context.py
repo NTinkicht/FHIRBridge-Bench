@@ -29,6 +29,8 @@ _RULE_KEYS = (
 _GUARD_KEYS = (
     "guard_id",
     "source_fact_type",
+    "additional_source_fact_types",
+    "additional_source_relation_type",
     "source_field",
     "target_fact_type",
     "target_field",
