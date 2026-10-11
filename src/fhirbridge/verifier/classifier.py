@@ -801,7 +801,10 @@ def _grounding_guard_decisions(
     for guard in policy.grounding_guards:
         source_values: set[object] = set()
         for source in source_facts:
-            if source.get("fact_type") != guard.source_fact_type:
+            if source.get("fact_type") not in (
+                guard.source_fact_type,
+                *guard.additional_source_fact_types,
+            ):
                 continue
             source_values.update(_scalar_values_at_path(source, guard.source_field))
 
@@ -832,6 +835,9 @@ def _grounding_guard_decisions(
                         "rationale_code": "TARGET_VALUE_NOT_GROUNDED_IN_SOURCE",
                         "guard_id": guard.guard_id,
                         "source_fact_type": guard.source_fact_type,
+                        "additional_source_fact_types": list(
+                            guard.additional_source_fact_types
+                        ),
                         "source_field": guard.source_field,
                         "target_fact_type": guard.target_fact_type,
                         "target_field": guard.target_field,
