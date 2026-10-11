@@ -3,7 +3,6 @@
 import runpy
 from pathlib import Path
 
-
 _BUILDER = Path(
     "qualification/hl7v2/required_element_review/build_blind_packet.py"
 )
