@@ -2,7 +2,6 @@ from copy import deepcopy
 
 from fhirbridge.confirmatory_execution_audit import audit_confirmatory_execution
 
-
 _MODEL_FREEZE_HASH = "1" * 64
 _SOURCE_HASHES = {"C1": "2" * 64, "C2": "3" * 64}
 _PROMPT_HASH = "4" * 64
