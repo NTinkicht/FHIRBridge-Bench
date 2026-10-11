@@ -31,7 +31,6 @@ def test_candidate_manifest_is_explicitly_not_freeze_ready() -> None:
     assert readiness.manifest_status == "candidate"
     assert not readiness.ready
     assert readiness.unresolved_paths == (
-        "structural_validation.hl7v2.validator_runtime_classpath_sha256",
         "structural_validation.hl7v2.profile_artifact",
         "structural_validation.hl7v2.profile_artifact_sha256",
     )
@@ -167,7 +166,7 @@ def test_candidate_versions_are_pinned_to_documented_protocol_choices() -> None:
         manifest["structural_validation"]["hl7v2"][
             "validator_runtime_classpath_sha256"
         ]
-        == "unresolved"
+        == "0c17573890c13b744fca7ce9f2ea4cb344469b894799a420c35c2d20112218d2"
     )
     assert (
         manifest["structural_validation"]["hl7v2"][
@@ -251,5 +250,19 @@ def test_freeze_readiness_export_counts_current_candidate_blockers() -> None:
     assert exported["blocker_count"] == (
         len(exported["unresolved_paths"]) + len(exported["false_boolean_paths"])
     )
-    assert exported["blocker_count"] == 4
+    assert exported["blocker_count"] == 3
     assert "structural_validation.hl7v2.profile_artifact" in exported["unresolved_paths"]
+
+
+def test_validator_runtime_evidence_is_consistent_across_three_runs() -> None:
+    v2 = _manifest()["structural_validation"]["hl7v2"]
+    digest = v2["validator_runtime_classpath_sha256"]
+    runs = v2["validator_runtime_evidence"]["independent_runs"]
+
+    assert v2["validator_runtime_artifact_count"] == 35
+    assert len(runs) == 3
+    assert len({run["run_id"] for run in runs}) == 3
+    assert len({run["job_id"] for run in runs}) == 3
+    assert all(run["classpath_sha256"] == digest for run in runs)
+    assert v2["profile_validation_qualification_passed"] is False
+    assert v2["profile_artifact"] == "unresolved"
