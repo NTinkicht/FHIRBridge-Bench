@@ -1,8 +1,6 @@
 from copy import deepcopy
 
-from fhirbridge.confirmatory_execution_audit import (
-    audit_confirmatory_execution,
-)
+from fhirbridge.confirmatory_execution_audit import audit_confirmatory_execution
 
 
 _MODEL_FREEZE_HASH = "1" * 64
