@@ -201,6 +201,9 @@ properties:
           items:
             type: string
             minLength: 1
+        additional_source_relation_type:
+          type: string
+          minLength: 1
         source_field:
           type: string
           minLength: 1
