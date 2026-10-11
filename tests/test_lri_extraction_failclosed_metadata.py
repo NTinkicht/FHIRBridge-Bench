@@ -57,6 +57,8 @@ def test_valid_fixture_has_no_metadata_blockers_not_completeness_certification()
         (("entries", 0, "condition"), "TO_BE_EXTRACTED", "condition"),
         (("entries", 0, "locus"), "TO_BE_EXTRACTED", "locus"),
         (("entries", 0, "classification_rationale"), "TBD", "classification_rationale"),
+        (("entries", 0, "classification_rationale"), None, "classification_rationale"),
+        (("entries", 0, "classification_rationale"), "", "classification_rationale"),
     ],
 )
 def test_unfinished_metadata_is_never_freeze_ready(
@@ -90,3 +92,21 @@ def test_condition_with_source_rationale_can_be_assessed_without_claiming_covera
     doc["entries"][0]["condition"] = "See Edition 5 condition predicate cited in evidence"
 
     assert assess_required_element_extraction(doc).ready
+
+
+def test_omitted_classification_rationale_blocks_readiness_and_pair_comparison() -> None:
+    from fhirbridge.lri_required_element_review import (
+        compare_required_element_extractions,
+    )
+
+    left = _declared_complete()
+    right = deepcopy(left)
+    right["extractor"]["extractor_id"] = "INDEPENDENT-EXTRACTOR-B"
+    left["entries"][0].pop("classification_rationale")
+
+    result = assess_required_element_extraction(left)
+    assert not result.ready
+    assert any("classification_rationale" in blocker for blocker in result.blockers)
+
+    with pytest.raises(ValueError, match="extraction A is not ready"):
+        compare_required_element_extractions(left, right)
