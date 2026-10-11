@@ -141,7 +141,7 @@ def test_builder_does_not_supply_default_acceptance_thresholds() -> None:
 def test_verifier_bundle_hash_changes_when_verifier_results_change() -> None:
     first = _build()
     verifier = _verifier()
-    verifier[0] = {"case_id": "C1", "semantic_verdict": "FAITHFUL"}
+    verifier[3] = {"case_id": "C4", "semantic_verdict": "UNFAITHFUL"}
     second = _build(verifier_results=verifier)
 
     assert (
