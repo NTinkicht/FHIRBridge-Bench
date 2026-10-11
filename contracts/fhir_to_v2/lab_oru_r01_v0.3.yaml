@@ -545,6 +545,7 @@ grounding_guards:
   - guard_id: ORDER_IDENTIFIER_SOURCE_GROUNDING_001
     source_fact_type: order
     additional_source_fact_types: [diagnostic_report]
+    additional_source_relation_type: has_report
     source_field: identifiers.value
     target_fact_type: order
     target_field: identifiers.value
@@ -556,7 +557,9 @@ grounding_guards:
       This avoids calling an authored accession fabricated when it appears in
       a filler slot. It does not license the particular placer/filler assignment;
       those mappings remain INDETERMINATE pending blind expert contract review.
-      Patient and specimen identifiers are deliberately not admissible here.
+      Patient and specimen identifiers and unrelated reports are deliberately
+      not admissible here; the accession must belong to the matched source
+      order's has_report relationship.
     evidence:
       - benchmark/lri_order_context_evidence.yaml
       - benchmark/lri_profile_selection.yaml
