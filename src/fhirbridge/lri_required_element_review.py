@@ -148,8 +148,9 @@ def assess_required_element_extraction(
             blockers.append(f"{locus}: cardinality is missing or placeholder")
         if item.get("usage") == "C" and _unfinished(item.get("condition")):
             blockers.append(f"{locus}: conditional usage has no condition")
-        for field in ("condition", "datatype", "value_set_or_binding_ref",
-                      "classification_rationale"):
+        if _unfinished(item.get("classification_rationale")):
+            blockers.append(f"{locus}: classification_rationale is missing or placeholder")
+        for field in ("condition", "datatype", "value_set_or_binding_ref"):
             value = item.get(field)
             if isinstance(value, str) and _unfinished(value):
                 blockers.append(f"{locus}: {field} is blank or placeholder")
