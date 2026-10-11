@@ -184,9 +184,9 @@ def test_repair_must_reference_same_case_model_mapping_execution() -> None:
     repair["source_execution_id"] = "C2-M"
 
     result = audit_confirmatory_execution(
-        expected_source_input_sha256=_SOURCE_HASHES,
         _plan(),
         records,
+        expected_source_input_sha256=_SOURCE_HASHES,
         sealed_case_ids={"C1", "C2"},
         deterministic_baseline_case_ids={"C1", "C2"},
     )
@@ -201,9 +201,9 @@ def test_repair_raw_hash_must_equal_mapping_raw_hash() -> None:
     repair["raw_response_sha256"] = "f" * 64
 
     result = audit_confirmatory_execution(
-        expected_source_input_sha256=_SOURCE_HASHES,
         _plan(),
         records,
+        expected_source_input_sha256=_SOURCE_HASHES,
         sealed_case_ids={"C1", "C2"},
         deterministic_baseline_case_ids={"C1", "C2"},
     )
@@ -227,9 +227,9 @@ def test_failed_mapping_requires_explicit_upstream_repair_failure() -> None:
     )
 
     result = audit_confirmatory_execution(
-        expected_source_input_sha256=_SOURCE_HASHES,
         _plan(),
         records,
+        expected_source_input_sha256=_SOURCE_HASHES,
         sealed_case_ids={"C1", "C2"},
         deterministic_baseline_case_ids={"C1", "C2"},
     )
@@ -254,9 +254,9 @@ def test_successful_mapping_cannot_be_labeled_upstream_failure() -> None:
     )
 
     result = audit_confirmatory_execution(
-        expected_source_input_sha256=_SOURCE_HASHES,
         _plan(),
         records,
+        expected_source_input_sha256=_SOURCE_HASHES,
         sealed_case_ids={"C1", "C2"},
         deterministic_baseline_case_ids={"C1", "C2"},
     )
@@ -275,9 +275,9 @@ def test_missing_arm_record_fails_completeness() -> None:
     ]
 
     result = audit_confirmatory_execution(
-        expected_source_input_sha256=_SOURCE_HASHES,
         _plan(),
         records,
+        expected_source_input_sha256=_SOURCE_HASHES,
         sealed_case_ids={"C1", "C2"},
         deterministic_baseline_case_ids={"C1", "C2"},
     )
@@ -295,9 +295,9 @@ def test_duplicate_case_model_strategy_record_is_rejected() -> None:
     records.append(duplicate)
 
     result = audit_confirmatory_execution(
-        expected_source_input_sha256=_SOURCE_HASHES,
         _plan(),
         records,
+        expected_source_input_sha256=_SOURCE_HASHES,
         sealed_case_ids={"C1", "C2"},
         deterministic_baseline_case_ids={"C1", "C2"},
     )
@@ -328,9 +328,9 @@ def test_execution_records_must_match_run_plan_model_freeze_hash() -> None:
     records[0]["model_prompt_freeze_sha256"] = "f" * 64
 
     result = audit_confirmatory_execution(
-        expected_source_input_sha256=_SOURCE_HASHES,
         _plan(),
         records,
+        expected_source_input_sha256=_SOURCE_HASHES,
         sealed_case_ids={"C1", "C2"},
         deterministic_baseline_case_ids={"C1", "C2"},
     )
@@ -348,9 +348,9 @@ def test_source_input_hash_must_match_across_all_arms_for_case() -> None:
     mapping["source_input_sha256"] = "e" * 64
 
     result = audit_confirmatory_execution(
-        expected_source_input_sha256=_SOURCE_HASHES,
         _plan(),
         records,
+        expected_source_input_sha256=_SOURCE_HASHES,
         sealed_case_ids={"C1", "C2"},
         deterministic_baseline_case_ids={"C1", "C2"},
     )
@@ -368,9 +368,9 @@ def test_repair_mapping_context_must_match_mapping_arm() -> None:
     repair["mapping_context_sha256"] = "e" * 64
 
     result = audit_confirmatory_execution(
-        expected_source_input_sha256=_SOURCE_HASHES,
         _plan(),
         records,
+        expected_source_input_sha256=_SOURCE_HASHES,
         sealed_case_ids={"C1", "C2"},
         deterministic_baseline_case_ids={"C1", "C2"},
     )
@@ -387,9 +387,9 @@ def test_execution_schema_version_must_match_frozen_record_version() -> None:
     records[0]["schema_version"] = "0.2.0"
 
     result = audit_confirmatory_execution(
-        expected_source_input_sha256=_SOURCE_HASHES,
         _plan(),
         records,
+        expected_source_input_sha256=_SOURCE_HASHES,
         sealed_case_ids={"C1", "C2"},
         deterministic_baseline_case_ids={"C1", "C2"},
     )
