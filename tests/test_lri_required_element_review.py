@@ -132,6 +132,25 @@ def test_comparison_rejects_same_reviewer_or_different_source_artifact() -> None
         compare_required_element_extractions(first, second)
 
 
+def test_comparison_rejects_different_errata_artifact_hashes() -> None:
+    first = _complete("R-A")
+    second = _complete("R-B")
+    second["source"]["errata_artifact_sha256"] = "1" * 64
+
+    with pytest.raises(ValueError, match="same errata artifact"):
+        compare_required_element_extractions(first, second)
+
+
+def test_comparison_report_retains_both_document_hashes() -> None:
+    first = _complete("R-A")
+    second = _complete("R-B")
+    report = extraction_comparison_to_dict(
+        compare_required_element_extractions(first, second)
+    )
+    assert report["source_sha256"] == first["source"]["artifact_sha256"]
+    assert report["errata_sha256"] == first["source"]["errata_artifact_sha256"]
+
+
 def test_extraction_independence_flags_are_fail_closed() -> None:
     document = _complete("R-A")
     mutated = deepcopy(document)
