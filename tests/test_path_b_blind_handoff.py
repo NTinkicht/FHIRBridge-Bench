@@ -1,7 +1,7 @@
 """Blind Path B handoff must not re-introduce the obsolete XML dependency."""
 
-from pathlib import Path
 import runpy
+from pathlib import Path
 
 
 _BUILDER = Path(
