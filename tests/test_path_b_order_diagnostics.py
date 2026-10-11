@@ -126,7 +126,11 @@ def test_orc_before_patient_group_cannot_satisfy_current_obr() -> None:
 def test_orc_from_previous_patient_cannot_fill_next_group() -> None:
     first = _msg().rstrip("\r")
     second = _msg(orc=False).split("\r")
-    later_patient_group = [segment for segment in second if segment.startswith(("PID|", "OBR|", "OBX|"))]
+    later_patient_group = [
+        segment
+        for segment in second
+        if segment.startswith(("PID|", "OBR|", "OBX|"))
+    ]
     artifact = first + "\r" + "\r".join(later_patient_group) + "\r"
 
     result = inspect_order_context_candidate(artifact)
