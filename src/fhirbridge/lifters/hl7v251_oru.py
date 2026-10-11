@@ -645,6 +645,7 @@ class Hl7V251OruLifter:
             order_id = (
                 f"v2::order::{group_number}"
                 if preceding_orc is not None
+                or _field(obr, 2)
                 or _field(obr, 3)
                 or _field(obr, 16)
                 else None
