@@ -1,0 +1,64 @@
+path_b_bounded_coverage:
+  id: FHIRBRIDGE-PATH-B-COVERAGE-20261011
+  version: "0.1.0"
+  status: incomplete_no_independent_extraction
+  path: bounded_independent_reconstruction
+  target:
+    hl7_version: "2.5.1"
+    lri_edition: "5"
+    errata: 2024DEC
+    components:
+      - LRI_Common_Component_V3
+      - LRI_NG_Component_R1
+      - LAB_FRU_Component
+  normative_source:
+    guide_pdf_sha256: 375f02fd5453b06ff1c51841e703c943c3132134fca53a122f5ccfed743461b7
+    errata_letter_sha256: 32eeb375ecb78dd77acb01ed388e30c554688e55a8a4d58df05dd0e7a791700f
+    publication_package_inspection: qualification/hl7v2/results/edition5-publication-package-inspection.json
+  bounded_segments:
+    - segment: MSH
+      included: true
+      R_and_C_constraints_audited: false
+    - segment: PID
+      included: true
+      R_and_C_constraints_audited: false
+    - segment: ORC
+      included: true
+      R_and_C_constraints_audited: false
+    - segment: OBR
+      included: true
+      R_and_C_constraints_audited: false
+    - segment: OBX
+      included: true
+      R_and_C_constraints_audited: false
+    - segment: SPM
+      included: true
+      R_and_C_constraints_audited: false
+    - segment: NTE
+      included: if_present
+      R_and_C_constraints_audited: false
+  required_and_conditional_inventory:
+    known_development_rows_not_complete_denominator: 12
+    independent_denominator: null
+    independently_adjudicated_R_and_C_rows: 0
+    published_percentage: null
+    zero_unreviewed_in_scope_R_or_C_required: true
+    requirement_level_exclusions_need_explicit_authorized_disposition: true
+    unresolved_mandatory_rules_are_qualified_passes: false
+  reviews:
+    AI_preliminary_extraction_received: false
+    blind_human_extraction_received: false
+    distinct_human_adjudicator_assigned: false
+    all_disagreements_adjudicated: false
+    agreement_audit_sample_preregistered: false
+    sampled_agreements_audited: false
+    standards_completeness_certified: false
+  test_qualification:
+    rule_provenance_and_hashes_pinned: false
+    positive_controls_passed: false
+    expected_locus_negative_controls_passed: false
+    all_11_scenario_families_feasible: false
+    independent_validator_review_complete: false
+  claims:
+    original_IGAMT_profile_conformant: false
+    confirmatory_G1_validity_authorized: false

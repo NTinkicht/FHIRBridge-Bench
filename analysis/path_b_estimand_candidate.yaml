@@ -1,0 +1,95 @@
+path_b_estimand_candidate:
+  id: FHIRBRIDGE-PATH-B-ESTIMAND-20261011
+  version: "0.1.0"
+  status: candidate_requires_pilot_and_independent_statistics_review
+  PI_approved_development_direction: true
+  PI_approved_confirmatory_estimand: false
+  confirmatory_execution_authorized: false
+  target: FHIR_R4_USCore_to_HL7v2_LRI_Edition5_bounded
+  validity_tiers:
+    G0:
+      name: base_HL7v2_2_5_1_structure
+      status: not_qualified_for_confirmatory_use
+      role: descriptive_and_prerequisite_not_original_LRI_conformance
+    G1:
+      name: independently_adjudicated_bounded_Edition5_rules
+      status: not_qualified
+      role: candidate_primary_structural_gate
+      full_original_IGAMT_conformance_claim: false
+      require_complete_declared_R_and_C_constraints: true
+    G2:
+      name: optional_authenticated_original_machine_profile
+      status: not_available
+      role: prospective_sensitivity_only
+  outcome_coding_candidate:
+    mutually_exclusive_states:
+      - INVALID_G0
+      - INVALID_G1
+      - VALID_G1_FAITHFUL
+      - VALID_G1_UNFAITHFUL
+      - VALID_G1_SEMANTIC_INDETERMINATE
+      - STRUCTURAL_MEASUREMENT_FAILURE
+      - STRUCTURAL_POLICY_UNRESOLVED
+    never_force_indeterminate_to_faithful: true
+    never_drop_attempts_silently: true
+    unresolved_required_rule_not_counted_as_qualified_pass: true
+    denominator: all_attempted_transformations_for_joint_rates
+    G1_scope_must_be_predeclared_and_uniform: true
+  estimands:
+    candidate_primary:
+      name: VFY_G1
+      numerator: count_VALID_G1_FAITHFUL
+      denominator: all_attempts
+      decision_status: not_frozen
+      rationale: success_jointly_requires_bounded_validity_and_semantic_fidelity
+    companion_safety:
+      name: VU_YIELD_G1
+      numerator: count_VALID_G1_UNFAITHFUL
+      denominator: all_attempts
+      decision_status: not_frozen
+      interpretation: unsafe_valid_outputs_not_an_improvement_goal
+    descriptive_conditional:
+      name: VUR_G1
+      numerator: count_VALID_G1_UNFAITHFUL
+      denominator: count_VALID_G1_FAITHFUL_plus_VALID_G1_UNFAITHFUL
+      excluded_reporting_required:
+        - VALID_G1_SEMANTIC_INDETERMINATE
+        - STRUCTURAL_MEASUREMENT_FAILURE
+        - STRUCTURAL_POLICY_UNRESOLVED
+      no_implicit_both_arms_valid_paired_primary_test: true
+      decision_status: not_frozen
+  prospective_analysis:
+    preferred_preregistered_contrast_candidate:
+      arm_a: mapping_aware_llm
+      arm_b: mapping_aware_plus_syntax_repair
+      effect_direction: compare_VFY_not_improvement_of_unsafe_valid_rate
+      model_family_count: undecided_pending_budget_and_feasibility
+    pairwise_unit: same_source_instance_same_frozen_model_family
+    preserve_cluster_id: true
+    exact_McNemar_if_valid_for_preregistered_binary_joint_outcome: candidate
+    paired_cluster_bootstrap: candidate
+    familywise_multiplicity: decide_before_sealed_data
+    sampling_enrichment_weights: decide_before_sealed_data
+    missing_indeterminate_policy: decide_from_pilot_and_statistics_review
+    externally_timestamped_preregistration_required: true
+  prerequisites:
+    independent_G1_ruleset_adjudicated: false
+    complete_scope_coverage_certified: false
+    G0_G1_independent_validator_qualified: false
+    verifier_expert_acceptance_qualified: false
+    natural_error_pilot_completed: false
+    clinically_meaningful_effect_preregistered: false
+    sample_size_justification_frozen: false
+    independent_statistician_reviewed: false
+    PI_final_amendment_approval: false
+    sealed_set_and_model_manifests_frozen: false
+  scientific_issues:
+    - current_VUR_both_arms_VALID_set_is_strategy_selected
+    - original_edition5_machine_profile_not_acquired
+    - source_grounding_not_equivalent_to_placer_filler_mapping_correctness
+    - reviewer_AI_and_human_agreement_does_not_prove_completeness
+  related_documents:
+    - docs/research_protocol.md
+    - docs/edition5_validation_contingency_proposal.md
+    - analysis/core_confirmatory_design.yaml
+    - benchmark/lri_edition5_contingency_proposal.yaml

@@ -3,6 +3,14 @@ analysis_design:
   version: 0.2.0
   status: predeclared_before_confirmatory_inference
   source_protocol: docs/research_protocol.md
+  path_b_transition:
+    selected_for_development: true
+    bounded_ruleset_qualified: false
+    current_design_is_not_frozen: true
+    current_conditional_VUR_contrast_cannot_be_activated: true
+    candidate_alternative: analysis/path_b_estimand_candidate.yaml
+    require_PI_approval_of_final_estimand: true
+    require_independent_statistics_review: true
   primary_direction: FHIR_to_HL7v2
   model_factor:
     design: crossed

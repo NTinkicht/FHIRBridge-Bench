@@ -2,6 +2,27 @@
 
 Status: **Draft — not yet frozen**
 
+## PI direction decision: Path B (2026-10-11)
+
+The PI approved an independently reconstructed and explicitly **bounded**
+Edition 5 Common+NG+FRU conformance ruleset as the **preferred development
+direction**. Path A (the original exact machine-readable profile) remains an
+optional, separately qualified sensitivity analysis if subsequently available.
+This is **not** an approval of the ruleset, a new denominator, a statistical
+hypothesis, an expert reference standard, a pilot or a sealed confirmatory run.
+
+Before confirmation, adopt a versioned and independently reviewed amendment
+defining a G0 basic v2 structural gate and a G1 bounded Edition 5 gate, with
+page-cited coverage, mandatory controls and explicit unknowns. Revisit the
+conditional VUR analysis-set selection and evaluate all-attempt outcomes,
+including VFY and valid-but-unfaithful yield. Do not interpret a hypothetical
+increase in unsafe-valid outcomes as a desirable performance gain.
+
+See the current scientific transition record:
+`docs/edition5_validation_contingency_proposal.md` and
+`analysis/path_b_estimand_candidate.yaml`. Existing VUR claims below are
+**unamended draft design**, not frozen or approved confirmatory inference.
+
 ## Working title
 
 **Valid Is Not Faithful: Source-Grounded Semantic Verification of LLM-Based HL7 v2–FHIR Transformations**

@@ -18,11 +18,14 @@ disagreements before the measurement instrument is frozen.
 
 Both extractors work from the **same cryptographically identified artifact**.
 
-The first extraction may use the authoritative Edition 5 + 2024DEC publication
-PDF. When the exact machine-readable Edition 5 profile bundle becomes available,
-the extraction must be repeated or reconciled against that exact bundle. A
-historical NIST profile, Labcorp/Quest profile, or locally reconstructed profile
-cannot satisfy this requirement.
+**Selected Path B development source:** the pinned authoritative Edition 5 +
+2024DEC publication PDF. The study does not wait for an original XML export
+to initiate an independently reviewed **bounded** rule inventory. If the exact
+machine-readable Edition 5 bundle is later authenticated, it becomes an
+optional *prespecified sensitivity/differential comparator*, whose differences
+must be disclosed, not silently relabeled as Path B ground truth. An older
+NIST profile, commercial implementation, or locally reconstructed profile
+cannot establish full Edition 5 machine-profile conformance.
 
 Target profile candidate:
 
@@ -107,8 +110,17 @@ Every disagreement is either:
 3. retained as `UNRESOLVED`, which keeps the affected mapping outside the
    frozen confirmatory instrument.
 
-Machine-bundle reconciliation is mandatory even if the two PDF extractions
-agree perfectly.
+**Path B:** two independent initial extractions, mandatory human adjudication
+of differences, a predeclared audit sample of agreements, and an explicit
+page-by-page completeness check are required. Agreement alone cannot reveal
+rules both readers omitted. Independent sign-off must cover all applicable
+required and conditional constraints in the prespecified bounded slice.
+An AI first reader may assist, but it is not a human standards expert.
+
+**Path A sensitivity:** a subsequently acquired exact machine-readable profile
+is separately qualified, with a documented differential analysis. Machine
+profile reconciliation is mandatory for any **Path A original-profile** claim,
+not for starting Path B development.
 
 ## Freeze condition
 
@@ -118,5 +130,7 @@ The required-element inventory gate may pass only after:
 - all R/RE/C/X and other load-bearing conditional elements in the bounded slice
   are represented;
 - disagreements are adjudicated or explicitly unresolved;
-- the exact Edition 5 machine profile has been reconciled;
+- the **selected Path B** ruleset has been independently adjudicated for
+  source coverage and qualified with positive and expected-locus negative
+  controls (original machine-profile reconciliation only for Path A claims);
 - no silent requirement is inferred from Renderer A, Renderer B, or model output.

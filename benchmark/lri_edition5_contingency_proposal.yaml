@@ -1,8 +1,12 @@
 edition5_contingency:
   id: FHIRBRIDGE-ED5-CONTINGENCY-20261011
-  version: "0.1.0"
-  status: draft_not_approved
-  selected_path: none
+  version: "0.2.0"
+  status: preferred_development_path_selected_not_qualified
+  selected_path: bounded_independent_reconstruction
+  path_selection_approved: true
+  path_selection_approval_date: "2026-10-11"
+  path_selection_scope: development_preparation_only
+  confirmatory_protocol_amendment_status: draft_not_approved
   activation_allowed: false
   confirmatory_inference_authorized: false
   replaces_existing_machine_bundle_gate: false
@@ -24,14 +28,17 @@ edition5_contingency:
     private_correspondence_redistribution_permitted: false
   possible_paths:
     exact_machine_profile:
-      role: preferred_original_qualification
-      status: blocked
+      role: optional_prespecified_sensitivity_and_corroboration
+      status: artifact_not_acquired_not_primary_blocking_development
       require_original_artifact_and_companions: true
     bounded_independent_reconstruction:
-      role: proposed_alternative_measurement_stratum
+      role: PI_selected_development_measurement_stratum
       status: not_qualified
       may_claim_official_original_machine_profile_conformance: false
-      required_independent_extractors: 2
+      required_independent_extraction_channels: 2
+      independent_extraction_plan: AI_assisted_reader_A_and_blind_human_reader_B_with_separate_human_adjudication
+      independent_AI_counts_as_human_expert: false
+      reviewer_agreement_alone_proves_completeness: false
       require_complete_source_page_table_provenance: true
       require_all_bounded_Common_NG_FRU_requirements: true
       require_adjudication_or_unresolved_disposition: true
@@ -46,6 +53,17 @@ edition5_contingency:
       status: access_not_yet_qualified
       allowed_as_general_lab_ground_truth: false
       import_newborn_specific_rules: false
+  decisions_still_pending:
+    - independently_adjudicated_bounded_scope_and_coverage
+    - protocol_version_and_primary_estimand_amendment
+    - sampling_and_human_review_budget
+    - severity_and_expert_verifier_qualification
+    - pilot_based_sample_size_and_acceptance_thresholds
+    - preregistration_and_sealed_set_approval
+  path_a_cutoff:
+    rule: stop_waiting_for_original_bundle_at_independent_bounded_extraction_adjudication
+    cut_off_date_fixed: false
+    original_bundle_if_later_found: prespecified_differential_sensitivity_only
   safeguards:
     unresolved_required_rules_are_valid: false
     silently_change_vur_denominator: false

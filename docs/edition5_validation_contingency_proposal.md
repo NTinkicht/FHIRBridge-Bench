@@ -1,8 +1,14 @@
-# Edition 5 validation-contingency proposal (PRE-FREEZE, NOT APPROVED)
+# Edition 5 Path B development decision and qualification proposal (PRE-FREEZE)
 
-Status: **proposal only**. This document is not an amendment in force, does not
-replace the tooling manifest's machine-profile gate, and does **not** authorize
-confirmatory inference or opening the sealed expert set.
+**PI decision (2026-10-11): Path B is the preferred DEVELOPMENT route.**
+This authorizes work on a bounded, independently extracted Edition 5 ruleset
+and its review materials; it does not mean that rules, structural-validity
+estimand, error classification, clinical instrument, or confirmatory protocol
+have been independently qualified. The formal prospective endpoint amendment
+is still **draft/unapproved**. The existing machine-profile freeze blockers
+are not removed until an explicit alternative qualification gate with
+independent evidence is implemented and approved. No confirmatory inference
+or sealed-set opening is authorized.
 
 ## Why this is needed
 
@@ -26,22 +32,25 @@ Authoritative public publication references:
 - [HL7 LRI Edition 5 product brief](https://www.hl7.org/implement/standards/product_brief.cfm?product_id=279)
 - [December 6, 2024 errata notice](https://standups.hl7.org/2024/12/06/errata-publication-of-hl7-version-2-5-1-implementation-guide-laboratory-results-interface-lri-edition-5-us-realm/)
 
-## Path A: exact machine-profile qualification (preferred)
+## Path A: exact machine-profile qualification (optional sensitivity)
 
-Continue to accept an independently authenticated original Edition 5 +
-2024DEC profile and its full companion bundle, if it can be acquired.
+If an independently authenticated original Edition 5 + 2024DEC profile
+and its full companion bundle becomes available, retain it for a **prespecified
+differential/sensitivity analysis**, not as an indefinite prerequisite to
+Path B development.
 Preserve cryptographic identity, source lineage, selected component identity,
 value-set bindings, parser/runtime dependency hashes, positive and
 expected-locus negative controls, and the frozen warning/alert policy.
 Do **not** substitute an older NIST LRI profile or a vendor-specific profile.
 
-This path retains the original external-profile-valid structural gate,
-provided all other protocol safeguards also pass.
+This path can support a separate original-profile conformance claim after its
+own qualification. It must not silently relabel Path B primary cases.
 
-## Path B: independently extracted bounded conformance (candidate)
+## Path B: independently extracted bounded conformance (selected for development)
 
-If no qualified original bundle can be acquired after a documented search,
-a **separate and explicitly labeled** measurement stratum may be proposed:
+The PI has selected development of a **separate, explicitly labeled** bounded
+measurement stratum, without waiting indefinitely for the original bundle.
+It remains unqualified until the full prospective amendment is approved:
 
 1. Fix the exact published Edition 5 + 2024DEC input PDFs and file hashes.
 2. Independently extract all applicable Common, NG, and FRU requirements
@@ -103,7 +112,9 @@ full external-profile validity:
 
 ## Go/no-go decision
 
-Path B is **not selected by this proposal**. Before replacing any current
+**Path B has been selected only as the preferred development direction.**
+The investigator has NOT approved replacing the current conformance gate,
+freezing a new endpoint, or opening confirmatory data. Before replacing any current
 `acquire_exact_machine_readable_profile_bundle` blocker, require:
 
 - an externally reviewable full Common + NG + FRU extraction and adjudication;
@@ -120,3 +131,60 @@ pilot, reviewer, sealed-set, and model-execution blocker remains in force**.
 
 Companion machine-readable proposal:
 `benchmark/lri_edition5_contingency_proposal.yaml`.
+
+## Minimum-resource independent-review design (candidate; not expert evidence)
+
+A clean-context AI extractor may prepare **reader A** from the pinned PDF, and
+a standards-qualified human may independently prepare **reader B** blind to
+the AI response and repository inventory. This is not equivalent to two
+independent human extractors: retain AI-assisted provenance, risks of
+correlated standards interpretation, exact first-round replies, and perform
+separate human adjudication of **every disagreement plus a predeclared
+random sample of agreements**. The proposed 10–15% agreement audit rate is
+a planning hypothesis, not certification of requirements coverage.
+The final fraction must be justified before handoff.
+
+The proposed primary scope covers MSH, PID, ORC, OBR, OBX, SPM and NTE if
+used, including applicable group, cardinality, field/component, value-set,
+conditional and cross-field assertions. **Do not assume every R/C element
+has been found until a reviewer has certified the denominator.**
+
+The expert label study should separate (1) unprompted clinically meaningful
+source-to-target differences, (2) contract classification, (3) blinded verifier
+comparison and (4) contract blind-spot review. Do not use verifier disagreement
+alone to trigger the second human label.
+
+## Primary-outcome redesign for statistical review (candidate, NOT frozen)
+
+Conditional VUR remains scientifically useful for description, but the paired
+*both-arms-valid* comparison subset can depend on treatment strategy. A
+candidate primary endpoint is all-attempt **valid-and-faithful yield (VFY)**
+for a prespecified contrast. A companion all-attempt
+**valid-and-unfaithful** risk captures unsafe passing outputs. Do not
+preregister a hypothesis rewarding increased unsafe-valid outputs.
+
+A fully explicit outcome partition must track structurally invalid,
+structurally unassessable, semantically indeterminate, valid-faithful and
+valid-unfaithful cases. Bounded G1 validity is distinct from full Edition 5
+machine-profile conformance; syntax-only G0 cannot masquerade as G1.
+
+Not fixed by direction approval: primary contrast/model count, effect size,
+sample size, multiplicity, enrichment weights, missingness/abstention,
+and independent statistical review.
+
+## Path B development milestone ordering
+
+1. Pin official normative publication and errata hashes; check copyright
+   constraints before redistribution.
+2. Prepare separate blind extraction packets and collect AI reader A and
+   human reader B, with separate human adjudication and completeness audit.
+3. Construct the bounded ruleset with positive/expected-locus negative
+   controls and explicit out-of-scope and unresolved requirement coverage.
+4. Independently demonstrate feasibility across the 11 LAB families with
+   provisional development messages, without using Renderer A as truth.
+5. Qualify a separate G0 grammar check and G1 bounded rule oracle.
+   Unresolved mandatory requirements never silently become passes.
+6. Complete blind contract and clinical review, pilot sensitivity/PPV on
+   naturally occurring model errors, then independent statistical review.
+7. Only then freeze the amended endpoint and warning policy; preregister,
+   authorize and execute sealed confirmatory evaluation.
