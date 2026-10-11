@@ -434,6 +434,32 @@ jobs:
           mvn -q -B -f qualification/hl7v2/pom.xml             dependency:build-classpath             -Dmdep.outputFile=runtime-classpath.txt
           python qualification/hl7v2/hash_validator_runtime.py             qualification/hl7v2/runtime-classpath.txt             --output qualification/hl7v2/results/validator-runtime-classpath.json
 
+      - name: Verify frozen HL7 v2 validator runtime identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          import yaml
+
+          pinned = yaml.safe_load(
+              Path("benchmark/tooling_versions.yaml").read_text(encoding="utf-8")
+          )["structural_validation"]["hl7v2"]
+          observed = json.loads(
+              Path("qualification/hl7v2/results/validator-runtime-classpath.json")
+              .read_text(encoding="utf-8")
+          )
+          expected = pinned["validator_runtime_classpath_sha256"]
+          actual = observed["runtime_classpath_sha256"]
+          if actual != expected:
+              raise SystemExit(f"validator runtime identity drift: {actual} != {expected}")
+          if observed["artifact_count"] != pinned["validator_runtime_artifact_count"]:
+              raise SystemExit("validator runtime classpath artifact count drift")
+          print(f"Pinned validator runtime verified: {actual}")
+          PY
+
       - name: Compile pinned NIST HL7 v2 qualification harness
         run: mvn -B -f qualification/hl7v2/pom.xml package -DskipTests
 
