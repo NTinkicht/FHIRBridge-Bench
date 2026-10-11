@@ -31,9 +31,9 @@ def test_candidate_manifest_is_explicitly_not_freeze_ready() -> None:
     assert readiness.manifest_status == "candidate"
     assert not readiness.ready
     assert readiness.unresolved_paths == (
+        "structural_validation.hl7v2.validator_runtime_classpath_sha256",
         "structural_validation.hl7v2.profile_artifact",
         "structural_validation.hl7v2.profile_artifact_sha256",
-        "structural_validation.hl7v2.validator_runtime_classpath_sha256",
     )
     assert readiness.false_boolean_paths == (
         "structural_validation.hl7v2.profile_validation_qualification_passed",
