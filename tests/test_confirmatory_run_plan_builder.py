@@ -44,7 +44,7 @@ def _model(key: str) -> dict:
         "max_output_tokens": 4096,
         "seed_policy": "fixed_supported_seed",
         "seed": 20261020,
-        "structured_output_mode": "json_schema",
+        "structured_output_mode": "plain_text_hl7_message",
     }
 
 
@@ -60,6 +60,7 @@ def _ready_model_config() -> dict:
     document["deterministic_baseline"]["implementation_artifact"] = _artifact(
         "1"
     )
+    document["deterministic_baseline"]["qualification_artifact"] = _artifact("a")
     document["llm_models"] = [_model("M1"), _model("M2")]
     for index, strategy in enumerate(document["llm_strategies"], start=2):
         strategy["implementation_artifact"] = _artifact(str(index))
@@ -114,12 +115,14 @@ def _fixture_paths(tmp_path: Path) -> dict[str, Path]:
                     {
                         "case_id": "C1",
                         "scenario_family": "LAB-001",
+                        "analysis_cluster_id": "SOURCE-C1",
                         "source_input_sha256": "1" * 64,
                         "canonical_graph_sha256": "2" * 64,
                     },
                     {
                         "case_id": "C2",
                         "scenario_family": "LAB-006",
+                        "analysis_cluster_id": "SOURCE-C2",
                         "source_input_sha256": "3" * 64,
                         "canonical_graph_sha256": "4" * 64,
                     },
@@ -348,7 +351,7 @@ def test_run_plan_assembler_rejects_changed_sealed_case_set(
             repository_commit="abcdef1",
         )
     except ValueError as exc:
-        assert "sealed case identity set changed" in str(exc)
+        assert "authorized sealed case manifest changed after authorization" in str(exc)
     else:
         raise AssertionError("changed sealed case set must fail")
 

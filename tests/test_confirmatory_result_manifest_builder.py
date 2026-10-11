@@ -244,6 +244,7 @@ def test_result_manifest_builder_rejects_repository_commit_drift(
             structural_validation_path=paths["structural"],
             semantic_verification_path=paths["semantic"],
             analysis_ready_dataset_path=paths["analysis"],
+            analysis_dataset_build_path=paths["analysis_build"],
             result_manifest_id="RESULTS-001",
             created_at="2026-10-21T10:00:00Z",
             repository_commit="deadbee",

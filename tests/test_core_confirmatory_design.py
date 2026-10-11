@@ -78,5 +78,5 @@ def test_analysis_design_remains_predeclared_and_not_falsely_complete() -> None:
     assert design["status"] == "predeclared_before_confirmatory_inference"
     unresolved = set(design["unresolved_before_final_preregistration"])
     assert "frozen_input_hashes" in unresolved
-    assert "pilot_derived_primary_margin" in unresolved
+    assert "pilot_derived_primary_vur_hypothesis_preregistration" in unresolved
     assert "pilot_derived_sample_size_justification" in unresolved

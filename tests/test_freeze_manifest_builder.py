@@ -78,7 +78,7 @@ def _fixture(tmp_path: Path) -> dict[str, Path]:
     tooling_path = _write_yaml(tmp_path / "tooling.yaml", tooling)
 
     components = {}
-    for index, name in enumerate(_COMPONENT_NAMES, start=1):
+    for name in _COMPONENT_NAMES:
         path = tmp_path / f"components/{name}.txt"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(f"{name}\n", encoding="utf-8")

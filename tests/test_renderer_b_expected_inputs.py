@@ -1,6 +1,13 @@
+import importlib.util
 import re
+from pathlib import Path
 
-from renderer_validation.build_renderer_b_expected_inputs import build_record
+_MODULE_PATH = Path("renderer_validation/build_renderer_b_expected_inputs.py")
+_SPEC = importlib.util.spec_from_file_location("build_renderer_b_expected_inputs", _MODULE_PATH)
+assert _SPEC is not None and _SPEC.loader is not None
+_MODULE = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(_MODULE)
+build_record = _MODULE.build_record
 
 
 def test_renderer_b_handoff_record_is_deterministic_for_fixed_inputs() -> None:

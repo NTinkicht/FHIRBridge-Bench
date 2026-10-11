@@ -182,7 +182,10 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
             + ", ".join(sorted(missing_dependencies))
         )
 
-    seen_critical_purposes: set[str] = set()
+    # Multiple independent artifacts may legitimately serve one purpose:
+    # LOINC and HL7 terminology, for example, are both terminology evidence.
+    # Reject duplicate artifact identities rather than duplicate purposes.
+    seen_critical_identities: set[tuple[str, str]] = set()
     for dependency in dependencies:
         if not isinstance(dependency, dict):
             blockers.append("dependency entry is malformed")
@@ -190,12 +193,14 @@ def assess_presealed_freeze(manifest: dict[str, Any]) -> FreezeReadinessReport:
         purpose = dependency.get("purpose")
         if purpose not in _REQUIRED_DEPENDENCY_PURPOSES:
             continue
-        if purpose in seen_critical_purposes:
-            blockers.append(
-                f"duplicate measurement-critical dependency purpose: {purpose}"
-            )
-        seen_critical_purposes.add(str(purpose))
         name = dependency.get("name", "unknown")
+        version = dependency.get("version")
+        identity = (str(name), str(version))
+        if identity in seen_critical_identities:
+            blockers.append(
+                f"duplicate measurement-critical dependency identity: {name}/{version}"
+            )
+        seen_critical_identities.add(identity)
         if _contains_placeholder(dependency.get("version")):
             blockers.append(
                 f"measurement-critical dependency {name} has placeholder version"

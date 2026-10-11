@@ -1,0 +1,66 @@
+edition5_contingency:
+  id: FHIRBRIDGE-ED5-CONTINGENCY-20261011
+  version: "0.1.0"
+  status: draft_not_approved
+  selected_path: none
+  activation_allowed: false
+  confirmatory_inference_authorized: false
+  replaces_existing_machine_bundle_gate: false
+  scientific_scope: general_laboratory_Common_NG_FRU_ORU_R01
+  target:
+    hl7_version: "2.5.1"
+    lri_edition: "5"
+    errata: 2024DEC
+    selected_profile_candidate: LRI_NG_FRU_Profile_V3
+    precoordinated_oid_conflict_status: unresolved
+  publication:
+    package_inspection: qualification/hl7v2/results/edition5-publication-package-inspection.json
+    official_product: https://www.hl7.org/implement/standards/product_brief.cfm?product_id=279
+    status: human_readable_primary_normative_source
+  acquisition:
+    original_igamt_profile_status: not_acquired
+    definitive_nonexistence_established: false
+    private_correspondence_received: "2026-10-11"
+    private_correspondence_redistribution_permitted: false
+  possible_paths:
+    exact_machine_profile:
+      role: preferred_original_qualification
+      status: blocked
+      require_original_artifact_and_companions: true
+    bounded_independent_reconstruction:
+      role: proposed_alternative_measurement_stratum
+      status: not_qualified
+      may_claim_official_original_machine_profile_conformance: false
+      required_independent_extractors: 2
+      require_complete_source_page_table_provenance: true
+      require_all_bounded_Common_NG_FRU_requirements: true
+      require_adjudication_or_unresolved_disposition: true
+      require_positive_and_expected_locus_negative_controls: true
+      require_separate_hl7v2_warning_policy: true
+      require_evidence_all_retained_scenario_families: true
+      require_independent_clinical_and_standards_review: true
+      require_statistics_and_estimand_amendment: true
+      require_pilot_thresholds_before_sealed_opening: true
+    aphl_newborn_gvt:
+      role: differential_evidence_only
+      status: access_not_yet_qualified
+      allowed_as_general_lab_ground_truth: false
+      import_newborn_specific_rules: false
+  safeguards:
+    unresolved_required_rules_are_valid: false
+    silently_change_vur_denominator: false
+    silently_reclassify_validity_after_unsealing: false
+    replace_original_profile_with_historical_nist: false
+    replace_general_lab_profile_with_newborn_profile: false
+    alter_sealed_set_before_freeze: false
+    emit_conflicted_precoordinated_oid_as_frozen: false
+  prerequisites:
+    independently_reviewed_inventory_complete: false
+    bounded_validator_qualified: false
+    expected_locus_negative_controls_passed: false
+    all_retained_family_feasibility_passed: false
+    structural_validity_estimand_amended_and_frozen: false
+    reviewer_signoffs_obtained: false
+    amended_freeze_tests_passed: false
+    protocol_amendment_approved: false
+  documentation: docs/edition5_validation_contingency_proposal.md

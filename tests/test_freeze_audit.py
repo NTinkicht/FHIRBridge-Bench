@@ -145,7 +145,7 @@ def test_template_is_schema_valid_but_not_operationally_ready() -> None:
 
     assert not report.ready_to_open_sealed_set
     assert any("freeze_complete" in blocker for blocker in report.blockers)
-    assert any("zero placeholder hash" in blocker for blocker in report.blockers)
+    assert any("SHA-256" in blocker for blocker in report.blockers)
     assert any("acceptance gate" in blocker for blocker in report.blockers)
     assert any("dependencies" in blocker for blocker in report.blockers)
 
@@ -379,10 +379,24 @@ def test_malformed_critical_dependency_entry_blocks_opening() -> None:
     assert "dependency entry is malformed" in report.blockers
 
 
-def test_duplicate_critical_dependency_purpose_blocks_opening() -> None:
+def test_distinct_artifacts_may_share_a_measurement_purpose() -> None:
+    manifest = _ready_manifest()
+    additional = dict(manifest["dependencies"][0])
+    additional["name"] = "independent-hl7-terminology-package"
+    additional["sha256"] = "c" * 64
+    manifest["dependencies"].append(additional)
+
+    report = assess_presealed_freeze(manifest)
+
+    assert not any(
+        "duplicate measurement-critical dependency identity" in blocker
+        for blocker in report.blockers
+    )
+
+
+def test_duplicate_critical_dependency_identity_blocks_opening() -> None:
     manifest = _ready_manifest()
     duplicate = dict(manifest["dependencies"][0])
-    duplicate["name"] = "duplicate-terminology"
     duplicate["sha256"] = "c" * 64
     manifest["dependencies"].append(duplicate)
 
@@ -390,7 +404,7 @@ def test_duplicate_critical_dependency_purpose_blocks_opening() -> None:
 
     assert not report.ready_to_open_sealed_set
     assert any(
-        "duplicate measurement-critical dependency purpose" in blocker
+        "duplicate measurement-critical dependency identity" in blocker
         for blocker in report.blockers
     )
 

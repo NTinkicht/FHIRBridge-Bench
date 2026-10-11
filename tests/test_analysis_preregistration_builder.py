@@ -58,7 +58,7 @@ def _model(key: str) -> dict:
         "max_output_tokens": 4096,
         "seed_policy": "fixed_supported_seed",
         "seed": 20261020,
-        "structured_output_mode": "json_schema",
+        "structured_output_mode": "plain_text_hl7_message",
     }
 
 
@@ -74,6 +74,7 @@ def _ready_model_config() -> dict:
     document["deterministic_baseline"]["implementation_artifact"] = _artifact(
         "1"
     )
+    document["deterministic_baseline"]["qualification_artifact"] = _artifact("a")
     document["llm_models"] = [_model("M1"), _model("M2")]
     for index, strategy in enumerate(document["llm_strategies"], start=2):
         strategy["implementation_artifact"] = _artifact(str(index))

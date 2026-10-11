@@ -33,12 +33,14 @@ def _ready() -> dict:
         {
             "case_id": "CASE-001",
             "scenario_family": "LAB-001",
+            "analysis_cluster_id": "SOURCE-CASE-001",
             "source_input_sha256": "1" * 64,
             "canonical_graph_sha256": "2" * 64,
         },
         {
             "case_id": "CASE-002",
             "scenario_family": "LAB-006",
+            "analysis_cluster_id": "SOURCE-CASE-002",
             "source_input_sha256": "3" * 64,
             "canonical_graph_sha256": "4" * 64,
         },
