@@ -52,13 +52,39 @@ def _entries_by_locus(document: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return result
 
 
+def _unfinished(value: Any) -> bool:
+    if not isinstance(value, str) or not value.strip():
+        return True
+    upper = value.upper()
+    return any(token in upper for token in ("TO_BE_", "TO-BE-", "TO BE ", "TBD"))
+
+
+def _sha256_present(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(char in "0123456789abcdefABCDEF" for char in value)
+        and set(value.lower()) != {"0"}
+    )
+
+
 def assess_required_element_extraction(
     document: dict[str, Any],
 ) -> ExtractionReadiness:
+    """Assess declared extraction quality, not scientific coverage completeness."""
+
     blockers: list[str] = []
 
+    if document.get("schema_version") != "0.1.0":
+        blockers.append("extraction schema_version is not 0.1.0")
+    if _unfinished(document.get("extraction_id")):
+        blockers.append("extraction_id is missing or placeholder")
     if document.get("extraction_complete") is not True:
         blockers.append("extraction is not marked complete")
+
+    extractor = document.get("extractor")
+    if not isinstance(extractor, dict) or _unfinished(extractor.get("extractor_id")):
+        blockers.append("extractor_id is missing or placeholder")
 
     independence = document.get("independence")
     if not isinstance(independence, dict):
@@ -76,13 +102,27 @@ def assess_required_element_extraction(
     if not isinstance(source, dict):
         blockers.append("source metadata is missing")
     else:
-        digest = source.get("artifact_sha256")
-        if (
-            not isinstance(digest, str)
-            or len(digest) != 64
-            or set(digest.lower()) <= {"0"}
-        ):
+        if not _sha256_present(source.get("artifact_sha256")):
             blockers.append("source artifact SHA-256 is missing or placeholder")
+        if source.get("artifact_type") not in {
+            "edition5_publication_pdf",
+            "edition5_machine_profile_bundle",
+        }:
+            blockers.append("source artifact type is not an allowed Edition 5 source")
+        if source.get("profile_name") != "LRI_NG_FRU_Profile_V3":
+            blockers.append("source target profile is not the selected general-lab profile")
+        if source.get("edition") != "5" or source.get("errata") != "2024DEC":
+            blockers.append("source Edition 5/2024DEC version is not pinned")
+        components = source.get("components")
+        expected = {
+            "LRI_Common_Component_V3",
+            "LRI_NG_Component_R1",
+            "LAB_FRU_Component",
+        }
+        if not isinstance(components, list) or len(components) != 3 or set(
+            value for value in components if isinstance(value, str)
+        ) != expected:
+            blockers.append("source Common/NG/FRU component set is not exact")
 
     try:
         entries = _entries_by_locus(document)
@@ -91,17 +131,32 @@ def assess_required_element_extraction(
         entries = {}
 
     for locus, item in entries.items():
-        if item.get("usage") == "UNKNOWN":
+        if _unfinished(locus):
+            blockers.append(f"{locus}: locus is missing or placeholder")
+        if item.get("usage") not in {"R", "RE", "C", "O", "X", "UNKNOWN"}:
+            blockers.append(f"{locus}: usage is invalid")
+        elif item.get("usage") == "UNKNOWN":
             blockers.append(f"{locus}: usage remains UNKNOWN")
-        if item.get("source_grounding_classification") == "UNRESOLVED":
+        if item.get("source_grounding_classification") not in {
+            "SOURCE_FACT", "PROFILE_CONSTANT", "ENVELOPE", "DERIVED",
+            "UNPROJECTABLE", "UNRESOLVED",
+        }:
+            blockers.append(f"{locus}: grounding classification is invalid")
+        elif item.get("source_grounding_classification") == "UNRESOLVED":
             blockers.append(f"{locus}: grounding classification remains UNRESOLVED")
+        if _unfinished(item.get("cardinality")):
+            blockers.append(f"{locus}: cardinality is missing or placeholder")
+        if item.get("usage") == "C" and _unfinished(item.get("condition")):
+            blockers.append(f"{locus}: conditional usage has no condition")
+        for field in ("condition", "datatype", "value_set_or_binding_ref",
+                      "classification_rationale"):
+            value = item.get(field)
+            if isinstance(value, str) and _unfinished(value):
+                blockers.append(f"{locus}: {field} is blank or placeholder")
         evidence = item.get("evidence")
         if not isinstance(evidence, list) or not evidence:
             blockers.append(f"{locus}: evidence is missing")
-        elif any(
-            isinstance(value, str) and "TO_BE_" in value.upper()
-            for value in evidence
-        ):
+        elif any(_unfinished(value) for value in evidence):
             blockers.append(f"{locus}: evidence still contains a placeholder")
 
     return ExtractionReadiness(
