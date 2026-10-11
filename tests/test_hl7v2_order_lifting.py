@@ -299,3 +299,37 @@ def test_order_guard_policy_only_admits_order_and_diagnostic_report_sources() ->
     )
     assert guard.source_fact_type == "order"
     assert guard.additional_source_fact_types == ("diagnostic_report",)
+    assert guard.additional_source_relation_type == "has_report"
+
+
+def test_unrelated_report_accession_is_not_authorized_for_target_order() -> None:
+    from copy import deepcopy
+
+    graph, contract, artifact = _message(9957)
+    unrelated_report = deepcopy(
+        next(fact for fact in graph["facts"] if fact["fact_type"] == "diagnostic_report")
+    )
+    unrelated_report["fact_id"] = "unrelated-report-9957"
+    unrelated_report["identifiers"][0]["value"] = "UNRELATED-ACCESSION-9957"
+    graph["facts"].append(unrelated_report)
+    artifact = _mutate_number_fields(artifact, filler="UNRELATED-ACCESSION-9957")
+
+    _, decisions = _order_fabrications(graph, contract, artifact)
+    assert len(decisions) == 1
+    assert "UNRELATED-ACCESSION-9957" in decisions[0].evidence[
+        "unsupported_values"
+    ]
+
+
+def test_additional_source_types_require_declared_relationship_scope() -> None:
+    from copy import deepcopy
+
+    _, contract, _ = _message(9958)
+    altered = deepcopy(contract)
+    altered["grounding_guards"][0].pop("additional_source_relation_type")
+    try:
+        fhirbridge.verifier.compile_verification_policy(altered)
+    except ValueError as exc:
+        assert "additional_source_relation_type" in str(exc)
+    else:
+        raise AssertionError("unscoped cross-fact provenance must not compile")
