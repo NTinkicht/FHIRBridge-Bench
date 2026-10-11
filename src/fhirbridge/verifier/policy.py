@@ -67,6 +67,7 @@ class GroundingGuard:
     match_type: str
     primary_endpoint_eligible: bool = True
     additional_source_fact_types: tuple[str, ...] = ()
+    additional_source_relation_type: str | None = None
 
 
 @dataclass(frozen=True)
@@ -281,6 +282,16 @@ def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
                 "grounding guard additional_source_fact_types must be distinct "
                 "nonempty fact types, excluding source_fact_type"
             )
+        relation_type = guard.get("additional_source_relation_type")
+        if extras and (not isinstance(relation_type, str) or not relation_type):
+            raise ValueError(
+                "grounding guard with additional_source_fact_types requires "
+                "additional_source_relation_type"
+            )
+        if not extras and relation_type is not None:
+            raise ValueError(
+                "grounding guard source relation requires additional source fact types"
+            )
         if fields["match_type"] != "exact_scalar_membership":
             raise ValueError(
                 f"unsupported grounding guard match_type: {fields['match_type']!r}"
@@ -290,6 +301,7 @@ def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
                 guard_id=fields["guard_id"],
                 source_fact_type=fields["source_fact_type"],
                 additional_source_fact_types=tuple(extras),
+                additional_source_relation_type=relation_type,
                 source_field=fields["source_field"],
                 target_fact_type=fields["target_fact_type"],
                 target_field=fields["target_field"],
