@@ -66,6 +66,8 @@ class GroundingGuard:
     target_field: str
     match_type: str
     primary_endpoint_eligible: bool = True
+    additional_source_fact_types: tuple[str, ...] = ()
+    additional_source_relation_type: str | None = None
 
 
 @dataclass(frozen=True)
@@ -269,6 +271,27 @@ def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
         }
         if not all(isinstance(value, str) and value for value in fields.values()):
             raise ValueError("grounding guard identity/field values must be strings")
+        extras = guard.get("additional_source_fact_types", [])
+        if (
+            not isinstance(extras, list)
+            or not all(isinstance(item, str) and item.strip() for item in extras)
+            or len(extras) != len(set(extras))
+            or fields["source_fact_type"] in extras
+        ):
+            raise ValueError(
+                "grounding guard additional_source_fact_types must be distinct "
+                "nonempty fact types, excluding source_fact_type"
+            )
+        relation_type = guard.get("additional_source_relation_type")
+        if extras and (not isinstance(relation_type, str) or not relation_type):
+            raise ValueError(
+                "grounding guard with additional_source_fact_types requires "
+                "additional_source_relation_type"
+            )
+        if not extras and relation_type is not None:
+            raise ValueError(
+                "grounding guard source relation requires additional source fact types"
+            )
         if fields["match_type"] != "exact_scalar_membership":
             raise ValueError(
                 f"unsupported grounding guard match_type: {fields['match_type']!r}"
@@ -277,6 +300,8 @@ def compile_verification_policy(contract: dict[str, Any]) -> VerificationPolicy:
             GroundingGuard(
                 guard_id=fields["guard_id"],
                 source_fact_type=fields["source_fact_type"],
+                additional_source_fact_types=tuple(extras),
+                additional_source_relation_type=relation_type,
                 source_field=fields["source_field"],
                 target_fact_type=fields["target_fact_type"],
                 target_field=fields["target_field"],

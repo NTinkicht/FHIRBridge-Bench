@@ -784,6 +784,7 @@ def _grounding_guard_decisions(
     target_facts: list[LiftedFact],
     *,
     used_target_ids: set[str],
+    reference_map: dict[str, str],
     policy: VerificationPolicy | None,
 ) -> list[SemanticDecision]:
     """Detect target assertions that have no corresponding authored source value.
@@ -798,12 +799,19 @@ def _grounding_guard_decisions(
         return []
 
     decisions: list[SemanticDecision] = []
+    source_by_id = {
+        fact.get("fact_id"): fact
+        for fact in source_facts
+        if isinstance(fact.get("fact_id"), str)
+    }
     for guard in policy.grounding_guards:
-        source_values: set[object] = set()
-        for source in source_facts:
-            if source.get("fact_type") != guard.source_fact_type:
-                continue
-            source_values.update(_scalar_values_at_path(source, guard.source_field))
+        global_source_values: set[object] = set()
+        if not guard.additional_source_fact_types:
+            for source in source_facts:
+                if source.get("fact_type") == guard.source_fact_type:
+                    global_source_values.update(
+                        _scalar_values_at_path(source, guard.source_field)
+                    )
 
         for target in target_facts:
             if (
@@ -811,6 +819,46 @@ def _grounding_guard_decisions(
                 or target.fact_type != guard.target_fact_type
             ):
                 continue
+            source_values = set(global_source_values)
+            if guard.additional_source_fact_types:
+                # Grounded report accessions are admissible only when linked
+                # to the specific source order corresponding to this target.
+                # Other patients' orders/reports cannot launder identifiers.
+                matched_sources = [
+                    source
+                    for source in source_facts
+                    if source.get("fact_type") == guard.source_fact_type
+                    and reference_map.get(str(source.get("fact_id")))
+                    == target.lifted_fact_id
+                ]
+                if len(matched_sources) != 1:
+                    # Without unique source/target attribution this guard
+                    # cannot assert source absence; leave it unresolved.
+                    continue
+                primary_source = matched_sources[0]
+                source_values.update(
+                    _scalar_values_at_path(primary_source, guard.source_field)
+                )
+                for relation in primary_source.get("relations", []):
+                    if not isinstance(relation, dict):
+                        continue
+                    if relation.get("relation_type") != (
+                        guard.additional_source_relation_type
+                    ):
+                        continue
+                    related_source = source_by_id.get(
+                        relation.get("target_fact_id")
+                    )
+                    if (
+                        isinstance(related_source, dict)
+                        and related_source.get("fact_type")
+                        in guard.additional_source_fact_types
+                    ):
+                        source_values.update(
+                            _scalar_values_at_path(
+                                related_source, guard.source_field
+                            )
+                        )
             target_values = _scalar_values_at_path(
                 target.semantic_payload,
                 guard.target_field,
@@ -832,6 +880,12 @@ def _grounding_guard_decisions(
                         "rationale_code": "TARGET_VALUE_NOT_GROUNDED_IN_SOURCE",
                         "guard_id": guard.guard_id,
                         "source_fact_type": guard.source_fact_type,
+                        "additional_source_fact_types": list(
+                            guard.additional_source_fact_types
+                        ),
+                        "additional_source_relation_type": (
+                            guard.additional_source_relation_type
+                        ),
                         "source_field": guard.source_field,
                         "target_fact_type": guard.target_fact_type,
                         "target_field": guard.target_field,
@@ -1028,6 +1082,7 @@ def classify_graph(
             source_facts,
             target_facts,
             used_target_ids=used_target_ids,
+            reference_map=reference_map,
             policy=policy,
         )
     )

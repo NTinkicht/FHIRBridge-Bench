@@ -157,14 +157,20 @@ def _identifier_from_ei(value: str) -> dict[str, Any] | None:
     }
 
 
-def _order_identifier_from_ei(value: str) -> dict[str, Any] | None:
+def _order_identifier_from_ei(
+    value: str, *, identifier_kind: str
+) -> dict[str, Any] | None:
+    """Lift the asserted placer/filler kind without inferring FHIR equivalence."""
+
+    if identifier_kind not in {"placer", "filler"}:
+        raise ValueError("order identifier kind must be placer or filler")
     parts = _components(value)
     if not parts or not parts[0]:
         return None
     return {
         "system": parts[1] if len(parts) > 1 and parts[1] else None,
         "value": parts[0],
-        "type": "order",
+        "type": identifier_kind,
     }
 
 
@@ -382,11 +388,28 @@ def _order_fact(
     report_id: str,
     lifted_id: str,
 ) -> LiftedFact | None:
-    orc_identifier = (
-        _order_identifier_from_ei(_field(orc, 3)) if orc is not None else None
+    # ORC-2/OBR-2 assert placer IDs; ORC-3/OBR-3 assert filler IDs.
+    # Preserve both kinds and conflicting assertions. This does not license
+    # either source identifier as the uniquely correct filler/placer mapping.
+    orc_placer = (
+        _order_identifier_from_ei(_field(orc, 2), identifier_kind="placer")
+        if orc is not None
+        else None
     )
-    obr_identifier = _order_identifier_from_ei(_field(obr, 3))
-    identifiers = _merge_identifiers(orc_identifier, obr_identifier)
+    obr_placer = _order_identifier_from_ei(
+        _field(obr, 2), identifier_kind="placer"
+    )
+    orc_filler = (
+        _order_identifier_from_ei(_field(orc, 3), identifier_kind="filler")
+        if orc is not None
+        else None
+    )
+    obr_filler = _order_identifier_from_ei(
+        _field(obr, 3), identifier_kind="filler"
+    )
+    identifiers = _merge_identifiers(
+        orc_placer, obr_placer, orc_filler, obr_filler
+    )
 
     orc_requester = _requester_from_xcn(_field(orc, 12)) if orc is not None else None
     obr_requester = _requester_from_xcn(_field(obr, 16))
@@ -622,6 +645,7 @@ class Hl7V251OruLifter:
             order_id = (
                 f"v2::order::{group_number}"
                 if preceding_orc is not None
+                or _field(obr, 2)
                 or _field(obr, 3)
                 or _field(obr, 16)
                 else None
