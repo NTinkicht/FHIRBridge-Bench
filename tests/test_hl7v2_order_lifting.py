@@ -333,3 +333,32 @@ def test_additional_source_types_require_declared_relationship_scope() -> None:
         assert "additional_source_relation_type" in str(exc)
     else:
         raise AssertionError("unscoped cross-fact provenance must not compile")
+
+
+def test_obr2_only_is_preserved_without_orc_or_filler() -> None:
+    _, _, artifact = _message(9959)
+    segments = [
+        line for line in artifact.split("\r")
+        if line and not line.startswith("ORC|")
+    ]
+    mutated: list[str] = []
+    for line in segments:
+        if line.startswith("OBR|"):
+            line = _set_field(line, 2, "PLACER-ONLY-9959^urn:fhirbridge:lab-order")
+            line = _set_field(line, 3, "")
+            line = _set_field(line, 16, "")
+        mutated.append(line)
+    lifted = fhirbridge.lifters.Hl7V251OruLifter().lift(
+        "\r".join(mutated) + "\r",
+        artifact_id="obr2-only-development",
+    )
+    orders = [fact for fact in lifted.facts if fact.fact_type == "order"]
+    assert lifted.metadata["order_count"] == 1
+    assert len(orders) == 1
+    assert orders[0].semantic_payload["identifiers"] == [
+        {
+            "system": "urn:fhirbridge:lab-order",
+            "value": "PLACER-ONLY-9959",
+            "type": "placer",
+        }
+    ]
