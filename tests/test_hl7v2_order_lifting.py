@@ -156,3 +156,146 @@ def test_v2_requester_grounding_guard_sees_conflicting_obr16_provider() -> None:
     assert len(decisions) == 1
     assert decisions[0].classification == "FABRICATION"
     assert "FABRICATED-PROVIDER-9934" in decisions[0].evidence["unsupported_values"]
+
+
+def _mutate_number_fields(
+    artifact: str,
+    *,
+    orc_placer: str | None = None,
+    obr_placer: str | None = None,
+    filler: str | None = None,
+) -> str:
+    segments = artifact.strip("\r").split("\r")
+    changed: list[str] = []
+    for segment in segments:
+        if segment.startswith("ORC|"):
+            if orc_placer is not None:
+                segment = _set_field(
+                    segment, 2, f"{orc_placer}^urn:fhirbridge:lab-order"
+                )
+            if filler is not None:
+                segment = _set_field(
+                    segment, 3, f"{filler}^urn:fhirbridge:accession"
+                )
+        if segment.startswith("OBR|"):
+            if obr_placer is not None:
+                segment = _set_field(
+                    segment, 2, f"{obr_placer}^urn:fhirbridge:lab-order"
+                )
+            if filler is not None:
+                segment = _set_field(
+                    segment, 3, f"{filler}^urn:fhirbridge:accession"
+                )
+        changed.append(segment)
+    return "\r".join(changed) + "\r"
+
+
+def _order_fabrications(source_graph: dict, contract: dict, artifact: str):
+    lifted = fhirbridge.lifters.Hl7V251OruLifter().lift(
+        artifact, artifact_id="development-order-identifier-case"
+    )
+    result = fhirbridge.verifier.classify_graph(
+        source_graph["facts"],
+        list(lifted.facts),
+        policy=fhirbridge.verifier.compile_verification_policy(contract),
+    )
+    return (
+        lifted,
+        [
+            decision
+            for decision in result.decisions
+            if decision.evidence.get("guard_id")
+            == "ORDER_IDENTIFIER_SOURCE_GROUNDING_001"
+        ],
+    )
+
+
+def test_authored_accession_in_filler_slot_is_not_called_fabricated() -> None:
+    graph, contract, artifact = _message(9951)
+    accession = next(
+        fact["identifiers"][0]["value"]
+        for fact in graph["facts"]
+        if fact["fact_type"] == "diagnostic_report"
+    )
+    artifact = _mutate_number_fields(artifact, filler=accession)
+    lifted, decisions = _order_fabrications(graph, contract, artifact)
+
+    assert decisions == []
+    target_order = next(fact for fact in lifted.facts if fact.fact_type == "order")
+    assert any(
+        item["value"] == accession and item["type"] == "filler"
+        for item in target_order.semantic_payload["identifiers"]
+    )
+
+
+def test_invented_filler_still_fails_source_grounding() -> None:
+    graph, contract, artifact = _message(9952)
+    artifact = _mutate_number_fields(artifact, filler="XYZ-999999")
+    _, decisions = _order_fabrications(graph, contract, artifact)
+    assert len(decisions) == 1
+    assert decisions[0].classification == "FABRICATION"
+    assert "XYZ-999999" in decisions[0].evidence["unsupported_values"]
+
+
+def test_invented_placer_is_lifted_and_flagged() -> None:
+    graph, contract, artifact = _message(9953)
+    artifact = _mutate_number_fields(
+        artifact, orc_placer="XYZ-PLACER-01", obr_placer="XYZ-PLACER-01"
+    )
+    lifted, decisions = _order_fabrications(graph, contract, artifact)
+    assert len(decisions) == 1
+    assert "XYZ-PLACER-01" in decisions[0].evidence["unsupported_values"]
+    target_order = next(fact for fact in lifted.facts if fact.fact_type == "order")
+    assert any(
+        value["value"] == "XYZ-PLACER-01" and value["type"] == "placer"
+        for value in target_order.semantic_payload["identifiers"]
+    )
+
+
+def test_source_order_placer_and_report_accession_filler_remain_nonfabricated() -> None:
+    graph, contract, artifact = _message(9954)
+    order_identifier = next(
+        fact["identifiers"][0]["value"]
+        for fact in graph["facts"]
+        if fact["fact_type"] == "order"
+    )
+    report_accession = next(
+        fact["identifiers"][0]["value"]
+        for fact in graph["facts"]
+        if fact["fact_type"] == "diagnostic_report"
+    )
+    artifact = _mutate_number_fields(
+        artifact, orc_placer=order_identifier,
+        obr_placer=order_identifier, filler=report_accession
+    )
+    lifted, decisions = _order_fabrications(graph, contract, artifact)
+    assert decisions == []
+    target_order = next(fact for fact in lifted.facts if fact.fact_type == "order")
+    assert {
+        (item["value"], item["type"])
+        for item in target_order.semantic_payload["identifiers"]
+    } == {(order_identifier, "placer"), (report_accession, "filler")}
+
+
+def test_patient_mrn_cannot_be_laundered_into_order_filler() -> None:
+    graph, contract, artifact = _message(9955)
+    patient_id = next(
+        fact["identifiers"][0]["value"]
+        for fact in graph["facts"]
+        if fact["fact_type"] == "patient_identity"
+    )
+    artifact = _mutate_number_fields(artifact, filler=patient_id)
+    _, decisions = _order_fabrications(graph, contract, artifact)
+    assert len(decisions) == 1
+    assert patient_id in decisions[0].evidence["unsupported_values"]
+
+
+def test_order_guard_policy_only_admits_order_and_diagnostic_report_sources() -> None:
+    _, contract, _ = _message(9956)
+    policy = fhirbridge.verifier.compile_verification_policy(contract)
+    guard = next(
+        item for item in policy.grounding_guards
+        if item.guard_id == "ORDER_IDENTIFIER_SOURCE_GROUNDING_001"
+    )
+    assert guard.source_fact_type == "order"
+    assert guard.additional_source_fact_types == ("diagnostic_report",)
