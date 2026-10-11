@@ -19,7 +19,7 @@ def test_path_b_readme_pins_both_normative_publication_documents() -> None:
 
 
 def test_packet_allows_pdf_extraction_without_original_machine_bundle() -> None:
-    readme = runpy.run_path(str(_BUILDER))["_readme"]()
+    readme = " ".join(runpy.run_path(str(_BUILDER))["_readme"]().split())
     assert "NOT a claim" in readme
     assert "not required to start Path B extraction" in readme
     assert "separately qualified sensitivity comparator" in readme
