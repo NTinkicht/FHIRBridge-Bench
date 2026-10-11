@@ -46,7 +46,15 @@ extraction_protocol:
       - must_record_page_or_machine_artifact_evidence_independently
   agreement_required: true
   disagreement_policy: retain_both_then_adjudicate_or_mark_unresolved
-  machine_bundle_reconciliation_required: true
+  machine_bundle_reconciliation_required: false
+  selected_development_qualification_path: bounded_independent_reconstruction
+  path_a_machine_bundle_reconciliation_if_claimed: true
+  path_b_authoritative_pdf_hash_pinned: true
+  path_b_coverage_denominator_status: not_yet_independently_enumerated
+  path_b_human_adjudication_complete: false
+  path_b_agreement_audit_complete: false
+  path_b_negative_controls_qualified: false
+  path_b_g1_validity_authorized: false
 
 verified_entries:
   - element: ORDER_OBSERVATION
