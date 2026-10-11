@@ -2,6 +2,15 @@ protocol_freeze:
   id: FHIRBRIDGE-PROTOCOL-FREEZE-001
   version: 0.1.0
   status: blocked
+  development_path_decision:
+    selected: bounded_independent_reconstruction
+    investigator_approval_date: "2026-10-11"
+    scope: development_only_no_protocol_freeze
+    original_machine_profile_role: optional_prespecified_sensitivity
+    gated_qualification_alternative_implemented: false
+    confirmatory_permission: false
+    related_coverage: benchmark/path_b_bounded_coverage.yaml
+    related_estimands: analysis/path_b_estimand_candidate.yaml
   note: >-
     This ledger complements, rather than replaces, the tooling freeze gate.
     A small tooling blocker count must never be interpreted as overall
