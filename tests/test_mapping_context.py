@@ -150,3 +150,18 @@ def test_mapping_context_refuses_unfrozen_determinate_rule() -> None:
         assert "PATIENT_IDENTIFIER_001" in str(exc)
     else:
         raise AssertionError("unfrozen determinate rule unexpectedly built context")
+
+
+def test_mapping_context_preserves_scoped_order_identifier_provenance() -> None:
+    contract, status, specimen, profile = _frozen_inputs()
+    context = build_frozen_mapping_context(contract, status, specimen, profile)
+    guards = {
+        item["guard_id"]: item for item in context["grounding_guards"]
+    }
+    order_guard = guards["ORDER_IDENTIFIER_SOURCE_GROUNDING_001"]
+    assert order_guard["source_fact_type"] == "order"
+    assert order_guard["additional_source_fact_types"] == ["diagnostic_report"]
+    assert order_guard["additional_source_relation_type"] == "has_report"
+    assert '"additional_source_relation_type":"has_report"' in (
+        mapping_context_json(context)
+    )
