@@ -98,8 +98,9 @@ only after you have exhausted the bounded Common + NG + FRU slice.
 Important
 ---------
 The implementation-guide PDF and errata letter are NOT embedded here. Use
-copies matching both hashes, and document exact page/table evidence (plus
-errata disposition) for each claim. Do not infer requirements from any
+copies matching both hashes, and record BOTH SHA-256 digests in the
+returned extraction's source section. Document exact page/table evidence
+(plus errata disposition) for each claim. Do not infer requirements from any
 project implementation or historical NIST profile. If an original complete
 Edition 5 machine-readable profile is acquired later, it is a separately
 qualified sensitivity comparator, not required to start Path B extraction.
