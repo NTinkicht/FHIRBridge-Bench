@@ -116,7 +116,7 @@ structural_validation:
       evidence_type: pinned_GitHub_Actions_runtime_classpath_archive
       independent_runs:
         - run_id: 38134436284
-          job_id: 114455294645
+          job_id: 114456182807
           classpath_sha256: 0c17573890c13b744fca7ce9f2ea4cb344469b894799a420c35c2d20112218d2
         - run_id: 38135012854
           job_id: 114457026499
