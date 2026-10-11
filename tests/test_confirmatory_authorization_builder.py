@@ -75,12 +75,14 @@ def _paths(tmp_path: Path) -> dict[str, Path]:
                     {
                         "case_id": "CASE-001",
                         "scenario_family": "LAB-001",
+                        "analysis_cluster_id": "SOURCE-CASE-001",
                         "source_input_sha256": "a" * 64,
                         "canonical_graph_sha256": "b" * 64,
                     },
                     {
                         "case_id": "CASE-002",
                         "scenario_family": "LAB-006",
+                        "analysis_cluster_id": "SOURCE-CASE-002",
                         "source_input_sha256": "c" * 64,
                         "canonical_graph_sha256": "d" * 64,
                     },
