@@ -19,6 +19,7 @@ def _frozen_tooling() -> dict:
     v2 = document["structural_validation"]["hl7v2"]
     v2["profile_artifact"] = "qualification/hl7v2/lri-ed5-bundle"
     v2["profile_artifact_sha256"] = "a" * 64
+    v2["validator_runtime_classpath_sha256"] = "b" * 64
     v2["profile_validation_qualification_passed"] = True
     return document
 
