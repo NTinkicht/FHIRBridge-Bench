@@ -17,12 +17,14 @@ def _sealed() -> dict:
             {
                 "case_id": "C1",
                 "scenario_family": "LAB-001",
+                "analysis_cluster_id": "SOURCE-C1",
                 "source_input_sha256": "1" * 64,
                 "canonical_graph_sha256": "2" * 64,
             },
             {
                 "case_id": "C2",
                 "scenario_family": "LAB-006",
+                "analysis_cluster_id": "SOURCE-C2",
                 "source_input_sha256": "3" * 64,
                 "canonical_graph_sha256": "4" * 64,
             },
