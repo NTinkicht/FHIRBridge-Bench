@@ -1,4 +1,4 @@
-schema_version: "0.1.0"
+schema_version: "0.2.0"
 extraction_id: "TO_BE_ASSIGNED"
 extractor:
   extractor_id: "TO_BE_ASSIGNED"
@@ -8,6 +8,7 @@ extractor:
 source:
   artifact_type: edition5_publication_pdf
   artifact_sha256: "375f02fd5453b06ff1c51841e703c943c3132134fca53a122f5ccfed743461b7"
+  errata_artifact_sha256: "32eeb375ecb78dd77acb01ed388e30c554688e55a8a4d58df05dd0e7a791700f"
   profile_name: LRI_NG_FRU_Profile_V3
   components:
     - LRI_Common_Component_V3

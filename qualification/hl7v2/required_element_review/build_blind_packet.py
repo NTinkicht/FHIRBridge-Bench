@@ -22,6 +22,9 @@ _MANIFEST = _OUTPUT_DIR / "lri-edition5-required-element-blind-extraction-manife
 _SOURCE_SHA256 = (
     "375f02fd5453b06ff1c51841e703c943c3132134fca53a122f5ccfed743461b7"
 )
+_ERRATA_SHA256 = (
+    "32eeb375ecb78dd77acb01ed388e30c554688e55a8a4d58df05dd0e7a791700f"
+)
 _PROFILE_NAME = "LRI_NG_FRU_Profile_V3"
 _COMPONENTS = (
     "LRI_Common_Component_V3",
@@ -52,6 +55,8 @@ Edition 5, US Realm, May 2024 with December 2024 Errata.
 
 Expected implementation-guide PDF SHA-256:
 {_SOURCE_SHA256}
+Expected December 2024 errata-letter PDF SHA-256:
+{_ERRATA_SHA256}
 
 Profile candidate:
 {_PROFILE_NAME}
@@ -63,8 +68,15 @@ Components:
 
 Purpose
 -------
-Independently enumerate every load-bearing group, segment, field, component,
-and subcomponent in the bounded ORU^R01 slice for the named profile/components.
+Independently enumerate every applicable group, segment, field, component,
+subcomponent, binding and conditional constraint within the bounded ORU^R01
+general-laboratory Common+NG+FRU slice. Cover MSH, PID, ORC, OBR, OBX, SPM,
+and NTE if included, plus constraints connecting these elements.
+
+This is Path B: bounded PDF-derived qualification work, NOT a claim of
+full conformance to a machine-readable Edition 5 IGAMT profile.
+An independent reviewer will adjudicate and separately audit completeness.
+A matching or schema-valid extraction alone does not establish completeness.
 
 Do not use another extractor's work, project implementation code, converter
 output, or project-authored requirement inventories as requirement evidence.
@@ -85,9 +97,14 @@ only after you have exhausted the bounded Common + NG + FRU slice.
 
 Important
 ---------
-The implementation-guide PDF itself is not embedded in this packet. Use only a
-copy whose SHA-256 matches the value above. When the exact machine-readable
-Edition 5 bundle becomes available, a separate reconciliation is mandatory.
+The implementation-guide PDF and errata letter are NOT embedded here. Use
+copies matching both hashes, and record BOTH SHA-256 digests in the
+returned extraction's source section. Document exact page/table evidence
+(plus errata disposition) for each claim. Do not infer requirements from any
+project implementation or historical NIST profile. If an original complete
+Edition 5 machine-readable profile is acquired later, it is a separately
+qualified sensitivity comparator, not required to start Path B extraction.
+Never classify an unresolved requirement as compliant by default.
 """
 
 
@@ -117,6 +134,10 @@ def build_packet() -> dict[str, object]:
         "profile_name": _PROFILE_NAME,
         "components": list(_COMPONENTS),
         "source_pdf_sha256": _SOURCE_SHA256,
+        "errata_pdf_sha256": _ERRATA_SHA256,
+        "development_path": "bounded_independent_reconstruction",
+        "full_edition5_profile_conformance_claim": False,
+        "includes_provisional_project_inventory": False,
         "packet_path": str(_PACKET),
         "packet_sha256": _sha256_bytes(_PACKET.read_bytes()),
         "contents": {

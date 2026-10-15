@@ -16,7 +16,12 @@ disagreements before the measurement instrument is frozen.
 
 ## Source identity
 
-Both extractors work from the **same cryptographically identified artifact**.
+Both extractors work from the **same cryptographically identified Edition 5
+guide PDF AND December 2024 errata-letter PDF**. Each response must record
+both full SHA-256 digests; comparisons reject missing, invalid or different
+errata digests. The blind response schema is now version 0.2.0. The coordinator
+must verify that hashes correspond to the independently supplied source
+documents, not merely that two readers copied the same expected strings.
 
 **Selected Path B development source:** the pinned authoritative Edition 5 +
 2024DEC publication PDF. The study does not wait for an original XML export

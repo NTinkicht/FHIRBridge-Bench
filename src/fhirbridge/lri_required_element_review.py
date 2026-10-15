@@ -26,6 +26,7 @@ class ExtractionReadiness:
 @dataclass(frozen=True)
 class ExtractionComparison:
     source_sha256: str
+    errata_sha256: str
     extractor_ids: tuple[str, str]
     union_locus_count: int
     exact_agreement_count: int
@@ -75,8 +76,8 @@ def assess_required_element_extraction(
 
     blockers: list[str] = []
 
-    if document.get("schema_version") != "0.1.0":
-        blockers.append("extraction schema_version is not 0.1.0")
+    if document.get("schema_version") != "0.2.0":
+        blockers.append("extraction schema_version is not 0.2.0")
     if _unfinished(document.get("extraction_id")):
         blockers.append("extraction_id is missing or placeholder")
     if document.get("extraction_complete") is not True:
@@ -104,6 +105,8 @@ def assess_required_element_extraction(
     else:
         if not _sha256_present(source.get("artifact_sha256")):
             blockers.append("source artifact SHA-256 is missing or placeholder")
+        if not _sha256_present(source.get("errata_artifact_sha256")):
+            blockers.append("source errata artifact SHA-256 is missing or placeholder")
         if source.get("artifact_type") not in {
             "edition5_publication_pdf",
             "edition5_machine_profile_bundle",
@@ -185,6 +188,13 @@ def compare_required_element_extractions(
     source_b = extraction_b["source"]
     if source_a["artifact_sha256"].lower() != source_b["artifact_sha256"].lower():
         raise ValueError("independent extractions do not use the same source artifact")
+    if (
+        source_a["errata_artifact_sha256"].lower()
+        != source_b["errata_artifact_sha256"].lower()
+    ):
+        raise ValueError(
+            "independent extractions do not use the same errata artifact"
+        )
     if source_a["profile_name"] != source_b["profile_name"]:
         raise ValueError("independent extractions do not use the same profile")
 
@@ -217,6 +227,7 @@ def compare_required_element_extractions(
 
     return ExtractionComparison(
         source_sha256=source_a["artifact_sha256"].lower(),
+        errata_sha256=source_a["errata_artifact_sha256"].lower(),
         extractor_ids=(str(extractor_a), str(extractor_b)),
         union_locus_count=len(union),
         exact_agreement_count=exact,
@@ -232,6 +243,7 @@ def extraction_comparison_to_dict(
 ) -> dict[str, Any]:
     return {
         "source_sha256": comparison.source_sha256,
+        "errata_sha256": comparison.errata_sha256,
         "extractor_ids": list(comparison.extractor_ids),
         "union_locus_count": comparison.union_locus_count,
         "exact_agreement_count": comparison.exact_agreement_count,
