@@ -11,17 +11,25 @@ import json
 from hashlib import sha256
 from pathlib import Path
 
-_DEFAULT_MANIFEST = (
-    Path(__file__).resolve().parents[2]
-    / "qualification/hl7v2/results/edition5-publication-package-inspection.json"
-)
+# Immutable primary pins deliberately embedded in the installed package.
+# The source repository's archived publication record is cross-checked by tests,
+# rather than assumed to be present inside a wheel or a virtual environment.
+_PUBLISHED_SHA256 = {
+    "implementation_guide": "375f02fd5453b06ff1c51841e703c943c3132134fca53a122f5ccfed743461b7",
+    "errata_letter": "32eeb375ecb78dd77acb01ed388e30c554688e55a8a4d58df05dd0e7a791700f",
+}
 _ROLES = ("implementation_guide", "errata_letter")
 
 
 def pinned_publication_hashes(manifest_path: Path | None = None) -> dict[str, str]:
     """Read the two archived normative PDF digests, failing closed on bad metadata."""
 
-    document = json.loads((manifest_path or _DEFAULT_MANIFEST).read_text("utf-8"))
+    if manifest_path is None:
+        # Normal readiness must work in wheels, virtual environments, and
+        # other installs without a source checkout or repository metadata.
+        return dict(_PUBLISHED_SHA256)
+
+    document = json.loads(manifest_path.read_text("utf-8"))
     classification = document.get("classification", {})
     if (
         classification.get("is_authoritative_human_readable_publication_package")
