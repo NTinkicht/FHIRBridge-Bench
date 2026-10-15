@@ -261,6 +261,34 @@ jobs:
           echo "dfccea1b5dc284245ebae97edd1dc03c45864da4e87df55bc9851797b4fd0b61  vendor/Ucum-java/src/main/resources/ucum-essence.xml" | sha256sum -c -
           echo "3b3feb9d8ecfe8958da69b1afcd25572e3f8d80a36bfcbcda4834a10a0eeef0d  vendor/Ucum-java/src/test/resources/UcumFunctionalTests.xml" | sha256sum -c -
 
+      - name: Pin vendor Maven resources plugin for reproducible UCUM tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Ucum-java's pinned upstream POM omits the resources plugin version.
+          # Maven's floating lifecycle resolution has requested unavailable 3.5.0.
+          # Pin only that build tool in the temporary checkout; do not alter
+          # pinned official UCUM source, ontology XML, or functional test inputs.
+          python3 - <<'PY'
+          from pathlib import Path
+
+          pom = Path("vendor/Ucum-java/pom.xml")
+          content = pom.read_text(encoding="utf-8")
+          anchor = "        <pluginManagement>\n            <plugins>"
+          if content.count(anchor) != 1:
+              raise SystemExit("unexpected upstream UCUM POM structure: fail closed")
+          plugin = (
+              "\n                <plugin>\n"
+              "                    <groupId>org.apache.maven.plugins</groupId>\n"
+              "                    <artifactId>maven-resources-plugin</artifactId>\n"
+              "                    <version>3.3.1</version>\n"
+              "                </plugin>"
+          )
+          pom.write_text(content.replace(anchor, anchor + plugin), encoding="utf-8")
+          PY
+          git -C vendor/Ucum-java diff --check
+          git -C vendor/Ucum-java diff -- pom.xml
+
       - name: Run official UCUM functional tests
         working-directory: vendor/Ucum-java
         run: mvn -B -Dtest=UcumFunctionalTests test
