@@ -31,7 +31,9 @@ def _fake_manifest(tmp_path: Path, guide: bytes, errata: bytes) -> Path:
 
 def test_packet_pins_match_archived_authoritative_publication() -> None:
     pins = pinned_publication_hashes()
+    archived = pinned_publication_hashes(_PUB)
     builder = runpy.run_path(_PACKET_BUILDER)
+    assert pins == archived  # Installed wheels use the same immutable provenance.
     assert pins["implementation_guide"] == builder["_SOURCE_SHA256"]
     assert pins["errata_letter"] == builder["_ERRATA_SHA256"]
 
@@ -69,3 +71,21 @@ def test_rejects_missing_errata_pin(tmp_path: Path) -> None:
     manifest.write_text(json.dumps(source), encoding="utf-8")
     with pytest.raises(ValueError, match="does not pin guide and errata"):
         pinned_publication_hashes(manifest)
+
+
+def test_default_pins_are_available_without_repo_checkout(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Default runtime never relies on source-tree manifest lookup."""
+
+    from fhirbridge import lri_source_identity as identity
+
+    monkeypatch.setattr(
+        identity.Path,
+        "read_text",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("no source-tree file may be read")
+        ),
+    )
+    assert identity.pinned_publication_hashes() == {
+        "implementation_guide": "375f02fd5453b06ff1c51841e703c943c3132134fca53a122f5ccfed743461b7",
+        "errata_letter": "32eeb375ecb78dd77acb01ed388e30c554688e55a8a4d58df05dd0e7a791700f",
+    }
