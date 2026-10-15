@@ -1,10 +1,13 @@
 """One-field control-diff tests are never Edition 5 conformance tests."""
 
-from dataclasses import replace
+from dataclasses import FrozenInstanceError, replace
 
 import pytest
 
-from fhirbridge.path_b_surgical_mutation import audit_single_field_mutation
+from fhirbridge.path_b_surgical_mutation import (
+    SurgicalMutationEvidence,
+    audit_single_field_mutation,
+)
 
 
 def _seg(name: str, fields: dict[int, str]) -> str:
@@ -176,8 +179,6 @@ def test_cannot_recast_a_diff_as_g1_qualified() -> None:
     # Dataclass is immutable, and callers should not use synthetic diffs as
     # independently validated G1 evidence.
     assert record.G1_qualified is False
-    from dataclasses import FrozenInstanceError
-
     with pytest.raises(FrozenInstanceError):
         record.G1_qualified = True
 
@@ -193,3 +194,33 @@ def test_control_evidence_is_distinct_per_mutant() -> None:
     assert one.before_sha256 == two.before_sha256
     assert one.after_sha256 != two.after_sha256
     assert replace(one, expected_locus="OBR-3") != two
+
+
+@pytest.mark.parametrize(
+    ("flag", "forged"),
+    [
+        ("G1_qualified", True),
+        ("validator_expected_locus_failure_confirmed", True),
+        ("primary_endpoint_eligible", True),
+        ("status", "G1_APPROVED"),
+    ],
+)
+def test_constructor_and_replace_cannot_forge_approval(
+    flag: str, forged: object,
+) -> None:
+    original = audit_single_field_mutation(
+        _message(), _message(version="2.3.1"), expected_locus="MSH-12"
+    )
+    payload = {
+        "expected_locus": original.expected_locus,
+        "observed_locus": original.observed_locus,
+        "before_sha256": original.before_sha256,
+        "after_sha256": original.after_sha256,
+        "before_value": original.before_value,
+        "after_value": original.after_value,
+        flag: forged,
+    }
+    with pytest.raises(TypeError):
+        SurgicalMutationEvidence(**payload)
+    with pytest.raises(TypeError):
+        replace(original, **{flag: forged})
