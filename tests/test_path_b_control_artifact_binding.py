@@ -168,7 +168,7 @@ def test_two_simultaneous_fields_cannot_be_laundered_as_one_control() -> None:
 
 def test_invalid_utf8_is_rejected_after_byte_hash_verification() -> None:
     manifest, rule, positive, _ = _inputs()
-    negative = b"\xff\xfe\x80"
+    negative = b"\xff\xfe\x80\r"
     manifest["negative_artifact_sha256"] = sha256(negative).hexdigest()
     with pytest.raises(ValueError, match="must be UTF-8"):
         _bind(manifest, rule, positive, negative)
