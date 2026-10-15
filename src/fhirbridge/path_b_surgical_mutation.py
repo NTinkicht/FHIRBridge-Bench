@@ -18,7 +18,7 @@ _LOCUS = re.compile(r"^(MSH|[A-Z][A-Z0-9]{2})-([1-9][0-9]*)$")
 _SEGMENT = re.compile(r"^[A-Z][A-Z0-9]{2}$")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class SurgicalMutationEvidence:
     """Only mechanical one-field change evidence; no conformance verdict."""
 
@@ -28,10 +28,21 @@ class SurgicalMutationEvidence:
     after_sha256: str
     before_value: str
     after_value: str
-    status: str = "PREFREEZE_SURGICAL_DIFF_ONLY"
-    G1_qualified: bool = False
-    validator_expected_locus_failure_confirmed: bool = False
-    primary_endpoint_eligible: bool = False
+    @property
+    def status(self) -> str:
+        return "PREFREEZE_SURGICAL_DIFF_ONLY"
+
+    @property
+    def G1_qualified(self) -> bool:
+        return False
+
+    @property
+    def validator_expected_locus_failure_confirmed(self) -> bool:
+        return False
+
+    @property
+    def primary_endpoint_eligible(self) -> bool:
+        return False
 
 
 def _message_fields(message: str) -> list[tuple[str, list[str]]]:
