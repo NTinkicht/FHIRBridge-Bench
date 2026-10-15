@@ -211,3 +211,32 @@ def test_cannot_forge_approval_by_direct_construction_or_replace(
         replace(binding, **{forged: value})
     with pytest.raises(FrozenInstanceError):
         setattr(binding, forged, value)
+
+
+@pytest.mark.parametrize("role", ["positive", "negative"])
+@pytest.mark.parametrize("separator", [b"\n", b"\r\n"])
+def test_changed_segment_separator_cannot_pass_as_one_field_edit(
+    role: str, separator: bytes,
+) -> None:
+    manifest, rule, positive, negative = _inputs()
+    if role == "positive":
+        positive = positive.replace(b"\r", separator)
+        manifest["positive_artifact_sha256"] = sha256(positive).hexdigest()
+    else:
+        negative = negative.replace(b"\r", separator)
+        manifest["negative_artifact_sha256"] = sha256(negative).hexdigest()
+    with pytest.raises(ValueError, match="CR-only segment delimiters"):
+        _bind(manifest, rule, positive, negative)
+
+
+@pytest.mark.parametrize("role", ["positive", "negative"])
+def test_missing_final_cr_cannot_pass_as_one_field_edit(role: str) -> None:
+    manifest, rule, positive, negative = _inputs()
+    if role == "positive":
+        positive = positive.removesuffix(b"\r")
+        manifest["positive_artifact_sha256"] = sha256(positive).hexdigest()
+    else:
+        negative = negative.removesuffix(b"\r")
+        manifest["negative_artifact_sha256"] = sha256(negative).hexdigest()
+    with pytest.raises(ValueError, match="CR-only segment delimiters"):
+        _bind(manifest, rule, positive, negative)
