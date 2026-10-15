@@ -24,9 +24,11 @@ def test_three_records_keep_path_b_distinct_from_optional_machine_profile() -> N
         == gate["protocol_freeze"]["development_path_decision"]["selected"]
         == "bounded_independent_reconstruction"
     )
-    assert selection["development_route"]["original_edition5_IGAMT_bundle_required_for_development"] is False
-    assert order["freeze_decision"]["exact_edition5_profile_bundle_required_for_path_b_development"] is False
-    assert order["freeze_decision"]["exact_edition5_profile_bundle_required_for_machine_validation"] is True
+    route = selection["development_route"]
+    order_freeze = order["freeze_decision"]
+    assert route["original_edition5_IGAMT_bundle_required_for_development"] is False
+    assert order_freeze["exact_edition5_profile_bundle_required_for_path_b_development"] is False
+    assert order_freeze["exact_edition5_profile_bundle_required_for_machine_validation"] is True
     assert "optional" in pin["profile_pin"]["purpose"].lower()
     assert contract["target"]["selected_validation_route"] == (
         "bounded_PDF_derived_Path_B_pending_independent_qualification"
@@ -59,8 +61,9 @@ def test_no_premature_oid_or_g1_claims_in_selected_target_records() -> None:
     assert not selection["development_route"]["confirmed_completeness_of_required_rules"]
     assert not selection["development_route"]["qualified_bounded_G1_validator"]
     assert gate["protocol_freeze"]["status"] == "blocked"
-    assert gate["protocol_freeze"]["development_path_decision"]["confirmatory_permission"] is False
-    assert gate["protocol_freeze"]["development_path_decision"]["gated_qualification_alternative_implemented"] is False
+    development = gate["protocol_freeze"]["development_path_decision"]
+    assert development["confirmatory_permission"] is False
+    assert development["gated_qualification_alternative_implemented"] is False
 
 
 def test_all_path_b_freeze_requirements_are_evidence_producing_not_original_bundle() -> None:
