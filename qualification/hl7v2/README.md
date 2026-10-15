@@ -1,10 +1,41 @@
 # HL7 v2 LRI profile qualification
 
-The confirmatory HL7 v2 structural oracle requires the exact **HL7 v2.5.1 LRI Edition 5 + 2024DEC** IGAMT-exported XML profile bundle for the selected ORU^R01 component.
+## Current route: Path B bounded G1 qualification (not yet complete)
 
-Do not substitute the pinned historical NIST LRI R2 comparator or a local implementation guide.
+The PI approved **development** of an independently extracted, adjudicated,
+bounded HL7 v2.5.1 LRI Edition 5 + 2024DEC conformance oracle for the selected
+general-laboratory ORU^R01 scope. Subsequent custodian correspondence reports
+that Edition 5 was never codified in IGAMT. That private correspondence is
+not a redistributable standards artifact; do not quote or identify the sender
+in this public repository.
 
-Once the exact bundle has been acquired:
+The original machine-readable IGAMT bundle is therefore **not a development
+dependency**. Path B must pin the guide and errata hashes, independently
+extract and adjudicate all applicable scoped Common + NG + FRU requirements,
+declare completeness and unresolved coverage, qualify deterministic positive
+and expected-locus negative controls, and establish source-grounded faithful
+outputs for all retained LAB families. Unreviewed mandatory/conditional
+requirements must not be treated as passing. A G0 syntax check is not G1
+bounded qualification, and G1 passing is not full original-profile conformance.
+
+Use the blind reviewer handoff at
+`docs/path_b_independent_reviewer_handoff.md` and the independent extraction
+protocol at `docs/lri_required_element_extraction_protocol.md`.
+The present tooling and prospective estimand still require a separately
+reviewed and authorized alternative freeze gate. No sealed data or
+confirmatory inference is authorized.
+
+Do not substitute the pinned historical NIST LRI R2 comparator, APHL
+newborn-specific requirements, or a local implementation guide as Edition 5
+general-laboratory ground truth.
+
+## Optional Path A: original profile sensitivity qualification
+
+The existing CDC/NIST XML-profile intake below is retained **only** if an
+authenticated complete Edition 5 + 2024DEC machine-readable bundle is
+independently obtained in the future. It is not the Path B validator.
+
+If such an exact bundle becomes available:
 
 ```bash
 python qualification/hl7v2/inspect_profile.py /absolute/path/to/profile-bundle
@@ -88,6 +119,8 @@ Pre-freeze qualification is deliberately fail-closed:
   preregistered expected locus, not merely because some unrelated error exists.
 
 The machine-readable candidate policy is
-`benchmark/structural_validity_policy.yaml`. Confirmatory inference remains
-blocked until the exact Edition 5 profile has been qualified and its
-warning/alert behavior has been reviewed and frozen.
+`benchmark/structural_validity_policy.yaml`. Confirmatory inference remains blocked until the selected qualification
+route has independently passed its own G1 coverage/positive-negative-control
+and warning/alert policy reviews, the prospectively amended estimand is
+approved, and all remaining scientific freeze gates have passed. The optional
+exact-profile sensitivity path requires its own separate qualification.

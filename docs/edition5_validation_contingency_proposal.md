@@ -20,12 +20,16 @@ in the general laboratory `LRI_Common_Component_V3` +
 The archived authoritative Edition 5 publication package is documented in
 `qualification/hl7v2/results/edition5-publication-package-inspection.json`.
 Its two entries are PDFs, not a machine-readable NIST/IGAMT validation bundle.
-A standards participant separately reported on October 11, 2026 that the
-Edition 5 guide had not been maintained in IGAMT and identified an
-Edition-5-reflecting newborn-screening profile in the APHL GVT toolscope.
-That communication is **private correspondence**, not a redistributable
-standards artifact or public proof that no archived Edition 5 bundle exists.
-Do not commit the email text, headers, or personal details to this public repo.
+Unpublished custodian/standards correspondence received on October 11 and
+14, 2026 reports that Edition 5 was **never codified in IGAMT**, while an
+older laboratory-suite GVT scope exists but remains private during QA.
+A separate APHL newborn-screening profile reportedly reflects some Edition 5
+requirements, but is not a general-laboratory Edition 5 ground-truth export.
+These are **private provenance reports**, not redistributable standards
+artifacts or public proof that no independent non-IGAMT archive exists.
+Accordingly, development must not wait for an original Edition 5 IGAMT bundle.
+Do not commit email text, headers, identities or personal details to this
+public repository.
 
 Authoritative public publication references:
 
