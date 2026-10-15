@@ -82,7 +82,10 @@ def test_real_prefreeze_template_fails_closed_without_human_evidence() -> None:
     assert result.status == "PREFREEZE_MECHANICAL_EVIDENCE_ONLY"
     assert result.mechanical_record_checks_complete is False
     assert any("denominator is absent" in item for item in result.blockers)
-    assert any("PB-MSH21-PROFILE: not independently adjudicated" in item for item in result.blockers)
+    assert any(
+        "PB-MSH21-PROFILE: not independently adjudicated" in item
+        for item in result.blockers
+    )
 
 
 @pytest.mark.parametrize(
