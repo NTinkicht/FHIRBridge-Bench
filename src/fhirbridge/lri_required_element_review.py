@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from functools import lru_cache
+from importlib.resources import files
 from typing import Any
+
+from jsonschema import Draft202012Validator
 
 from fhirbridge.lri_source_identity import pinned_publication_hashes
 
@@ -71,12 +76,34 @@ def _sha256_present(value: Any) -> bool:
     )
 
 
+@lru_cache(maxsize=1)
+def _extraction_schema_validator() -> Draft202012Validator:
+    """Load the exact reviewer schema from installed package resources."""
+
+    resource = files("fhirbridge").joinpath("required_element_extraction.schema.json")
+    schema = json.loads(resource.read_text(encoding="utf-8"))
+    Draft202012Validator.check_schema(schema)
+    return Draft202012Validator(schema)
+
+
 def assess_required_element_extraction(
     document: dict[str, Any],
 ) -> ExtractionReadiness:
-    """Assess declared extraction quality, not scientific coverage completeness."""
+    """Assess schema and declared metadata, not scientific coverage completeness."""
+
+    if not isinstance(document, dict):
+        return ExtractionReadiness(
+            ready=False, blockers=("extraction response is not an object",)
+        )
 
     blockers: list[str] = []
+    # A well-formed hash or complete-looking metadata is never a substitute
+    # for validating the entire response schema (including nested entries).
+    for problem in _extraction_schema_validator().iter_errors(document):
+        location = "/" + "/".join(str(part) for part in problem.absolute_path)
+        blockers.append(
+            f"extraction JSON Schema violation at {location} ({problem.validator})"
+        )
 
     if document.get("schema_version") != "0.2.0":
         blockers.append("extraction schema_version is not 0.2.0")

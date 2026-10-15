@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/lri_required_element_extraction.schema.json",
+  "title": "FHIRBridge Independent LRI Required-Element Extraction",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "extraction_id",
+    "extractor",
+    "source",
+    "independence",
+    "entries",
+    "extraction_complete"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.2.0"},
+    "extraction_id": {"type": "string", "minLength": 1},
+    "extractor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "extractor_id",
+        "role",
+        "conflicts_of_interest",
+        "prior_project_involvement"
+      ],
+      "properties": {
+        "extractor_id": {"type": "string", "minLength": 1},
+        "role": {"type": "string", "minLength": 1},
+        "conflicts_of_interest": {"type": "string"},
+        "prior_project_involvement": {"type": "string"}
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_type",
+        "artifact_sha256",
+        "errata_artifact_sha256",
+        "profile_name",
+        "components",
+        "edition",
+        "errata"
+      ],
+      "properties": {
+        "artifact_type": {
+          "enum": [
+            "edition5_publication_pdf",
+            "edition5_machine_profile_bundle"
+          ]
+        },
+        "artifact_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{64}$"
+        },
+        "errata_artifact_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{64}$"
+        },
+        "profile_name": {"const": "LRI_NG_FRU_Profile_V3"},
+        "components": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "LRI_Common_Component_V3",
+              "LRI_NG_Component_R1",
+              "LAB_FRU_Component"
+            ]
+          }
+        },
+        "edition": {"const": "5"},
+        "errata": {"const": "2024DEC"}
+      }
+    },
+    "independence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "other_extractor_output_seen_before_completion",
+        "project_required_element_inventory_seen_before_completion",
+        "renderer_output_used_as_requirement_evidence"
+      ],
+      "properties": {
+        "other_extractor_output_seen_before_completion": {"const": false},
+        "project_required_element_inventory_seen_before_completion": {"const": false},
+        "renderer_output_used_as_requirement_evidence": {"const": false}
+      }
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/entry"}
+    },
+    "extraction_complete": {"type": "boolean"},
+    "notes": {"type": ["string", "null"]}
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "locus",
+        "element_kind",
+        "usage",
+        "cardinality",
+        "source_grounding_classification",
+        "evidence"
+      ],
+      "properties": {
+        "locus": {"type": "string", "minLength": 1},
+        "element_kind": {
+          "enum": ["group", "segment", "field", "component", "subcomponent"]
+        },
+        "usage": {
+          "enum": ["R", "RE", "C", "O", "X", "UNKNOWN"]
+        },
+        "cardinality": {"type": "string", "minLength": 1},
+        "datatype": {"type": ["string", "null"]},
+        "max_length": {"type": ["integer", "null"], "minimum": 1},
+        "condition": {"type": ["string", "null"]},
+        "value_set_or_binding_ref": {"type": ["string", "null"]},
+        "source_grounding_classification": {
+          "enum": [
+            "SOURCE_FACT",
+            "PROFILE_CONSTANT",
+            "ENVELOPE",
+            "DERIVED",
+            "UNPROJECTABLE",
+            "UNRESOLVED"
+          ]
+        },
+        "classification_rationale": {"type": ["string", "null"]},
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}
