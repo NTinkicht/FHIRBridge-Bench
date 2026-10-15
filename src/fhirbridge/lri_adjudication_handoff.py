@@ -11,6 +11,7 @@ from typing import Any
 
 from fhirbridge.lri_extraction_lock import verify_response_lock
 from fhirbridge.lri_required_element_review import assess_required_element_extraction
+from fhirbridge.lri_source_identity import pinned_publication_hashes
 
 # A full agreement census is the conservative default. A later, separately
 # preregistered and approved sampling protocol could replace this approach,
@@ -49,7 +50,11 @@ def _indexed(document: dict[str, Any]) -> dict[str, dict[str, Any]]:
         raise ValueError("extraction has no entries")
     output: dict[str, dict[str, Any]] = {}
     for entry in entries:
-        locus = entry["locus"]
+        if not isinstance(entry, dict):
+            raise ValueError("invalid extracted entry")
+        locus = entry.get("locus")
+        if not isinstance(locus, str) or not locus.strip():
+            raise ValueError("extraction entry lacks a valid locus")
         if locus in output:
             raise ValueError("duplicate extraction locus")
         output[locus] = entry
@@ -80,12 +85,18 @@ def build_adjudication_handoff(
         "LAB_FRU_Component",
     }
     for doc in (first, second):
-        src = doc["source"]
+        src = doc.get("source")
+        if not isinstance(src, dict):
+            raise ValueError("incompatible source/profile for Path B adjudication handoff")
+        components = src.get("components")
         if (
-            src.get("profile_name") != "LRI_NG_FRU_Profile_V3"
+            not isinstance(components, list)
+            or any(not isinstance(item, str) for item in components)
+            or len(components) != 3
+            or src.get("profile_name") != "LRI_NG_FRU_Profile_V3"
             or src.get("edition") != "5"
             or src.get("errata") != "2024DEC"
-            or set(src.get("components", [])) != expected_components
+            or set(components) != expected_components
         ):
             raise ValueError("incompatible source/profile for Path B adjudication handoff")
 
@@ -153,8 +164,6 @@ def build_adjudication_handoff(
     # when both extractors marked their documents incomplete or UNKNOWN.
     if sum(counts.values()) != len(rows):
         raise ValueError("inconsistent observed-union accounting")
-    from fhirbridge.lri_source_identity import pinned_publication_hashes
-
     pins = pinned_publication_hashes()
     all_metadata_ready = ready_a.ready and ready_b.ready
     return {
