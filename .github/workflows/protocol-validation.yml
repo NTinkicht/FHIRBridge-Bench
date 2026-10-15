@@ -195,6 +195,17 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      - name: Build Path B eleven-family prefreeze development feasibility
+        run: python qualification/hl7v2/report_path_b_family_feasibility.py
+
+      - name: Archive Path B development feasibility evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: path-b-eleven-family-development-${{ github.run_id }}
+          path: qualification/hl7v2/results/path-b-11-family-prefreeze.json
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Report tooling freeze readiness
         run: python qualification/freeze/report_readiness.py
 
