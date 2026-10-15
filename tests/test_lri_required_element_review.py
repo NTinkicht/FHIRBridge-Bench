@@ -128,7 +128,7 @@ def test_comparison_rejects_same_reviewer_or_different_source_artifact() -> None
     second = _complete("R-B")
     second["source"]["artifact_sha256"] = "1" * 64
 
-    with pytest.raises(ValueError, match="same source artifact"):
+    with pytest.raises(ValueError, match="pinned Edition 5 guide"):
         compare_required_element_extractions(first, second)
 
 
@@ -137,7 +137,7 @@ def test_comparison_rejects_different_errata_artifact_hashes() -> None:
     second = _complete("R-B")
     second["source"]["errata_artifact_sha256"] = "1" * 64
 
-    with pytest.raises(ValueError, match="same errata artifact"):
+    with pytest.raises(ValueError, match="pinned 2024DEC errata"):
         compare_required_element_extractions(first, second)
 
 
