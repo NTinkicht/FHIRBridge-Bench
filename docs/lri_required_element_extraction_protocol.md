@@ -147,6 +147,48 @@ normative PDF files to this public repository. Preserve the original raw
 response and create a *new* separately labeled artifact for adjudication or
 any corrections.
 
+## Independent adjudication preparation (private)
+
+After both original responses and locks are separately retained, generate a
+**private, unadjudicated** handoff:
+
+```bash
+python qualification/hl7v2/required_element_review/build_adjudication_handoff.py \
+  reviewer-A.yaml reviewer-A.lock.json \
+  reviewer-B.yaml reviewer-B.lock.json adjudication-handoff.json
+```
+
+This reads and rechecks both original SHA-256 locks before building the
+handoff, rejects mixed profiles and source revisions, and refuses to overwrite
+an existing packet. Preserve the complete packet and its displayed hash in a
+coordinator-controlled evidence store; reviewer disclosures, source quotations
+and raw submissions do not belong in the public GitHub repository.
+
+Every locus reported by at least one extractor is retained. A one-reader-only
+locus or attribute disagreement is assigned for independent source review.
+**Even matching field assessments remain subject to source-evidence audit**;
+different citations and explanations are preserved alongside matching fields.
+For now, use a conservative **census of all observed agreements**, rather
+than selecting a convenient post-hoc random subset. A less burdensome
+sampling policy would require a separately approved, prospectively locked
+sampling plan before reviewers' outputs become visible.
+
+An extractor may leave a claim UNKNOWN/UNRESOLVED or mark the initial
+extraction incomplete. The original is still locked and included in a
+**triage-only** packet, with the original metadata-readiness blockers,
+not corrected or silently dropped. Incomplete first-round extractions cannot
+be used to claim scientific readiness.
+
+A separate **source-completeness audit** explicitly covers the in-scope
+segments MSH, PID, ORC, OBR, OBX, SPM, NTE if present, cross-segment
+constraints, vocabulary/datatype bindings, Common/NG/FRU composition,
+December 2024 errata and potential rules missed by **both** readers.
+The packet marks all audit areas NOT_REVIEWED. It cannot manufacture a
+standards denominator from the observed union or attest an independent
+reviewer's identity. Completing the worksheet, resolving discrepancies,
+auditing omissions, independently qualifying rule-level expected-locus
+controls, and obtaining expert/PI sign-offs are separate future gates.
+
 ## Reconciliation
 
 Every disagreement is either:
