@@ -74,10 +74,22 @@ def test_profile_selection_does_not_claim_machine_freeze() -> None:
     record = _selection()
     freeze_requirements = set(record["freeze_requirements"])
 
-    assert "independently_extract_all_in_scope_Common_NG_FRU_Edition5_2024DEC_requirements" in freeze_requirements
-    assert "independently_adjudicate_MSH21_publication_oid_conflict_or_defer_oid" in freeze_requirements
-    assert "independently_certify_bounded_denominator_and_source_completeness" in freeze_requirements
-    assert "qualify_positive_and_expected_locus_negative_controls_against_G1_bounded_rules" in freeze_requirements
+    assert (
+        "independently_extract_all_in_scope_Common_NG_FRU_Edition5_2024DEC_requirements"
+        in freeze_requirements
+    )
+    assert (
+        "independently_adjudicate_MSH21_publication_oid_conflict_or_defer_oid"
+        in freeze_requirements
+    )
+    assert (
+        "independently_certify_bounded_denominator_and_source_completeness"
+        in freeze_requirements
+    )
+    assert (
+        "qualify_positive_and_expected_locus_negative_controls_against_G1_bounded_rules"
+        in freeze_requirements
+    )
     assert "acquire_machine_readable_LRI_NG_FRU_Profile_V3_bundle" not in freeze_requirements
     route = record["development_route"]
     assert route["selected"] == "bounded_independent_reconstruction"
