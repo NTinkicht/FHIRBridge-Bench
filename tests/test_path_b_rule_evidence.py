@@ -248,3 +248,25 @@ def test_exclusion_is_never_a_free_unreviewed_rule_removal() -> None:
     assert any("separately authorized scope review" in item for item in _check(
         doc, coverage, freeze
     ).blockers)
+
+
+def test_conditional_usage_c_requires_predicate_even_if_applicability_unconditional() -> None:
+    doc, coverage, freeze = _inputs()
+    rule = _synthetic_complete_rule(doc["rules"][0])
+    rule["usage"] = "C"
+    rule["applicability"] = "UNCONDITIONAL"
+    rule["condition"] = None
+    doc["rules"] = [rule]
+    report = _check(doc, coverage, freeze)
+    assert any("conditional predicate not established" in item for item in report.blockers)
+    assert report.G1_qualified is False
+
+
+def test_same_original_response_lock_for_two_readers_is_rejected() -> None:
+    doc, coverage, freeze = _inputs()
+    rule = _synthetic_complete_rule(doc["rules"][0])
+    rule["reader_b"]["response_lock_sha256"] = rule["reader_a"]["response_lock_sha256"]
+    doc["rules"] = [rule]
+    report = _check(doc, coverage, freeze)
+    assert any("original review chain missing" in item for item in report.blockers)
+    assert report.G1_qualified is False
