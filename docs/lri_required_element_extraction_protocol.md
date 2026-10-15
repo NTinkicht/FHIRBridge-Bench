@@ -18,10 +18,14 @@ disagreements before the measurement instrument is frozen.
 
 Both extractors work from the **same cryptographically identified Edition 5
 guide PDF AND December 2024 errata-letter PDF**. Each response must record
-both full SHA-256 digests; comparisons reject missing, invalid or different
-errata digests. The blind response schema is now version 0.2.0. The coordinator
-must verify that hashes correspond to the independently supplied source
-documents, not merely that two readers copied the same expected strings.
+both full SHA-256 digests. Extraction readiness rejects missing, malformed,
+or non-pinned guide and errata digests (including matching but incorrect
+reviewer strings). The blind response schema is version 0.2.0. The coordinator
+must also independently verify the **actual PDF bytes** with
+`qualification/hl7v2/required_element_review/verify_source_documents.py`;
+copied metadata or two matching reviewer answers cannot establish that the
+reviewer actually read the official publication. This is a source-identity
+check, not certification of completeness or independent review.
 
 **Selected Path B development source:** the pinned authoritative Edition 5 +
 2024DEC publication PDF. The study does not wait for an original XML export
