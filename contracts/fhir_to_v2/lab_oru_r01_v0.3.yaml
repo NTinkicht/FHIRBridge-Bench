@@ -30,7 +30,10 @@ target:
   realm: US
   selected_profile_candidate: LRI_NG_FRU_Profile_V3
   profile_selection_record: benchmark/lri_profile_selection.yaml
-  exact_machine_profile_status: pending_acquisition_and_qualification
+  exact_machine_profile_status: optional_path_a_original_profile_unavailable
+  selected_validation_route: bounded_PDF_derived_Path_B_pending_independent_qualification
+  bounded_G1_qualification_complete: false
+  confirmatory_inference_authorized: false
 
 scope:
   included:
