@@ -13,6 +13,7 @@ def test_three_records_keep_path_b_distinct_from_optional_machine_profile() -> N
     selection = _yaml("benchmark/lri_profile_selection.yaml")
     order = _yaml("benchmark/lri_order_context_evidence.yaml")
     pin = _yaml("benchmark/hl7v2_lri_profile_pin.yaml")
+    contract = _yaml("contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml")
     contingency = _yaml("benchmark/lri_edition5_contingency_proposal.yaml")
     gate = _yaml("benchmark/protocol_freeze_gates.yaml")
 
@@ -26,6 +27,15 @@ def test_three_records_keep_path_b_distinct_from_optional_machine_profile() -> N
     assert order["freeze_decision"]["exact_edition5_profile_bundle_required_for_path_b_development"] is False
     assert order["freeze_decision"]["exact_edition5_profile_bundle_required_for_machine_validation"] is True
     assert "optional" in pin["profile_pin"]["purpose"].lower()
+    assert contract["target"]["selected_validation_route"] == (
+        "bounded_PDF_derived_Path_B_pending_independent_qualification"
+    )
+    assert contract["target"]["exact_machine_profile_status"] == (
+        "optional_path_a_original_profile_unavailable"
+    )
+    assert contract["target"]["bounded_G1_qualification_complete"] is False
+    assert contract["target"]["confirmatory_inference_authorized"] is False
+    assert contract["contract"]["freeze_status"] == "not_frozen"
     assert pin["identity_verification"]["independent_profile_provenance_reviewed"] is False
 
 
