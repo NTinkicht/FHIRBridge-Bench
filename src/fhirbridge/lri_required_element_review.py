@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from fhirbridge.lri_source_identity import pinned_publication_hashes
+
 _COMPARE_FIELDS = (
     "element_kind",
     "usage",
@@ -103,15 +105,19 @@ def assess_required_element_extraction(
     if not isinstance(source, dict):
         blockers.append("source metadata is missing")
     else:
-        if not _sha256_present(source.get("artifact_sha256")):
+        pinned = pinned_publication_hashes()
+        guide_sha = source.get("artifact_sha256")
+        errata_sha = source.get("errata_artifact_sha256")
+        if not _sha256_present(guide_sha):
             blockers.append("source artifact SHA-256 is missing or placeholder")
-        if not _sha256_present(source.get("errata_artifact_sha256")):
+        elif guide_sha.lower() != pinned["implementation_guide"]:
+            blockers.append("source artifact SHA-256 differs from pinned Edition 5 guide")
+        if not _sha256_present(errata_sha):
             blockers.append("source errata artifact SHA-256 is missing or placeholder")
-        if source.get("artifact_type") not in {
-            "edition5_publication_pdf",
-            "edition5_machine_profile_bundle",
-        }:
-            blockers.append("source artifact type is not an allowed Edition 5 source")
+        elif errata_sha.lower() != pinned["errata_letter"]:
+            blockers.append("source errata artifact SHA-256 differs from pinned 2024DEC errata")
+        if source.get("artifact_type") != "edition5_publication_pdf":
+            blockers.append("source artifact type is not the approved Path B PDF source")
         if source.get("profile_name") != "LRI_NG_FRU_Profile_V3":
             blockers.append("source target profile is not the selected general-lab profile")
         if source.get("edition") != "5" or source.get("errata") != "2024DEC":
