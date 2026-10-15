@@ -9,10 +9,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
-from fhirbridge.lri_extraction_lock import (
-    compare_locked_extractions,
-    verify_response_lock,
-)
+from fhirbridge.lri_extraction_lock import verify_response_lock
+from fhirbridge.lri_required_element_review import assess_required_element_extraction
 
 # A full agreement census is the conservative default. A later, separately
 # preregistered and approved sampling protocol could replace this approach,
@@ -70,14 +68,29 @@ def build_adjudication_handoff(
     independently omitted requirements cannot be discovered by agreement.
     """
 
-    comparison = compare_locked_extractions(raw_a, lock_a, raw_b, lock_b)
-    if comparison["status"] != "LOCKED_UNADJUDICATED_COMPARISON_ONLY":
-        raise ValueError(
-            "both locked extractions must be metadata-ready before handoff; "
-            "preserve incomplete original responses without forcing qualification"
-        )
     first = verify_response_lock(raw_a, lock_a)
     second = verify_response_lock(raw_b, lock_b)
+    if lock_a["extractor_id"] == lock_b["extractor_id"]:
+        raise ValueError("the locked reviewers must have different identifiers")
+    # The coordinator may triage a first-round UNKNOWN or incomplete claim,
+    # but source/profile mismatches are never valid comparison inputs.
+    expected_components = {
+        "LRI_Common_Component_V3",
+        "LRI_NG_Component_R1",
+        "LAB_FRU_Component",
+    }
+    for doc in (first, second):
+        src = doc["source"]
+        if (
+            src.get("profile_name") != "LRI_NG_FRU_Profile_V3"
+            or src.get("edition") != "5"
+            or src.get("errata") != "2024DEC"
+            or set(src.get("components", [])) != expected_components
+        ):
+            raise ValueError("incompatible source/profile for Path B adjudication handoff")
+
+    ready_a = assess_required_element_extraction(first)
+    ready_b = assess_required_element_extraction(second)
     left = _indexed(first)
     right = _indexed(second)
 
@@ -102,6 +115,14 @@ def build_adjudication_handoff(
                 or a.get("classification_rationale") != b.get("classification_rationale")
             )
         )
+        uncertainty_as_submitted = any(
+            entry is not None and (
+                entry.get("usage") == "UNKNOWN"
+                or entry.get("source_grounding_classification") == "UNRESOLVED"
+                or entry.get("cardinality") in (None, "", "TO_BE_EXTRACTED")
+            )
+            for entry in (a, b)
+        )
         rows.append(
             {
                 "locus": locus,
@@ -109,6 +130,7 @@ def build_adjudication_handoff(
                 "reader_a_entry": deepcopy(a),
                 "reader_b_entry": deepcopy(b),
                 "citation_or_rationale_differs": provenance_disagreement,
+                "unknown_or_unresolved_initial_claim": uncertainty_as_submitted,
                 "source_level_independent_adjudication_required": True,
                 "human_disposition": None,
                 "human_source_evidence": [],
@@ -127,24 +149,33 @@ def build_adjudication_handoff(
         }
         for name in _COVERAGE_TARGETS
     ]
-    observed = comparison["comparison"]
-    if len(rows) != observed["union_locus_count"]:
-        raise ValueError("handoff does not match the locked comparison union")
-    if counts["observed_agreements"] != observed["exact_agreement_count"]:
-        raise ValueError("handoff does not match observed field agreements")
-    if counts["one_reader_only"] != (
-        len(observed["missing_from_a"]) + len(observed["missing_from_b"])
-    ):
-        raise ValueError("handoff does not match missing-locus accounting")
-    if counts["field_disagreements"] != len(observed["field_disagreements"]):
-        raise ValueError("handoff does not match field disagreement accounting")
+    # Counts describe submitted rows only. This is a TRIAGE comparison, even
+    # when both extractors marked their documents incomplete or UNKNOWN.
+    if sum(counts.values()) != len(rows):
+        raise ValueError("inconsistent observed-union accounting")
+    from fhirbridge.lri_source_identity import pinned_publication_hashes
 
+    pins = pinned_publication_hashes()
+    all_metadata_ready = ready_a.ready and ready_b.ready
     return {
         "schema_version": _HANDOFF_VERSION,
-        "status": "PRIVATE_PRE_ADJUDICATION_REVIEW_REQUIRED",
-        "source_sha256": observed["source_sha256"],
-        "errata_sha256": observed["errata_sha256"],
-        "original_response_sha256": comparison["raw_response_hashes"],
+        "status": (
+            "PRIVATE_PRE_ADJUDICATION_REVIEW_REQUIRED"
+            if all_metadata_ready
+            else "PRIVATE_INCOMPLETE_EXTRACTION_TRIAGE_ONLY"
+        ),
+        "source_sha256": pins["implementation_guide"],
+        "errata_sha256": pins["errata_letter"],
+        "original_response_sha256": [
+            lock_a["response_sha256"],
+            lock_b["response_sha256"],
+        ],
+        "original_metadata_readiness": {
+            "reader_a_ready": ready_a.ready,
+            "reader_b_ready": ready_b.ready,
+            "reader_a_blockers": list(ready_a.blockers),
+            "reader_b_blockers": list(ready_b.blockers),
+        },
         "extractor_ids": [lock_a["extractor_id"], lock_b["extractor_id"]],
         "agreement_audit_plan": {
             "mode": _AUDIT_MODE,
@@ -157,7 +188,7 @@ def build_adjudication_handoff(
             "total": len(rows),
             **counts,
         },
-        "observed_field_agreement_rate": observed["exact_agreement_rate"],
+        "observed_field_agreement_rate": counts["observed_agreements"] / len(rows),
         "adjudication_rows": rows,
         "independent_scope_completeness_audit": scope_audit,
         "independently_established_requirements_denominator": None,
