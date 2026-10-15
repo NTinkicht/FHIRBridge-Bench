@@ -15,11 +15,15 @@ def test_v2_renderer_refuses_to_silently_drop_v03_order_context() -> None:
     )
     contract = fhirbridge.schema_validation.load_yaml(_CONTRACT)
 
-    with pytest.raises(ValueError, match="order-context rendering is fail-closed"):
+    with pytest.raises(ValueError, match="order-context rendering is fail-closed") as err:
         fhirbridge.renderers.Hl7V251OruRendererA().render(
             graph,
             contract=contract,
         )
+    message = str(err.value)
+    assert "independent Path B" in message
+    assert "G1 qualification" in message
+    assert "original IGAMT export is not a Path B prerequisite" in message
 
 
 def test_v2_renderer_development_slice_still_renders_legacy_no_order_case() -> None:
