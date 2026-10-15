@@ -18,8 +18,9 @@ def test_three_records_keep_path_b_distinct_from_optional_machine_profile() -> N
     gate = _yaml("benchmark/protocol_freeze_gates.yaml")
 
     assert selection["profile_selection"]["selected_profile_name"] == "LRI_NG_FRU_Profile_V3"
-    assert selection["development_route"]["selected"] == (
-        contingency["edition5_contingency"]["selected_path"]
+    assert (
+        selection["development_route"]["selected"]
+        == contingency["edition5_contingency"]["selected_path"]
         == gate["protocol_freeze"]["development_path_decision"]["selected"]
         == "bounded_independent_reconstruction"
     )
@@ -50,6 +51,9 @@ def test_no_premature_oid_or_g1_claims_in_selected_target_records() -> None:
     assert selection["message_requirements"]["msh_21"]["precoordinated_oid_declaration"][
         "status"
     ] == "deferred_due_to_publication_internal_conflict"
+    assert "use_conflicted_precoordinated_msh21_oid_without_independent_disposition" in (
+        order["freeze_decision"]["prohibited_shortcuts"]
+    )
     assert not order["freeze_decision"]["independent_G1_qualified"]
     assert not order["freeze_decision"]["confirmatory_inference_authorized"]
     assert not selection["development_route"]["confirmed_completeness_of_required_rules"]
