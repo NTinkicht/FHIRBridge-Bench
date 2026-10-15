@@ -9,8 +9,8 @@ used as G1 validity or a confirmatory semantic verdict.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Mapping
 
 _ROLE_FIELDS = {
     "ORC-2": ("ORC", 2),
@@ -85,8 +85,10 @@ def _segments_by_name(message: str) -> dict[str, list[str]]:
     names = [line.split("|", 1)[0] for line in lines]
     if names.count("ORC") != 1 or names.count("OBR") != 1:
         raise ValueError("probe requires exactly one ORC and one OBR group")
-    if names.index("ORC") >= names.index("OBR"):
-        raise ValueError("ORC must precede its OBR in the synthetic fixture")
+    if names.count("PID") != 1:
+        raise ValueError("probe requires exactly one PID patient group")
+    if not (names.index("PID") < names.index("ORC") < names.index("OBR")):
+        raise ValueError("probe requires PID before its ORC and OBR group")
     return {
         "ORC": lines[names.index("ORC")].split("|"),
         "OBR": lines[names.index("OBR")].split("|"),
