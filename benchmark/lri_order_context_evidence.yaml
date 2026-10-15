@@ -50,9 +50,11 @@ authoritative_publication:
         LRI_NG_FRU_Profile_V3 OID as 2.16.840.1.113883.9.195.3.25, while
         conformance statement LRI-11 on page 169 prints
         2.16.840.1.113883.9.195.3.3 for the pre-coordinated identifier.
-        This internal publication inconsistency must be resolved against the
-        machine-readable Edition 5 bundle before using a pre-coordinated OID
-        in generated MSH-21.
+        This internal publication inconsistency remains unresolved. The
+        pre-coordinated OID must stay deferred unless independently adjudicated
+        against the official Edition 5 publication and errata. An authenticated
+        complete machine bundle, if later found, is optional corroboration,
+        not a required Path B source.
     ORC_table_and_constraints:
       pages: [185, 186, 188]
       establishes:
@@ -103,11 +105,16 @@ edition5_profile_architecture:
     - LRI_GU_FRN_Profile_V3
     - LRI_NG_FRU_Profile_V3
     - LRI_NG_FRN_Profile_V3
-  selected_confirmatory_combination: LRI_NG_FRU_Profile_V3_candidate_pending_machine_bundle
+  selected_confirmatory_combination: LRI_NG_FRU_Profile_V3_bounded_target_pending_independent_qualification
   selection_record: benchmark/lri_profile_selection.yaml
   note: >-
-    LRI_NG_FRU_Profile_V3 is the selected study-design candidate. The exact
-    machine-readable bundle remains required before profile identity is frozen.
+    LRI_NG_FRU_Profile_V3 names the selected bounded, PDF-derived Path B
+    study-design target. Independent edition/errata extraction, coverage
+    adjudication, and qualification of G1 remain required; no complete
+    original Edition 5 IGAMT authoring bundle was produced according to
+    privately retained custodian correspondence. An independently
+    authenticated machine-readable bundle, if found, is optional Path A
+    sensitivity evidence and not a precondition for Path B development.
 
 legacy_nist_comparator:
   repository: usnistgov/hit-core-hl7v2
@@ -132,6 +139,10 @@ secondary_implementation_evidence:
 
 freeze_decision:
   exact_edition5_profile_bundle_required_for_machine_validation: true
+  exact_edition5_profile_bundle_required_for_path_b_development: false
+  current_route: bounded_independent_reconstruction_not_yet_qualified
+  independent_G1_qualified: false
+  confirmatory_inference_authorized: false
   selected_profile_candidate: LRI_NG_FRU_Profile_V3
   resolved_from_authoritative_publication:
     ORC_usage: R
@@ -153,12 +164,19 @@ freeze_decision:
       - 2.16.840.1.113883.9.195.3.22
       - 2.16.840.1.113883.9.13
       - 2.16.840.1.113883.9.83
-    freeze_precoordinated_oid_only_after_machine_bundle_verification: true
+    defer_precoordinated_oid_until_independent_disposition_of_conflict: true
   still_required_before_hl7_profile_qualification:
-    - acquire_exact_machine_readable_profile_bundle
-    - verify_profile_bundle_lineage_to_edition5_2024dec
-    - resolve_precoordinated_msh21_oid_against_machine_bundle
-    - qualify_reference_and_negative_messages_against_profile
+    - independently_extract_all_applicable_Common_NG_FRU_Edition5_2024DEC_requirements
+    - independently_adjudicate_all_required_conditional_and_cross_field_rules
+    - audit_agreed_rules_and_possible_omissions_by_both_readers
+    - resolve_precoordinated_msh21_oid_conflict_or_keep_deferred
+    - independently_establish_bounded_completeness_denominator
+    - qualify_reference_and_expected_locus_negative_messages_against_bounded_G1
+    - approve_warning_policy_and_prospective_estimand_before_protocol_freeze
+  optional_path_a_machine_profile_sensitivity:
+    - acquire_and_authenticate_exact_complete_bundle_if_available
+    - verify_original_bundle_lineage_and_errata
+    - separate_profile_validation_and_differential_report
   prohibited_shortcuts:
     - infer_machine_profile_from_human_readable_pdf
     - infer_edition5_from_legacy_r2
@@ -166,7 +184,7 @@ freeze_decision:
     - invent_order_identifiers_to_make_validator_green
     - invent_ordering_provider_to_make_validator_green
     - map_diagnostic_report_identifier_to_order_identifier_without_review
-    - use_conflicted_precoordinated_msh21_oid_before_machine_verification
+    - use_conflicted_precoordinated_msh21_oid_without_independent_disposition
   required_design_change: >-
     The current ORU renderer cannot be structurally conformant to Edition 5
     while omitting ORC. Add explicit source-grounded order context before

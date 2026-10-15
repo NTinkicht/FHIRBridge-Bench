@@ -2,10 +2,12 @@ profile_pin:
   schema_version: 0.1.0
   status: candidate
   purpose: >-
-    Provenance and freeze record for the exact HL7 v2.5.1 LRI Edition 5
-    ORU^R01 profile bundle used by FHIRBridge-Bench. This file deliberately
-    remains unresolved until the exact IGAMT-exported bundle is acquired and
-    independently checked.
+    Dormant optional Path A exact-machine-profile sensitivity record.
+    This file deliberately remains unresolved; privately archived custodian
+    correspondence confirms Edition 5 was not codified in IGAMT. The selected
+    Path B bounded, independently reconstructed Edition 5 + errata G1 rule
+    oracle is a separate scientific instrument and must NOT be qualified or
+    blocked by this original machine-bundle-only metadata template.
 
 target:
   standard: HL7_v2

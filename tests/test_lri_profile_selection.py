@@ -17,7 +17,7 @@ def test_initial_lri_profile_selects_ng_fru_as_candidate() -> None:
         selection["candidate_precoordinated_profile_oid"]["value"]
         == "2.16.840.1.113883.9.195.3.25"
     )
-    assert selection["status"] == "selected_candidate_pending_machine_bundle"
+    assert selection["status"] == "selected_bounded_target_pending_independent_qualification"
 
 
 def test_selected_profile_components_match_authoritative_edition5_combination() -> None:
@@ -36,11 +36,11 @@ def test_publication_internal_oid_conflict_fails_safe_to_component_declaration()
     conflict = record["publication_identifier_conflict"]
     msh21 = record["message_requirements"]["msh_21"]
 
-    assert conflict["status"] == "unresolved_pending_machine_bundle"
+    assert conflict["status"] == "unresolved_pending_independent_source_adjudication"
     assert conflict["section_7_4_3_page_152"]["printed_oid"].endswith(".3.25")
     assert conflict["lri_11_page_169"]["printed_oid"].endswith(".3.3")
     assert msh21["preferred_declaration_strategy"] == (
-        "component_oids_until_machine_bundle"
+        "component_oids_pending_independent_review"
     )
     assert msh21["precoordinated_oid_declaration"]["status"].startswith("deferred")
 
@@ -74,7 +74,25 @@ def test_profile_selection_does_not_claim_machine_freeze() -> None:
     record = _selection()
     freeze_requirements = set(record["freeze_requirements"])
 
-    assert "acquire_machine_readable_LRI_NG_FRU_Profile_V3_bundle" in freeze_requirements
-    assert "resolve_precoordinated_msh21_oid_conflict" in freeze_requirements
-    assert "pass_local_NIST_reference_message_qualification" in freeze_requirements
-    assert "pass_structural_negative_controls" in freeze_requirements
+    assert (
+        "independently_extract_all_in_scope_Common_NG_FRU_Edition5_2024DEC_requirements"
+        in freeze_requirements
+    )
+    assert (
+        "independently_adjudicate_MSH21_publication_oid_conflict_or_defer_oid"
+        in freeze_requirements
+    )
+    assert (
+        "independently_certify_bounded_denominator_and_source_completeness"
+        in freeze_requirements
+    )
+    assert (
+        "qualify_positive_and_expected_locus_negative_controls_against_G1_bounded_rules"
+        in freeze_requirements
+    )
+    assert "acquire_machine_readable_LRI_NG_FRU_Profile_V3_bundle" not in freeze_requirements
+    route = record["development_route"]
+    assert route["selected"] == "bounded_independent_reconstruction"
+    assert route["original_edition5_IGAMT_bundle_required_for_development"] is False
+    assert route["qualified_bounded_G1_validator"] is False
+    assert route["confirmatory_inference_authorized"] is False

@@ -47,7 +47,7 @@ def test_profile_selection_is_synchronized_as_candidate() -> None:
 
     assert (
         record["edition5_profile_architecture"]["selected_confirmatory_combination"]
-        == "LRI_NG_FRU_Profile_V3_candidate_pending_machine_bundle"
+        == "LRI_NG_FRU_Profile_V3_bounded_target_pending_independent_qualification"
     )
     assert (
         record["edition5_profile_architecture"]["selection_record"]
@@ -65,7 +65,7 @@ def test_msh21_uses_consistent_component_oids_until_machine_bundle() -> None:
         "2.16.840.1.113883.9.13",
         "2.16.840.1.113883.9.83",
     ]
-    assert strategy["freeze_precoordinated_oid_only_after_machine_bundle_verification"]
+    assert strategy["defer_precoordinated_oid_until_independent_disposition_of_conflict"]
 
 
 def test_pdf_page_anchors_cover_load_bearing_order_claims() -> None:
