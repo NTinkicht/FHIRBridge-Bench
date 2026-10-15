@@ -127,13 +127,32 @@ def test_tampering_with_original_or_lock_fails_closed() -> None:
         build_adjudication_handoff(a, lock_a, b, bad_lock)
 
 
-def test_incomplete_locked_extraction_does_not_create_adjudication_packet() -> None:
+def test_incomplete_locked_extraction_is_flagged_for_triage_not_qualified() -> None:
     a, b = _raw(_doc("R-A")), _doc("R-B")
     b["extraction_complete"] = False
+    b["entries"][0]["usage"] = "UNKNOWN"
+    b["entries"][0]["source_grounding_classification"] = "UNRESOLVED"
     raw_b = _raw(b)
-    with pytest.raises(ValueError, match="metadata-ready"):
+    report = build_adjudication_handoff(
+        a, create_response_lock(a), raw_b, create_response_lock(raw_b)
+    )
+    assert report["status"] == "PRIVATE_INCOMPLETE_EXTRACTION_TRIAGE_ONLY"
+    assert report["original_metadata_readiness"]["reader_b_ready"] is False
+    assert report["original_metadata_readiness"]["reader_b_blockers"]
+    row = next(x for x in report["adjudication_rows"] if x["locus"] == "ORC-3")
+    assert row["unknown_or_unresolved_initial_claim"] is True
+    assert report["human_adjudication_performed"] is False
+    assert report["G1_qualified"] is False
+
+
+def test_disallowed_profile_does_not_enter_triage_even_if_locked() -> None:
+    a, b = _doc("R-A"), _doc("R-B")
+    b["source"]["profile_name"] = "UNVERIFIED"
+    raw_a, raw_b = _raw(a), _raw(b)
+    with pytest.raises(ValueError, match="incompatible source/profile"):
         build_adjudication_handoff(
-            a, create_response_lock(a), raw_b, create_response_lock(raw_b)
+            raw_a, create_response_lock(raw_a),
+            raw_b, create_response_lock(raw_b),
         )
 
 
