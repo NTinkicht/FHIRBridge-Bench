@@ -136,7 +136,7 @@ def bind_unrun_control_artifacts(
         # A real HL7 ER7 segment ends with CR. Normalizing mixed CR/LF here
         # would hide extra byte edits and can move a validator failure away
         # from the declared field.
-        if not contents.endswith(b"\\r") or b"\\n" in contents:
+        if not contents.endswith(b"\r") or b"\n" in contents:
             raise ValueError(f"{role} artifact must use CR-only segment delimiters")
     if manifest["positive_artifact_sha256"] == manifest["negative_artifact_sha256"]:
         raise ValueError("positive and negative artifacts must be distinct")
