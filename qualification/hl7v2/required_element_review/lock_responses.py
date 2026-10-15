@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from hashlib import sha256
 from pathlib import Path
 
 from fhirbridge.lri_extraction_lock import (
@@ -61,9 +62,7 @@ def main() -> int:
 
     print(json.dumps({
         "status": report["status"],
-        "record_sha256": __import__("hashlib").sha256(
-            destination.read_bytes()
-        ).hexdigest(),
+        "record_sha256": sha256(destination.read_bytes()).hexdigest(),
         "G1_qualified": False,
     }, sort_keys=True))
     return 0
