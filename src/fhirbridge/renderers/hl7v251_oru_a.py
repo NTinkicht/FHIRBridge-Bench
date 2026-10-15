@@ -251,10 +251,12 @@ class Hl7V251OruRendererA:
         orders = _facts(graph, "order")
         if orders:
             raise ValueError(
-                "HL7 v2 order-context rendering is fail-closed until the exact "
-                "Edition 5 machine profile resolves the remaining ORC-1, EI/XCN "
-                "datatype, binding, and profile-identity serialization details. "
-                "Renderer A must not silently drop or invent required order facts."
+                "HL7 v2 order-context rendering is fail-closed until independent "
+                "Path B Edition 5 + 2024DEC requirements adjudication and bounded "
+                "G1 qualification resolve ORC-1, EI/XCN datatypes, bindings, "
+                "and MSH-21 profile-identity serialization. An original IGAMT "
+                "export is not a Path B prerequisite; Renderer A must never "
+                "silently drop or invent source order facts."
             )
         if patient is None or not reports:
             raise ValueError(
