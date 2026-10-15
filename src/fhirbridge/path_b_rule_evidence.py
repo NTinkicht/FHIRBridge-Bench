@@ -119,7 +119,9 @@ def assess_path_b_rule_evidence(
         anchor = rule["source_anchor"]
         if usage == "UNKNOWN" or applies in ("UNKNOWN", "UNASSESSED"):
             blockers.append(f"{name}: usage/applicability is unresolved")
-        if applies == "CONDITIONAL" and not _valid_reference(rule["condition"]):
+        if (usage == "C" or applies == "CONDITIONAL") and not _valid_reference(
+            rule["condition"]
+        ):
             blockers.append(f"{name}: conditional predicate not established")
         if disposition != "ADJUDICATED":
             blockers.append(f"{name}: not independently adjudicated")
@@ -147,6 +149,7 @@ def assess_path_b_rule_evidence(
                 _valid_digest(rec["response_lock_sha256"])
                 for rec in (a, b)
             )
+            or a["response_lock_sha256"] == b["response_lock_sha256"]
             or not _valid_reference(adj["private_evidence_ref"])
             or not _valid_reference(adj["double_omission_audit_ref"])
         ):
