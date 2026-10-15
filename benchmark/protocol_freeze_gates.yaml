@@ -47,7 +47,14 @@ gates:
       independent_extraction_protocol: docs/lri_required_element_extraction_protocol.md
       extraction_schema: qualification/hl7v2/required_element_review/schema/required_element_extraction.schema.json
       comparison_implementation: src/fhirbridge/lri_required_element_review.py
-      status: extraction_infrastructure_ready_reviewers_and_machine_bundle_pending
+      coordinator_source_byte_checker: qualification/hl7v2/required_element_review/verify_source_documents.py
+      first_round_response_locks: src/fhirbridge/lri_extraction_lock.py
+      unadjudicated_human_review_handoff: src/fhirbridge/lri_adjudication_handoff.py
+      reviewer_recruitment_and_custody_plan: docs/path_b_external_reviewer_assignment_plan.md
+      independent_source_completeness_certified: false
+      independent_reviewers_appointed: false
+      G1_qualified: false
+      status: prefreeze_infrastructure_ready_external_extraction_and_adjudication_pending
     completion_rule: >-
       Every required/conditional target element for the selected profile slice
       must be classified as SOURCE_FACT, PROFILE_CONSTANT, ENVELOPE, DERIVED,
