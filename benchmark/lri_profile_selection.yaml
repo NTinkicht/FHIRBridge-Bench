@@ -1,7 +1,7 @@
 profile_selection:
   id: FHIRBRIDGE-LRI-PROFILE-SELECTION-001
   version: 0.2.0
-  status: selected_candidate_pending_machine_bundle
+  status: selected_bounded_target_pending_independent_qualification
   selected_profile_name: LRI_NG_FRU_Profile_V3
   message: ORU^R01
   hl7_version: "2.5.1"
@@ -10,10 +10,10 @@ profile_selection:
   candidate_precoordinated_profile_oid:
     value: 2.16.840.1.113883.9.195.3.25
     evidence_pages: [152, 167]
-    verification_status: pdf_supported_machine_bundle_pending
+    verification_status: pdf_supported_internal_conflict_independent_review_pending
 
 publication_identifier_conflict:
-  status: unresolved_pending_machine_bundle
+  status: unresolved_pending_independent_source_adjudication
   section_7_4_3_page_152:
     profile_name: LRI_NG_FRU_Profile_V3
     printed_oid: 2.16.840.1.113883.9.195.3.25
@@ -24,26 +24,30 @@ publication_identifier_conflict:
     profile_name: LRI_NG_FRU_Profile
     printed_oid: 2.16.840.1.113883.9.195.3.3
   disposition: >-
-    Do not emit either pre-coordinated OID in confirmatory MSH-21 until the
-    exact Edition 5 machine-readable bundle resolves the inconsistency. Use
-    the three component OIDs, which are consistent across the publication.
+    Do not emit either pre-coordinated OID in confirmatory MSH-21 until an
+    independent source/errata adjudication specifically resolves the internal
+    publication discrepancy. The three published component OIDs are a
+    provisional development strategy, not a G1-qualified declaration. An
+    authenticated complete XML bundle, if independently discovered, may
+    provide separately reviewed sensitivity evidence but is not required
+    to begin Path B extraction.
 
 components:
   - name: LRI_Common_Component_V3
     oid: 2.16.840.1.113883.9.195.3.22
     role: required_common
     publication_pages: [152, 166, 167, 169]
-    verification_status: pdf_verified_machine_bundle_pending
+    verification_status: pdf_cited_independent_qualification_pending
   - name: LRI_NG_Component_R1
     oid: 2.16.840.1.113883.9.13
     role: selected_identifier_component
     publication_pages: [152, 167, 169]
-    verification_status: pdf_verified_machine_bundle_pending
+    verification_status: pdf_cited_independent_qualification_pending
   - name: LAB_FRU_Component
     oid: 2.16.840.1.113883.9.83
     role: selected_filler_order_component
     publication_pages: [152, 167, 169]
-    verification_status: pdf_verified_machine_bundle_pending
+    verification_status: pdf_cited_independent_qualification_pending
 
 rationale:
   identifier_component: >-
@@ -71,7 +75,7 @@ message_requirements:
     usage: R
     cardinality: "1..*"
     publication_page: 166
-    preferred_declaration_strategy: component_oids_until_machine_bundle
+    preferred_declaration_strategy: component_oids_pending_independent_review
     preferred_component_declaration:
       - name: LRI_Common_Component_V3
         oid: 2.16.840.1.113883.9.195.3.22
@@ -146,10 +150,21 @@ scoring_boundary:
     - DiagnosticReport_basedOn_to_order_linkage
 
 freeze_requirements:
-  - acquire_machine_readable_LRI_NG_FRU_Profile_V3_bundle
-  - verify_bundle_lineage_to_Edition5_2024DEC
-  - resolve_precoordinated_msh21_oid_conflict
-  - record_exact_profile_and_companion_artifact_hashes
-  - pass_local_NIST_reference_message_qualification
-  - pass_structural_negative_controls
+  - independently_extract_all_in_scope_Common_NG_FRU_Edition5_2024DEC_requirements
+  - independently_adjudicate_MSH21_publication_oid_conflict_or_defer_oid
+  - verify_guide_and_errata_document_hashes
+  - independently_adjudicate_R_RE_C_and_cross_segment_requirements
+  - independently_certify_bounded_denominator_and_source_completeness
+  - qualify_positive_and_expected_locus_negative_controls_against_G1_bounded_rules
+  - show_source_grounded_feasibility_all_11_retained_LAB_families
   - independently_review_new_order_projectability_rules_before_scoring
+  - independently_approve_warning_policy_estimand_and_prospective_protocol
+
+development_route:
+  selected: bounded_independent_reconstruction
+  original_edition5_IGAMT_bundle_required_for_development: false
+  original_edition5_IGAMT_bundle_required_for_full_machine_profile_claim: true
+  original_machine_profile_if_independently_found: optional_prespecified_sensitivity
+  qualified_bounded_G1_validator: false
+  confirmed_completeness_of_required_rules: false
+  confirmatory_inference_authorized: false
