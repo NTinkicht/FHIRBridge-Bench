@@ -110,6 +110,43 @@ It checks:
 The comparison **does not adjudicate** disagreements. Original extractions remain
 the evidence.
 
+## First-round response capture (private coordination)
+
+Before either reviewer's initial answers are disclosed to the other or to
+adjudicators, store each **original submitted YAML file** in controlled-access,
+write-restricted storage and independently retain its byte-level hash record.
+A schema-compliant answer need not be marked scientifically complete to be
+captured: unresolved and partially complete first-round answers are evidence
+and must not be silently replaced by polished second-round answers.
+
+Use the coordinator-only commands from a private working directory:
+
+```bash
+python qualification/hl7v2/required_element_review/lock_responses.py lock \
+  reviewer-A.yaml reviewer-A.lock.json
+python qualification/hl7v2/required_element_review/lock_responses.py lock \
+  reviewer-B.yaml reviewer-B.lock.json
+python qualification/hl7v2/required_element_review/lock_responses.py compare \
+  reviewer-A.yaml reviewer-A.lock.json \
+  reviewer-B.yaml reviewer-B.lock.json comparison.json
+```
+
+The lock records original UTF-8 YAML bytes, both pinned source digests,
+pseudonymous extractor/extraction identifiers, and initial metadata-readiness
+blockers. The CLI uses exclusive creation; rerunning cannot overwrite a lock
+or comparison output. Pair comparison verifies both lock records before
+considering rule disagreement. If a submission remains incomplete or unresolved,
+the raw responses stay locked but full rule comparison stays blocked. It does
+not declare G1 validity, reviewer independence, or adjudication.
+
+**Security and methodology limitations:** a SHA-256 record is not a digital
+signature or proof that a person actually performed an independent review.
+Keep first-round responses and locks in separately controlled, time-recorded,
+read-only custody; never commit personal reviewer disclosures or confidential
+normative PDF files to this public repository. Preserve the original raw
+response and create a *new* separately labeled artifact for adjudication or
+any corrections.
+
 ## Reconciliation
 
 Every disagreement is either:
