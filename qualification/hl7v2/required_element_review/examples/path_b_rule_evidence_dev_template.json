@@ -1,0 +1,79 @@
+{
+  "schema_version": "0.1.0",
+  "status": "PREFREEZE_DEVELOPER_ONLY",
+  "normative_sources": {
+    "guide_sha256": "375f02fd5453b06ff1c51841e703c943c3132134fca53a122f5ccfed743461b7",
+    "errata_sha256": "32eeb375ecb78dd77acb01ed388e30c554688e55a8a4d58df05dd0e7a791700f",
+    "profile_name": "LRI_NG_FRU_Profile_V3",
+    "components": [
+      "LRI_Common_Component_V3",
+      "LRI_NG_Component_R1",
+      "LAB_FRU_Component"
+    ]
+  },
+  "rules": [
+    {
+      "rule_id": "PB-MSH21-PROFILE",
+      "locus": "MSH-21",
+      "usage": "UNKNOWN",
+      "applicability": "UNASSESSED",
+      "condition": null,
+      "disposition": "DISPUTED",
+      "exclusion_reason": null,
+      "source_anchor": {
+        "guide_pages": [
+          152,
+          167,
+          169
+        ],
+        "errata_review": "UNASSESSED",
+        "errata_references": []
+      },
+      "reader_a": null,
+      "reader_b": null,
+      "adjudicator": null,
+      "positive_control": null,
+      "negative_control": null
+    },
+    {
+      "rule_id": "PB-ORC1-CONTROL",
+      "locus": "ORC-1",
+      "usage": "UNKNOWN",
+      "applicability": "UNASSESSED",
+      "condition": null,
+      "disposition": "UNASSESSED",
+      "exclusion_reason": null,
+      "source_anchor": {
+        "guide_pages": [
+          185
+        ],
+        "errata_review": "UNASSESSED",
+        "errata_references": []
+      },
+      "reader_a": null,
+      "reader_b": null,
+      "adjudicator": null,
+      "positive_control": null,
+      "negative_control": null
+    },
+    {
+      "rule_id": "PB-OBR4-ORDER-CODE",
+      "locus": "OBR-4",
+      "usage": "UNKNOWN",
+      "applicability": "UNASSESSED",
+      "condition": null,
+      "disposition": "UNASSESSED",
+      "exclusion_reason": null,
+      "source_anchor": {
+        "guide_pages": [],
+        "errata_review": "UNASSESSED",
+        "errata_references": []
+      },
+      "reader_a": null,
+      "reader_b": null,
+      "adjudicator": null,
+      "positive_control": null,
+      "negative_control": null
+    }
+  ]
+}
