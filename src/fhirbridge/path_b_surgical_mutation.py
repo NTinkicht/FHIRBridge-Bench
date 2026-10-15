@@ -18,7 +18,7 @@ _LOCUS = re.compile(r"^(MSH|[A-Z][A-Z0-9]{2})-([1-9][0-9]*)$")
 _SEGMENT = re.compile(r"^[A-Z][A-Z0-9]{2}$")
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class SurgicalMutationEvidence:
     """Only mechanical one-field change evidence; no conformance verdict."""
 
