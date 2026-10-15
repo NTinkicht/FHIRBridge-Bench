@@ -71,9 +71,22 @@ The initial message family is **ORU^R01**, used for unsolicited observation/labo
 
 For the first confirmatory general-laboratory slice, the selected pre-coordinated profile candidate is **LRI_NG_FRU_Profile_V3** (OID `2.16.840.1.113883.9.195.3.25`). It combines the mandatory Common component with the non-globally-unique identifier component and the unique filler-order-number component. This avoids inventing ISO OID semantics for the benchmark's synthetic identifiers while allowing one explicit source-grounded filler order identifier to identify each order without introducing the additional composite identity semantics of FRN.
 
-This profile selection is a study-design choice and remains pending exact machine-readable Edition 5 + 2024DEC bundle acquisition and local qualification. It does not relax the requirement for ORC, OBR, filler order number, or ordering provider.
+This profile selection is a study-design choice. The approved Path B route is
+development of a **separately labeled bounded Edition 5 + 2024DEC rule oracle**,
+derived independently from the published guide and errata. An original
+machine-readable Edition 5 IGAMT export is not a development prerequisite.
+The bounded G1 oracle is **not yet qualified**, and no primary endpoint or
+structural-validity amendment is frozen. Exact authenticated profile
+qualification, if it ever becomes possible, is an optional prespecified
+sensitivity analysis. This decision does not relax the need to adjudicate
+applicable ORC, OBR, filler-order-number and ordering-provider requirements.
 
-The target is therefore not generic “valid HL7 v2”. Every FHIR → v2 output in the primary experiment must be evaluated against the named LRI profile and the subset of that profile frozen in the projectability contract.
+The target is therefore not generic “valid HL7 v2”. During development,
+provisional rules must retain unassessed and unresolved constraints explicitly.
+Confirmatory claims require an independently qualified and frozen bounded G1
+oracle with declared coverage and an approved statistical/measurement protocol.
+Passing this oracle may not be presented as full conformance to an original
+machine-readable Edition 5 profile.
 
 ### Initial message structure in scope
 
