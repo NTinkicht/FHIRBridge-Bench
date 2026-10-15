@@ -8,7 +8,6 @@ from fhirbridge.path_b_role_probes import (
     inspect_authored_identifier_loci,
 )
 
-
 SOURCE = AuthoredIdentifierRoles(
     accession="ACC-900^ACC-AUTH",
     placer="PLC-100^PLACER-AUTH",
@@ -194,3 +193,12 @@ def test_multiple_obr_groups_fail_closed_in_single_group_probe() -> None:
     message = _message() + _seg("OBR", {1: "2", 3: SOURCE.filler}) + "\r"
     with pytest.raises(ValueError, match="exactly one ORC and one OBR"):
         _probe(message)
+
+
+def test_orc_before_pid_cannot_launder_an_order_identifier() -> None:
+    segments = [part for part in _message().split("\r") if part]
+    orc = next(part for part in segments if part.startswith("ORC|"))
+    segments.remove(orc)
+    segments.insert(1, orc)
+    with pytest.raises(ValueError, match="PID before"):
+        _probe("\r".join(segments) + "\r")
