@@ -50,9 +50,11 @@ authoritative_publication:
         LRI_NG_FRU_Profile_V3 OID as 2.16.840.1.113883.9.195.3.25, while
         conformance statement LRI-11 on page 169 prints
         2.16.840.1.113883.9.195.3.3 for the pre-coordinated identifier.
-        This internal publication inconsistency must be resolved against the
-        machine-readable Edition 5 bundle before using a pre-coordinated OID
-        in generated MSH-21.
+        This internal publication inconsistency remains unresolved. The
+        pre-coordinated OID must stay deferred unless independently adjudicated
+        against the official Edition 5 publication and errata. An authenticated
+        complete machine bundle, if later found, is optional corroboration,
+        not a required Path B source.
     ORC_table_and_constraints:
       pages: [185, 186, 188]
       establishes:
@@ -182,7 +184,7 @@ freeze_decision:
     - invent_order_identifiers_to_make_validator_green
     - invent_ordering_provider_to_make_validator_green
     - map_diagnostic_report_identifier_to_order_identifier_without_review
-    - use_conflicted_precoordinated_msh21_oid_before_machine_verification
+    - use_conflicted_precoordinated_msh21_oid_without_independent_disposition
   required_design_change: >-
     The current ORU renderer cannot be structurally conformant to Edition 5
     while omitting ORC. Add explicit source-grounded order context before
