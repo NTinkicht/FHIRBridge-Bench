@@ -206,6 +206,17 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      - name: Build Path B rule evidence prefreeze diagnostics
+        run: python qualification/hl7v2/report_path_b_rule_evidence.py
+
+      - name: Archive Path B rule evidence prefreeze diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: path-b-rule-evidence-development-${{ github.run_id }}
+          path: qualification/hl7v2/results/path-b-rule-evidence-prefreeze.json
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Report tooling freeze readiness
         run: python qualification/freeze/report_readiness.py
 
