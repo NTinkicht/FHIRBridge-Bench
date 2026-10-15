@@ -156,6 +156,41 @@ def test_disallowed_profile_does_not_enter_triage_even_if_locked() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("element_kind", "BOGUS"),
+        ("max_length", -3),
+    ],
+)
+def test_schema_invalid_entry_is_triaged_not_promoted(
+    field: str, value: object
+) -> None:
+    a, b = _doc("R-A"), _doc("R-B")
+    b["entries"][0][field] = value
+    report = _packet(a, b)
+    assert report["status"] == "PRIVATE_INCOMPLETE_EXTRACTION_TRIAGE_ONLY"
+    assert report["original_metadata_readiness"]["reader_b_ready"] is False
+    assert any(
+        "JSON Schema violation" in reason
+        for reason in report["original_metadata_readiness"]["reader_b_blockers"]
+    )
+    assert report["G1_qualified"] is False
+
+
+def test_missing_required_entry_property_and_unknown_key_are_schema_failures() -> None:
+    a, b = _doc("R-A"), _doc("R-B")
+    b["entries"][0].pop("evidence")
+    b["entries"][1]["rogue_extra_attribute"] = "do not accept"
+    report = _packet(a, b)
+    assert report["status"] == "PRIVATE_INCOMPLETE_EXTRACTION_TRIAGE_ONLY"
+    assert report["original_metadata_readiness"]["reader_b_ready"] is False
+    assert sum(
+        "JSON Schema violation" in reason
+        for reason in report["original_metadata_readiness"]["reader_b_blockers"]
+    ) >= 2
+
+
 def test_same_reviewer_id_is_not_independent() -> None:
     raw = _raw(_doc("R-A"))
     lock = create_response_lock(raw)
