@@ -132,13 +132,42 @@ def create_response_lock(raw: bytes) -> dict[str, Any]:
     }
 
 
+def _same_lock_value(actual: Any, expected: Any) -> bool:
+    """Compare a generated lock exactly, including every nested Python type.
+
+    Python considers False == 0 and 1 == True. A direct Python caller must
+    not bypass the strict type guarantees of the coordinator JSON loader.
+    """
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(expected, dict):
+        # All generated custody-lock mapping keys are plain strings. Python
+        # dictionary equality accepts subclasses with equal hashes/values;
+        # rejecting those prevents key-identity spoofing by direct callers.
+        return (
+            len(actual) == len(expected)
+            and all(type(key) is str for key in actual)
+            and all(type(key) is str for key in expected)
+            and all(
+                key in actual and _same_lock_value(actual[key], expected[key])
+                for key in expected
+            )
+        )
+    if isinstance(expected, list):
+        return len(actual) == len(expected) and all(
+            _same_lock_value(left, right)
+            for left, right in zip(actual, expected, strict=True)
+        )
+    return actual == expected
+
+
 def verify_response_lock(raw: bytes, lock: dict[str, Any]) -> dict[str, Any]:
     """Fail if returned bytes or immutable metadata no longer match the lock."""
 
     if not isinstance(lock, dict) or lock.get("lock_schema_version") != _LOCK_VERSION:
         raise ValueError("invalid extraction response lock version")
     fresh = create_response_lock(raw)
-    if lock != fresh:
+    if not _same_lock_value(lock, fresh):
         raise ValueError("response does not match its original complete lock record")
     return _response(raw)
 
