@@ -8,6 +8,31 @@ Implement **Renderer B** for the first FHIRBridge-Bench laboratory slice as an i
 
 Renderer B exists to provide **differential evidence about task specification and implementation ambiguity**. It is not ground truth. Agreement between Renderer A and Renderer B does not validate the canonical facts or projectability contract by itself.
 
+## AI-authored agent B status (2026-10-18; pre-freeze)
+
+The PI has chosen **Codex** to develop an *exploratory* Renderer B prototype.
+Codex is an LLM coding agent, so mapping code it generates must be declared
+truthfully with `independence.llm_generated_mapping_code_used: true`.
+The current scientific clean-room protocol explicitly prohibits LLM-generated
+mapping code. **This agent-authored prototype cannot pass the existing
+`ready_for_differential_comparison` scientific intake gate** by obtaining
+green CI, matching challenge hashes, or providing a declaration.
+
+The coordinator's declaration checker now exposes a separate,
+nonauthoritative `ready_for_exploratory_agent_comparison` diagnostic if the
+only blocker is precisely the disclosed AI authorship. All other isolation,
+custody, source-identity, and exposure checks still apply. Any comparative
+results from this route must be labeled *exploratory development diagnostics*;
+they do not clear scientific independence, contract review, G1 conformance,
+or protocol freeze. The CLI intentionally exits nonzero when the scientific
+comparison gate remains blocked.
+
+A future route that seeks to use an AI-authored Renderer B as scientifically
+accepted independent evidence requires a **prospective methodology amendment
+and independent technical assessment**, not a silent change of the current
+rules. Never mark the LLM-generated field `false` for a Codex-authored mapping
+or reuse Renderer A's implementation/outputs to improve B before first lock.
+
 ## Independence requirement
 
 The implementer of Renderer B must not inspect, copy, refactor, or mechanically translate Renderer A source code before completing the initial implementation and test set.

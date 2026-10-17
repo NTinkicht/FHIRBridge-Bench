@@ -2,11 +2,22 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from functools import lru_cache
+from importlib.resources import files
+from pathlib import Path
 from typing import Any
+
+from jsonschema import Draft202012Validator
 
 _EXPECTED_CONTRACT_ID = "F2V-LAB-ORU-R01-001"
 _EXPECTED_CONTRACT_VERSION = "0.3.0"
+_AI_RENDERER_BLOCKER = (
+    "AI-generated mapping code violates the current clean-room independence protocol; "
+    "scientific Renderer B comparison requires an independently approved methodology amendment"
+)
+
 _PLACEHOLDER_TOKENS = (
     "TO_BE_",
     "TO-BE-",
@@ -22,7 +33,51 @@ class RendererBSubmissionReadiness:
 
     @property
     def ready_for_differential_comparison(self) -> bool:
+        """Only the original non-AI clean-room protocol may pass this gate."""
         return not self.blockers
+
+    @property
+    def ready_for_exploratory_agent_comparison(self) -> bool:
+        """Codex prototypes may be compared as development diagnostics only.
+
+        This is *never* scientific independence, normative qualification, or
+        permission for confirmatory inference. Every other readiness blocker
+        (including exposed A outputs or invalid custodial hashes) still fails.
+        """
+        return (
+            bool(self.blockers)
+            and all(blocker == _AI_RENDERER_BLOCKER for blocker in self.blockers)
+        )
+
+
+@lru_cache(maxsize=1)
+def _schemas() -> tuple[Draft202012Validator, Draft202012Validator]:
+    """Package validators so direct callers cannot bypass CLI shape checks."""
+    root = files("fhirbridge")
+    # Hatch bundles these schemas into built wheels. An editable install
+    # instead points importlib.resources at src/fhirbridge, where the same
+    # authoritative schemas live in renderer_validation/schema. Support
+    # both layouts without silently accepting a missing schema.
+    def read_schema(filename: str) -> dict[str, Any]:
+        packaged = root.joinpath(filename)
+        if packaged.is_file():
+            return json.loads(packaged.read_text(encoding="utf-8"))
+        source_file = (
+            Path(__file__).resolve().parents[2]
+            / "renderer_validation"
+            / "schema"
+            / filename
+        )
+        return json.loads(source_file.read_text(encoding="utf-8"))
+
+    declaration = read_schema("renderer_implementation_declaration.schema.json")
+    handoff = read_schema("renderer_b_expected_inputs.schema.json")
+    Draft202012Validator.check_schema(declaration)
+    Draft202012Validator.check_schema(handoff)
+    return (
+        Draft202012Validator(declaration),
+        Draft202012Validator(handoff["properties"]["clean_room_inputs"]),
+    )
 
 
 def _placeholder(value: Any) -> bool:
@@ -41,6 +96,23 @@ def assess_renderer_b_declaration(
 
     blockers: list[str] = []
     warnings: list[str] = []
+
+    if not isinstance(declaration, dict):
+        return RendererBSubmissionReadiness(
+            blockers=("Renderer B declaration is not an object",), warnings=()
+        )
+    declaration_schema, handoff_schema = _schemas()
+    for error in declaration_schema.iter_errors(declaration):
+        blockers.append(
+            f"Renderer B declaration schema invalid at {error.json_path} "
+            f"({error.validator})"
+        )
+    if isinstance(expected_clean_room_inputs, dict):
+        for error in handoff_schema.iter_errors(expected_clean_room_inputs):
+            blockers.append(
+                f"custodian clean-room input schema invalid at {error.json_path} "
+                f"({error.validator})"
+            )
 
     renderer_id = declaration.get("renderer_id")
     if _placeholder(renderer_id):
@@ -134,10 +206,13 @@ def assess_renderer_b_declaration(
         blockers.append("Renderer B implementer declared accidental clean-room exposure")
 
     if independence.get("llm_generated_mapping_code_used") is True:
+        blockers.append(_AI_RENDERER_BLOCKER)
         warnings.append(
-            "LLM-generated mapping code was used; retain prompt/context provenance "
-            "to demonstrate Renderer A material was not exposed"
+            "LLM-generated mapping code was used; retain complete prompt/context "
+            "provenance and label all comparisons exploratory only"
         )
+    elif independence.get("llm_generated_mapping_code_used") is not False:
+        blockers.append("LLM-generated mapping code provenance is missing or invalid")
 
     if isinstance(language, str) and "python" in language.lower():
         rationale = independence.get("same_language_as_renderer_a_rationale")
@@ -173,6 +248,9 @@ def renderer_b_readiness_to_dict(
     return {
         "ready_for_differential_comparison": (
             readiness.ready_for_differential_comparison
+        ),
+        "ready_for_exploratory_agent_comparison": (
+            readiness.ready_for_exploratory_agent_comparison
         ),
         "blockers": list(readiness.blockers),
         "warnings": list(readiness.warnings),
