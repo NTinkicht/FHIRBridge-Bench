@@ -64,3 +64,38 @@ def test_source_lock_hash_requires_exact_bytes_not_trimmed_content() -> None:
     assert result["qualified_G1"] is False
     # The parser does not promote any author or scientific readiness state.
     assert "reviewer_independence_verified_by_software" not in result
+
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "extraction_declared_complete",
+        "initial_extraction_metadata_ready",
+        "qualified_G1",
+        "adjudication_performed",
+    ],
+)
+@pytest.mark.parametrize("substitution", [0, 1, "false", None])
+def test_lock_boolean_flags_require_exact_json_types(
+    field: str, substitution: object,
+) -> None:
+    lock = {
+        "extraction_declared_complete": True,
+        "initial_extraction_metadata_ready": False,
+        "qualified_G1": False,
+        "adjudication_performed": False,
+    }
+    lock[field] = substitution
+    with pytest.raises(ValueError, match="actual JSON boolean"):
+        load_coordinator_lock_json(json.dumps(lock).encode("utf-8"))
+
+
+def test_authentic_boolean_flags_remain_parseable() -> None:
+    lock = {
+        "extraction_declared_complete": True,
+        "initial_extraction_metadata_ready": False,
+        "qualified_G1": False,
+        "adjudication_performed": False,
+    }
+    assert load_coordinator_lock_json(json.dumps(lock).encode("utf-8")) == lock
