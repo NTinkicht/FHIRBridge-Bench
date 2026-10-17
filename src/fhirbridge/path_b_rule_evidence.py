@@ -160,15 +160,35 @@ def assess_path_b_rule_evidence(
         if positive is None or negative is None:
             blockers.append(f"{name}: positive/negative controls not supplied")
         else:
-            for label, control in (("positive", positive), ("negative", negative)):
-                if (
-                    control["result"] != "PASS_EXPECTED_LOCUS"
-                    or control["expected_locus"] != rule["locus"]
-                    or control["observed_locus"] != rule["locus"]
-                    or not _valid_digest(control["evidence_sha256"])
-                ):
-                    blockers.append(f"{name}: {label} control not evidenced at expected locus")
-            if positive["control_id"] == negative["control_id"]:
+            # A positive must be accepted with no rule violation; a
+            # negative must be rejected precisely at the source-adjudicated
+            # expected field. One generic "pass" outcome cannot represent
+            # both and would conceal a negative accepted by the validator.
+            positive_ok = (
+                positive["result"] == "ACCEPTED_WITHOUT_RULE_VIOLATION"
+                and positive["expected_locus"] == rule["locus"]
+                and positive["observed_locus"] is None
+                and _valid_digest(positive["evidence_sha256"])
+            )
+            negative_ok = (
+                negative["result"] == "REJECTED_AT_EXPECTED_LOCUS"
+                and negative["expected_locus"] == rule["locus"]
+                and negative["observed_locus"] == rule["locus"]
+                and _valid_digest(negative["evidence_sha256"])
+            )
+            if not positive_ok:
+                blockers.append(f"{name}: positive control not evidenced as accepted")
+            if not negative_ok:
+                blockers.append(
+                    f"{name}: negative control not evidenced as rejected at expected locus"
+                )
+            if (
+                positive["control_id"] == negative["control_id"]
+                or (
+                    _valid_digest(positive["evidence_sha256"])
+                    and positive["evidence_sha256"] == negative["evidence_sha256"]
+                )
+            ):
                 blockers.append(f"{name}: positive and negative controls are not distinct")
 
     inventory = scope.get("required_and_conditional_inventory", {})

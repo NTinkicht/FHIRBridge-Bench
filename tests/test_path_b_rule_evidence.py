@@ -59,15 +59,15 @@ def _synthetic_complete_rule(rule: dict) -> dict:
     rule["positive_control"] = {
         "control_id": "TEST-POS",
         "expected_locus": rule["locus"],
-        "observed_locus": rule["locus"],
-        "result": "PASS_EXPECTED_LOCUS",
+        "observed_locus": None,
+        "result": "ACCEPTED_WITHOUT_RULE_VIOLATION",
         "evidence_sha256": "c" * 64,
     }
     rule["negative_control"] = {
         "control_id": "TEST-NEG",
         "expected_locus": rule["locus"],
         "observed_locus": rule["locus"],
-        "result": "PASS_EXPECTED_LOCUS",
+        "result": "REJECTED_AT_EXPECTED_LOCUS",
         "evidence_sha256": "d" * 64,
     }
     return rule
@@ -181,9 +181,9 @@ def test_same_person_as_reader_and_adjudicator_is_rejected() -> None:
 @pytest.mark.parametrize(
     ("variant", "expected"),
     [
-        ("wrong_locus", "negative control not evidenced at expected locus"),
-        ("unrun", "negative control not evidenced at expected locus"),
-        ("missing_digest", "negative control not evidenced at expected locus"),
+        ("wrong_locus", "negative control not evidenced as rejected at expected locus"),
+        ("unrun", "negative control not evidenced as rejected at expected locus"),
+        ("missing_digest", "negative control not evidenced as rejected at expected locus"),
         ("same_id", "positive and negative controls are not distinct"),
     ],
 )
@@ -270,3 +270,95 @@ def test_same_original_response_lock_for_two_readers_is_rejected() -> None:
     report = _check(doc, coverage, freeze)
     assert any("original review chain missing" in item for item in report.blockers)
     assert report.G1_qualified is False
+
+
+
+@pytest.mark.parametrize(
+    ("control", "result", "observed", "expected"),
+    [
+        (
+            "positive_control",
+            "REJECTED_AT_EXPECTED_LOCUS",
+            "MSH-21",
+            "positive control not evidenced as accepted",
+        ),
+        (
+            "positive_control",
+            "ACCEPTED_WITHOUT_RULE_VIOLATION",
+            "MSH-21",
+            "positive control not evidenced as accepted",
+        ),
+        (
+            "negative_control",
+            "ACCEPTED_WITHOUT_RULE_VIOLATION",
+            None,
+            "negative control not evidenced as rejected at expected locus",
+        ),
+        (
+            "negative_control",
+            "REJECTED_AT_EXPECTED_LOCUS",
+            None,
+            "negative control not evidenced as rejected at expected locus",
+        ),
+        (
+            "positive_control",
+            "FAIL",
+            None,
+            "positive control not evidenced as accepted",
+        ),
+        (
+            "negative_control",
+            "FAIL",
+            "MSH-21",
+            "negative control not evidenced as rejected at expected locus",
+        ),
+    ],
+)
+def test_positive_and_negative_controls_require_opposite_validator_outcomes(
+    control: str, result: str, observed: str | None, expected: str,
+) -> None:
+    doc, coverage, freeze = _inputs()
+    rule = _synthetic_complete_rule(doc["rules"][0])
+    rule[control]["result"] = result
+    rule[control]["observed_locus"] = observed
+    doc["rules"] = [rule]
+    report = _check(doc, coverage, freeze)
+    assert any(expected in blocker for blocker in report.blockers)
+    assert report.G1_qualified is False
+
+
+@pytest.mark.parametrize("control", ["positive_control", "negative_control"])
+def test_legacy_ambiguous_positive_negative_pass_label_is_not_accepted(
+    control: str,
+) -> None:
+    doc, coverage, freeze = _inputs()
+    rule = _synthetic_complete_rule(doc["rules"][0])
+    rule[control]["result"] = "PASS_EXPECTED_LOCUS"
+    doc["rules"] = [rule]
+    with pytest.raises(ValueError, match="invalid Path B evidence format"):
+        _check(doc, coverage, freeze)
+
+
+def test_positive_negative_evidence_must_not_share_a_single_receipt() -> None:
+    doc, coverage, freeze = _inputs()
+    rule = _synthetic_complete_rule(doc["rules"][0])
+    rule["negative_control"]["evidence_sha256"] = rule["positive_control"][
+        "evidence_sha256"
+    ]
+    doc["rules"] = [rule]
+    report = _check(doc, coverage, freeze)
+    assert any(
+        "positive and negative controls are not distinct" in blocker
+        for blocker in report.blockers
+    )
+    assert report.G1_qualified is False
+
+
+def test_separate_synthetic_outcomes_never_override_missing_real_denominator() -> None:
+    doc, coverage, freeze = _inputs()
+    doc["rules"] = [_synthetic_complete_rule(doc["rules"][0])]
+    report = _check(doc, coverage, freeze)
+    assert not any("control not evidenced" in b for b in report.blockers)
+    assert not report.mechanical_record_checks_complete
+    assert report.G1_qualified is False
+    assert report.confirmatory_permission is False
