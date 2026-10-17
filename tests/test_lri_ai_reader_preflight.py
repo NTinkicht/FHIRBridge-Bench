@@ -139,7 +139,7 @@ def test_exposed_original_digest_changes_with_any_byte_change() -> None:
     d["independence"]["renderer_output_used_as_requirement_evidence"] = True
     raw = yaml.safe_dump(d, sort_keys=False).encode("utf-8")
     original = preflight_mistral_reader_a(raw, source_use_authorized=True)
-    altered = preflight_mistral_reader_a(raw + b"\\n", source_use_authorized=True)
+    altered = preflight_mistral_reader_a(raw + b"\n", source_use_authorized=True)
     assert original.original_response_sha256 != altered.original_response_sha256
     assert original.status == altered.status
 
