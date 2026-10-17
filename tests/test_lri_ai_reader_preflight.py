@@ -2,8 +2,10 @@
 
 import json
 import os
+import runpy
 import sys
 from dataclasses import FrozenInstanceError
+from pathlib import Path
 
 import pytest
 import yaml
@@ -141,10 +143,20 @@ def test_output_scientific_gate_properties_are_immutable() -> None:
 
 
 
+def _intake_cli():
+    # The qualification folder is a repository script directory, not an
+    # installed Python package. Import its CLI by file path from tests.
+    script = (
+        Path(__file__).resolve().parents[1]
+        / "qualification/hl7v2/required_element_review/intake_mistral_reader_a.py"
+    )
+    return runpy.run_path(str(script))
+
+
 def test_private_cli_original_lock_is_exclusive_and_never_overwritten(
     tmp_path, monkeypatch, capsys
 ) -> None:
-    from qualification.hl7v2.required_element_review.intake_mistral_reader_a import main
+    main = _intake_cli()["main"]
 
     source = tmp_path / "original.yaml"
     lock = tmp_path / "original.lock.json"
@@ -175,10 +187,9 @@ def test_private_cli_original_lock_is_exclusive_and_never_overwritten(
 def test_cli_rejects_public_repository_paths_before_reading_private_evidence(
     tmp_path, monkeypatch, capsys
 ) -> None:
-    from qualification.hl7v2.required_element_review.intake_mistral_reader_a import (
-        _REPOSITORY_ROOT,
-        main,
-    )
+    source_module = _intake_cli()
+    main = source_module["main"]
+    _REPOSITORY_ROOT = source_module["_REPOSITORY_ROOT"]
 
     target = tmp_path / "private.lock.json"
     monkeypatch.setattr(sys, "argv", [
@@ -195,7 +206,7 @@ def test_cli_rejects_public_repository_paths_before_reading_private_evidence(
 def test_cli_requires_coordinator_authorization_flag(
     tmp_path, monkeypatch, capsys
 ) -> None:
-    from qualification.hl7v2.required_element_review.intake_mistral_reader_a import main
+    main = _intake_cli()["main"]
 
     source = tmp_path / "original.yaml"
     source.write_bytes(_response())
