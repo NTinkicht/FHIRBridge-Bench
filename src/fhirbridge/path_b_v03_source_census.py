@@ -154,6 +154,12 @@ def audit_v03_independent_source_census(
             or rule_id in seen_ids
             or _reject_nonnormative_placeholders(rule["locus"])
             or rule["usage"] not in ("R", "C")
+            or rule["source_grounding_classification"] != "SOURCE_FACT"
+            or _reject_nonnormative_placeholders(rule.get("cardinality"))
+            or any(
+                _reject_nonnormative_placeholders(item)
+                for item in rule.get("evidence", [])
+            )
             or (
                 (rule["usage"] == "C" or rule["rule_kind"] == "CONDITIONAL_PREDICATE")
                 and _reject_nonnormative_placeholders(rule.get("condition"))
