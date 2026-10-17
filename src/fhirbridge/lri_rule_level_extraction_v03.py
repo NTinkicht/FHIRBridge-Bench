@@ -224,6 +224,7 @@ def create_v03_response_lock(raw: bytes) -> dict[str, Any]:
         or "identity missing" in p
         or "ID missing" in p
         or "duplicate candidate" in p
+        or "duplicate substantive candidate" in p
         for p in problems
     ):
         raise ValueError("v0.3 response cannot be locked: " + "; ".join(problems))
