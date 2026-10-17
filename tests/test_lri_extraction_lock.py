@@ -204,7 +204,7 @@ def test_direct_verifier_rejects_lookalike_nested_container_types() -> None:
     altered["initial_readiness_blockers"] = tuple(
         original["initial_readiness_blockers"]
     )
-    assert altered == original
+    assert altered != original
     with pytest.raises(ValueError, match="original complete lock record"):
         verify_response_lock(raw, altered)
 
