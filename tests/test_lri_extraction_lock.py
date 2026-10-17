@@ -107,3 +107,59 @@ def test_wrong_guide_hash_and_placeholder_identity_fail_before_lock() -> None:
     doc["extractor"]["extractor_id"] = "TO_BE_ASSIGNED"
     with pytest.raises(ValueError, match="missing or placeholders"):
         create_response_lock(yaml.safe_dump(doc).encode("utf-8"))
+
+
+
+@pytest.mark.parametrize(
+    ("mutation", "detail"),
+    [
+        (
+            lambda text: text + "\nschema_version: '0.2.0'\n",
+            "duplicate top-level schema version",
+        ),
+        (
+            lambda text: text.replace(
+                "  artifact_sha256:", "  artifact_sha256: WRONG\n  artifact_sha256:", 1
+            ),
+            "duplicate source document hash",
+        ),
+        (
+            lambda text: text.replace(
+                "  renderer_output_used_as_requirement_evidence:",
+                "  renderer_output_used_as_requirement_evidence: true\n"
+                "  renderer_output_used_as_requirement_evidence:",
+                1,
+            ),
+            "duplicate independence declaration",
+        ),
+        (
+            lambda text: text.replace(
+                "    usage: R", "    usage: X\n    usage: R", 1
+            ),
+            "duplicate requirement usage",
+        ),
+        (
+            lambda text: text.replace(
+                "source:\n",
+                "source:\n  <<: &injected {artifact_type: unverified}\n",
+                1,
+            ),
+            "unsafe YAML merge mapping",
+        ),
+    ],
+)
+def test_ambiguous_yaml_cannot_be_locked_even_if_last_value_looks_valid(
+    mutation, detail: str,
+) -> None:
+    original = _submission("R-A", complete=True).decode("utf-8")
+    suspect = mutation(original)
+    assert suspect != original, detail
+    with pytest.raises(ValueError, match="not valid UTF-8 YAML"):
+        create_response_lock(suspect.encode("utf-8"))
+
+
+def test_distinct_valid_nested_mapping_still_locks_and_verifies() -> None:
+    original = _submission("R-A", complete=True)
+    lock = create_response_lock(original)
+    assert lock["initial_extraction_metadata_ready"] is True
+    assert verify_response_lock(original, lock)["extractor"]["extractor_id"] == "R-A"
