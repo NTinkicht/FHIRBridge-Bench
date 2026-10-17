@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from functools import lru_cache
+from importlib.resources import files
 from typing import Any
+
+from jsonschema import Draft202012Validator
 
 _EXPECTED_CONTRACT_ID = "F2V-LAB-ORU-R01-001"
 _EXPECTED_CONTRACT_VERSION = "0.3.0"
@@ -44,6 +49,28 @@ class RendererBSubmissionReadiness:
         )
 
 
+@lru_cache(maxsize=1)
+def _schemas() -> tuple[Draft202012Validator, Draft202012Validator]:
+    """Package validators so direct callers cannot bypass CLI shape checks."""
+    root = files("fhirbridge")
+    declaration = json.loads(
+        root.joinpath("renderer_implementation_declaration.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    handoff = json.loads(
+        root.joinpath("renderer_b_expected_inputs.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    Draft202012Validator.check_schema(declaration)
+    Draft202012Validator.check_schema(handoff)
+    return (
+        Draft202012Validator(declaration),
+        Draft202012Validator(handoff["properties"]["clean_room_inputs"]),
+    )
+
+
 def _placeholder(value: Any) -> bool:
     if not isinstance(value, str):
         return False
@@ -60,6 +87,23 @@ def assess_renderer_b_declaration(
 
     blockers: list[str] = []
     warnings: list[str] = []
+
+    if not isinstance(declaration, dict):
+        return RendererBSubmissionReadiness(
+            blockers=("Renderer B declaration is not an object",), warnings=()
+        )
+    declaration_schema, handoff_schema = _schemas()
+    for error in declaration_schema.iter_errors(declaration):
+        blockers.append(
+            f"Renderer B declaration schema invalid at {error.json_path} "
+            f"({error.validator})"
+        )
+    if isinstance(expected_clean_room_inputs, dict):
+        for error in handoff_schema.iter_errors(expected_clean_room_inputs):
+            blockers.append(
+                f"custodian clean-room input schema invalid at {error.json_path} "
+                f"({error.validator})"
+            )
 
     renderer_id = declaration.get("renderer_id")
     if _placeholder(renderer_id):
