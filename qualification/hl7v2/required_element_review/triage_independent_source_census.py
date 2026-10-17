@@ -31,9 +31,7 @@ def main() -> int:
             lock_a=load_coordinator_lock_json(args.first_lock_json.read_bytes()),
             raw_b=args.second_original_yaml.read_bytes(),
             lock_b=load_coordinator_lock_json(args.second_lock_json.read_bytes()),
-            census=load_coordinator_lock_json(
-                args.independent_source_census_json.read_bytes()
-            ),
+            census_bytes=args.independent_source_census_json.read_bytes(),
         )
         output = asdict(report) | {
             "status": report.status,
