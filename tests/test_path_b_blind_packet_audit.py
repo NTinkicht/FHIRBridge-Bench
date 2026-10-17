@@ -1,6 +1,5 @@
 """Blind reviewer ZIP release audit is structural, never expert signoff."""
 
-from copy import deepcopy
 from dataclasses import FrozenInstanceError, replace
 from hashlib import sha256
 from io import BytesIO
