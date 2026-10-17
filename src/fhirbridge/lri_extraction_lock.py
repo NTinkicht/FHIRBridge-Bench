@@ -18,6 +18,7 @@ from fhirbridge.lri_required_element_review import (
 )
 from fhirbridge.lri_source_identity import pinned_publication_hashes
 
+
 class _UniqueKeysExtractionLoader(yaml.SafeLoader):
     """Reject ambiguous mappings and shared YAML aliases in reviewer evidence."""
 
