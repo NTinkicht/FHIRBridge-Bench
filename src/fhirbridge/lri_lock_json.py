@@ -44,4 +44,15 @@ def load_coordinator_lock_json(raw: bytes) -> dict[str, Any]:
         raise ValueError("reviewer-lock file is not valid UTF-8 JSON") from exc
     if not isinstance(data, dict):
         raise ValueError("reviewer-lock file must contain one JSON object")
+    # Python dict equality considers False == 0 and True == 1.
+    # A lock read with numerical substitutes must never compare equal to
+    # create_response_lock's original boolean custody claims.
+    for flag in (
+        "extraction_declared_complete",
+        "initial_extraction_metadata_ready",
+        "qualified_G1",
+        "adjudication_performed",
+    ):
+        if flag in data and type(data[flag]) is not bool:
+            raise ValueError(f"reviewer-lock flag {flag} must be an actual JSON boolean")
     return data
