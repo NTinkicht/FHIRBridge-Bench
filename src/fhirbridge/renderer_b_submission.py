@@ -6,6 +6,7 @@ import json
 from dataclasses import dataclass
 from functools import lru_cache
 from importlib.resources import files
+from pathlib import Path
 from typing import Any
 
 from jsonschema import Draft202012Validator
@@ -53,16 +54,24 @@ class RendererBSubmissionReadiness:
 def _schemas() -> tuple[Draft202012Validator, Draft202012Validator]:
     """Package validators so direct callers cannot bypass CLI shape checks."""
     root = files("fhirbridge")
-    declaration = json.loads(
-        root.joinpath("renderer_implementation_declaration.schema.json").read_text(
-            encoding="utf-8"
+    # Hatch bundles these schemas into built wheels. An editable install
+    # instead points importlib.resources at src/fhirbridge, where the same
+    # authoritative schemas live in renderer_validation/schema. Support
+    # both layouts without silently accepting a missing schema.
+    def read_schema(filename: str) -> dict[str, Any]:
+        packaged = root.joinpath(filename)
+        if packaged.is_file():
+            return json.loads(packaged.read_text(encoding="utf-8"))
+        source_file = (
+            Path(__file__).resolve().parents[2]
+            / "renderer_validation"
+            / "schema"
+            / filename
         )
-    )
-    handoff = json.loads(
-        root.joinpath("renderer_b_expected_inputs.schema.json").read_text(
-            encoding="utf-8"
-        )
-    )
+        return json.loads(source_file.read_text(encoding="utf-8"))
+
+    declaration = read_schema("renderer_implementation_declaration.schema.json")
+    handoff = read_schema("renderer_b_expected_inputs.schema.json")
     Draft202012Validator.check_schema(declaration)
     Draft202012Validator.check_schema(handoff)
     return (
