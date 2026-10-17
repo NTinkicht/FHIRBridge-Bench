@@ -174,3 +174,45 @@ def test_yaml_alias_cannot_insert_shared_review_claims() -> None:
     assert suspect != original
     with pytest.raises(ValueError, match="not valid UTF-8 YAML"):
         create_response_lock(suspect.encode("utf-8"))
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "extraction_declared_complete",
+        "initial_extraction_metadata_ready",
+        "qualified_G1",
+        "adjudication_performed",
+    ],
+)
+def test_direct_verifier_rejects_numeric_boolean_lookalikes(field: str) -> None:
+    raw = _submission("R-A", complete=True)
+    lock = create_response_lock(raw)
+    modified = deepcopy(lock)
+    modified[field] = int(lock[field])
+    # Legacy dict comparison would silently consider this unchanged.
+    assert modified == lock
+    with pytest.raises(ValueError, match="original complete lock record"):
+        verify_response_lock(raw, modified)
+    assert verify_response_lock(raw, lock)["extraction_complete"] is True
+
+
+def test_direct_verifier_rejects_lookalike_nested_container_types() -> None:
+    raw = _submission("R-A", complete=False)
+    original = create_response_lock(raw)
+    altered = deepcopy(original)
+    altered["initial_readiness_blockers"] = tuple(
+        original["initial_readiness_blockers"]
+    )
+    assert altered == original
+    with pytest.raises(ValueError, match="original complete lock record"):
+        verify_response_lock(raw, altered)
+
+
+def test_direct_comparison_does_not_accept_type_spoofed_locked_responses() -> None:
+    raw_a = _submission("R-A", complete=True)
+    raw_b = _submission("R-B", complete=True)
+    lock_a, lock_b = create_response_lock(raw_a), create_response_lock(raw_b)
+    lock_b["qualified_G1"] = 0
+    with pytest.raises(ValueError, match="original complete lock record"):
+        compare_locked_extractions(raw_a, lock_a, raw_b, lock_b)
