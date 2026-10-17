@@ -7,6 +7,11 @@ from typing import Any
 
 _EXPECTED_CONTRACT_ID = "F2V-LAB-ORU-R01-001"
 _EXPECTED_CONTRACT_VERSION = "0.3.0"
+_AI_RENDERER_BLOCKER = (
+    "AI-generated mapping code violates the current clean-room independence protocol; "
+    "scientific Renderer B comparison requires an independently approved methodology amendment"
+)
+
 _PLACEHOLDER_TOKENS = (
     "TO_BE_",
     "TO-BE-",
@@ -22,7 +27,21 @@ class RendererBSubmissionReadiness:
 
     @property
     def ready_for_differential_comparison(self) -> bool:
+        """Only the original non-AI clean-room protocol may pass this gate."""
         return not self.blockers
+
+    @property
+    def ready_for_exploratory_agent_comparison(self) -> bool:
+        """Codex prototypes may be compared as development diagnostics only.
+
+        This is *never* scientific independence, normative qualification, or
+        permission for confirmatory inference. Every other readiness blocker
+        (including exposed A outputs or invalid custodial hashes) still fails.
+        """
+        return (
+            bool(self.blockers)
+            and all(blocker == _AI_RENDERER_BLOCKER for blocker in self.blockers)
+        )
 
 
 def _placeholder(value: Any) -> bool:
@@ -134,10 +153,13 @@ def assess_renderer_b_declaration(
         blockers.append("Renderer B implementer declared accidental clean-room exposure")
 
     if independence.get("llm_generated_mapping_code_used") is True:
+        blockers.append(_AI_RENDERER_BLOCKER)
         warnings.append(
-            "LLM-generated mapping code was used; retain prompt/context provenance "
-            "to demonstrate Renderer A material was not exposed"
+            "LLM-generated mapping code was used; retain complete prompt/context "
+            "provenance and label all comparisons exploratory only"
         )
+    elif independence.get("llm_generated_mapping_code_used") is not False:
+        blockers.append("LLM-generated mapping code provenance is missing or invalid")
 
     if isinstance(language, str) and "python" in language.lower():
         rationale = independence.get("same_language_as_renderer_a_rationale")
@@ -173,6 +195,9 @@ def renderer_b_readiness_to_dict(
     return {
         "ready_for_differential_comparison": (
             readiness.ready_for_differential_comparison
+        ),
+        "ready_for_exploratory_agent_comparison": (
+            readiness.ready_for_exploratory_agent_comparison
         ),
         "blockers": list(readiness.blockers),
         "warnings": list(readiness.warnings),
