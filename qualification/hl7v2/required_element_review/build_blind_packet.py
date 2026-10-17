@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from hashlib import sha256
 from pathlib import Path
-from zipfile import ZIP_DEFLATED, ZipFile
+from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 _SCHEMA = Path(
     "qualification/hl7v2/required_element_review/schema/"
@@ -108,6 +108,15 @@ Never classify an unresolved requirement as compliant by default.
 """
 
 
+def _canonical_member(name: str) -> ZipInfo:
+    """Fixed ZIP metadata so byte hashes do not depend on build clock/OS."""
+    info = ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+    info.compress_type = ZIP_DEFLATED
+    info.create_system = 3
+    info.external_attr = (0o100644 << 16)
+    return info
+
+
 def build_packet() -> dict[str, object]:
     schema = _SCHEMA.read_bytes()
     template = _TEMPLATE.read_bytes()
@@ -127,7 +136,7 @@ def build_packet() -> dict[str, object]:
     _OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     with ZipFile(_PACKET, "w", compression=ZIP_DEFLATED) as archive:
         for name in sorted(payloads):
-            archive.writestr(name, payloads[name])
+            archive.writestr(_canonical_member(name), payloads[name])
 
     manifest = {
         "packet_id": "FHIRBRIDGE-LRI-E5-BLIND-EXTRACTION-001",
