@@ -13,7 +13,7 @@ from hashlib import sha256
 from io import BytesIO
 from pathlib import Path
 from stat import S_IFLNK
-from zipfile import ZIP_DEFLATED, BadZipFile, ZipFile
+from zipfile import ZIP_DEFLATED, BadZipFile, ZipFile, ZipInfo
 
 from .lri_source_identity import pinned_publication_hashes
 
@@ -192,7 +192,13 @@ def audit_blind_packet_bytes(
     reconstructed = BytesIO()
     with ZipFile(reconstructed, "w", compression=ZIP_DEFLATED) as canonical:
         for name in sorted(_ALLOWED_NAMES):
-            canonical.writestr(name, expected_payloads[name])
+            # Match the *fixed public packet format*, not a new ZIP whose
+            # incidental timestamp is based on the auditor's wall clock.
+            entry = ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+            entry.compress_type = ZIP_DEFLATED
+            entry.create_system = 3
+            entry.external_attr = 0o100644 << 16
+            canonical.writestr(entry, expected_payloads[name])
     if reconstructed.getvalue() != packet_bytes:
         raise ValueError("ZIP envelope or serialization is not canonical")
 
