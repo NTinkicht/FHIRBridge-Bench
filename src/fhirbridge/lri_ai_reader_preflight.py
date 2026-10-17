@@ -90,9 +90,9 @@ def preflight_mistral_reader_a(
         )
     # These are explicit submitted *claims*, not API-verified provenance.
     # A floating model alias or absent version is not a reproducible run ID.
-    model_id = re.search(r"(?:^|[\\s;])model_id=([a-zA-Z0-9._/-]+)(?:$|[\\s;])", details)
+    model_id = re.search(r"(?:^|[\s;])model_id=([a-zA-Z0-9._/-]+)(?:$|[\s;])", details)
     version = re.search(
-        r"(?:^|[\\s;])model_version=([a-zA-Z0-9._/-]+)(?:$|[\\s;])", details
+        r"(?:^|[\s;])model_version=([a-zA-Z0-9._/-]+)(?:$|[\s;])", details
     )
     if (
         model_id is None
