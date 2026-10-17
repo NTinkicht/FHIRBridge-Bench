@@ -1,17 +1,18 @@
 """Blind reviewer ZIP release audit is structural, never expert signoff."""
 
+import json
 from dataclasses import FrozenInstanceError, replace
 from hashlib import sha256
 from io import BytesIO
 from stat import S_IFLNK
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
-
-import json
 import pytest
 
 from fhirbridge.path_b_blind_packet_audit import audit_blind_packet_bytes
 from qualification.hl7v2.required_element_review.build_blind_packet import (
-    _SCHEMA, _TEMPLATE, _readme,
+    _SCHEMA,
+    _TEMPLATE,
+    _readme,
 )
 
 _PACKET_PATH = "qualification/hl7v2/required_element_review/generated/test-blind.zip"
