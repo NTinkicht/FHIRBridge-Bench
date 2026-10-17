@@ -58,6 +58,24 @@ and December 2024 errata. Cite pages sparingly without reproducing long
 copyrighted text. Each distinct R/C requirement receives its own unique
 candidate ID, even at the same physical field.
 
+## Private coordinator command
+
+Run offline after original submissions are placed in privately controlled
+storage, using two v0.3 source response YAMLs and their **own** v0.3 locks:
+
+```sh
+python qualification/hl7v2/required_element_review/triage_third_source_v03.py \
+  /private/reader-a-v03.yaml /private/reader-a-v03.lock.json \
+  /private/reader-b-v03.yaml /private/reader-b-v03.lock.json \
+  /private/third-source-v03.json /private/third-source-v03.triage.json
+```
+
+The CLI refuses paths inside the repository, rejects mismatched original
+locks or incompatible v0.2 submissions, and creates an exclusive private
+receipt with restricted permissions. Only counts, hashes and the false
+scientific gates go to stdout; predicates and source citations remain in
+the private report. This is an integrity check, not a digital signature.
+
 ## Output interpretation
 
 - `rules_not_found_in_either_reader`: third-source *candidate* rules whose
