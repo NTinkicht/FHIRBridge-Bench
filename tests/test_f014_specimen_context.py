@@ -53,7 +53,7 @@ def test_f014_swaps_only_two_distinct_group_specimen_identifiers() -> None:
     assert [line.split("|")[2] for line in _segment_lines(fault.artifact, "SPM")] == [
         "SPEC-B^LAB", "SPEC-A^LAB"
     ]
-    assert sum(a != b for a, b in zip(old_lines, new_lines)) == 2
+    assert sum(a != b for a, b in zip(old_lines, new_lines, strict=True)) == 2
 
 
 def test_f014_rejects_identical_specimens_without_mutation() -> None:
