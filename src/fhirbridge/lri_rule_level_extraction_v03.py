@@ -168,10 +168,23 @@ def assess_rule_level_v03(document: dict[str, Any]) -> tuple[str, ...]:
             ids.add(rid)
         if _reject_nonnormative_placeholders(rule.get("locus")):
             blockers.append(f"candidate entry {index} physical locus missing")
-        if rule.get("usage") == "C" and _reject_nonnormative_placeholders(
-            rule.get("condition")
-        ):
+        if (
+            rule.get("usage") == "C"
+            or rule.get("rule_kind") == "CONDITIONAL_PREDICATE"
+        ) and _reject_nonnormative_placeholders(rule.get("condition")):
             blockers.append(f"candidate entry {index} conditional predicate missing")
+        if (
+            rule.get("rule_kind") == "DATATYPE"
+            and _reject_nonnormative_placeholders(rule.get("datatype"))
+        ):
+            blockers.append(f"candidate entry {index} datatype constraint missing")
+        if (
+            rule.get("rule_kind") == "VALUE_SET_BINDING"
+            and _reject_nonnormative_placeholders(
+                rule.get("value_set_or_binding_ref")
+            )
+        ):
+            blockers.append(f"candidate entry {index} value-set binding missing")
         if rule.get("usage") == "UNKNOWN" or rule.get(
             "source_grounding_classification"
         ) == "UNRESOLVED":
@@ -225,6 +238,10 @@ def create_v03_response_lock(raw: bytes) -> dict[str, Any]:
         or "ID missing" in p
         or "duplicate candidate" in p
         or "duplicate substantive candidate" in p
+        or "conditional predicate missing" in p
+        or "datatype constraint missing" in p
+        or "value-set binding missing" in p
+        or "cross-field related loci missing" in p
         for p in problems
     ):
         raise ValueError("v0.3 response cannot be locked: " + "; ".join(problems))
