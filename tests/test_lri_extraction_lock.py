@@ -134,7 +134,7 @@ def test_wrong_guide_hash_and_placeholder_identity_fail_before_lock() -> None:
         ),
         (
             lambda text: text.replace(
-                "    usage: R", "    usage: X\n    usage: R", 1
+                "  usage: R", "  usage: X\n  usage: R", 1
             ),
             "duplicate requirement usage",
         ),
