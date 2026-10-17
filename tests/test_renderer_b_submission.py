@@ -120,8 +120,9 @@ def test_python_requires_same_language_independence_rationale() -> None:
     assert ready.ready_for_differential_comparison is True
 
 
-def test_llm_mapping_use_is_audit_warning_not_automatic_failure() -> None:
+def test_codex_mapping_use_blocks_scientific_gate_but_allows_exploratory_check() -> None:
     declaration = _declaration()
+    declaration["contributor"]["identity"] = "CODEX-AGENT-B"
     declaration["independence"]["llm_generated_mapping_code_used"] = True
 
     readiness = assess_renderer_b_declaration(
@@ -129,9 +130,68 @@ def test_llm_mapping_use_is_audit_warning_not_automatic_failure() -> None:
         expected_clean_room_inputs=_expected_inputs(),
     )
 
-    assert readiness.ready_for_differential_comparison is True
+    assert readiness.ready_for_differential_comparison is False
+    assert readiness.ready_for_exploratory_agent_comparison is True
+    assert any("clean-room independence protocol" in b for b in readiness.blockers)
     assert len(readiness.warnings) == 1
     assert "prompt/context provenance" in readiness.warnings[0]
+
+
+def test_codex_renderer_a_exposure_blocks_even_exploratory_comparison() -> None:
+    declaration = _declaration()
+    declaration["independence"]["llm_generated_mapping_code_used"] = True
+    declaration["independence"][
+        "renderer_a_outputs_inspected_before_initial_commit"
+    ] = True
+
+    readiness = assess_renderer_b_declaration(
+        declaration,
+        expected_clean_room_inputs=_expected_inputs(),
+    )
+    assert readiness.ready_for_differential_comparison is False
+    assert readiness.ready_for_exploratory_agent_comparison is False
+
+
+def test_codex_without_custodian_handoff_blocks_all_comparisons() -> None:
+    declaration = _declaration()
+    declaration["independence"]["llm_generated_mapping_code_used"] = True
+    readiness = assess_renderer_b_declaration(declaration)
+    assert not readiness.ready_for_differential_comparison
+    assert not readiness.ready_for_exploratory_agent_comparison
+
+
+def test_llm_mapping_provenance_must_be_explicit_even_for_direct_python_caller() -> None:
+    declaration = _declaration()
+    del declaration["independence"]["llm_generated_mapping_code_used"]
+    readiness = assess_renderer_b_declaration(
+        declaration, expected_clean_room_inputs=_expected_inputs()
+    )
+    assert not readiness.ready_for_differential_comparison
+    assert not readiness.ready_for_exploratory_agent_comparison
+    assert any("provenance is missing or invalid" in b for b in readiness.blockers)
+
+
+def test_readiness_dict_always_distinguishes_exploratory_and_scientific() -> None:
+    from fhirbridge.renderer_b_submission import renderer_b_readiness_to_dict
+
+    declaration = _declaration()
+    clean = assess_renderer_b_declaration(
+        declaration, expected_clean_room_inputs=_expected_inputs()
+    )
+    assert renderer_b_readiness_to_dict(clean)["ready_for_differential_comparison"]
+    assert not renderer_b_readiness_to_dict(clean)[
+        "ready_for_exploratory_agent_comparison"
+    ]
+    declaration["independence"]["llm_generated_mapping_code_used"] = True
+    agent = assess_renderer_b_declaration(
+        declaration, expected_clean_room_inputs=_expected_inputs()
+    )
+    assert not renderer_b_readiness_to_dict(agent)[
+        "ready_for_differential_comparison"
+    ]
+    assert renderer_b_readiness_to_dict(agent)[
+        "ready_for_exploratory_agent_comparison"
+    ]
 
 
 def test_placeholders_block_comparison() -> None:
