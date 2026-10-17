@@ -3,6 +3,7 @@
 import json
 from copy import deepcopy
 from dataclasses import FrozenInstanceError, replace
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -104,7 +105,7 @@ def _audit(
         lock_a=first[1],
         raw_b=second[0],
         lock_b=second[1],
-        census=census,
+        census_bytes=json.dumps(census).encode("utf-8"),
     )
 
 
@@ -125,6 +126,13 @@ def test_third_source_finds_double_omission_but_not_equivalence_by_locus() -> No
     assert report.reviewer_independence_verified_by_software is False
     assert report.G1_qualified is False
     assert report.confirmatory_permission is False
+    assert report.source_census_sha256 == sha256(
+        json.dumps(_census()).encode("utf-8")
+    ).hexdigest()
+    assert report.original_response_sha256 == (
+        sha256(_locked_reviewer("SYNTHETIC-A")[0]).hexdigest(),
+        sha256(_locked_reviewer("SYNTHETIC-B")[0]).hexdigest(),
+    )
 
 
 def test_duplicate_requirements_same_locus_do_not_silently_collapse() -> None:
