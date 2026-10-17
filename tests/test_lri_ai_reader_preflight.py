@@ -26,7 +26,10 @@ def _response() -> bytes:
     doc["extractor"]["prior_project_involvement"] = (
         "Mistral AI-assisted blind candidate extraction; synthetic test"
     )
-    doc["notes"] = "Mistral AI-assisted, unreviewed and not human-attested"
+    doc["notes"] = (
+        "Mistral AI-assisted; model_id=mistral-synthetic-test; "
+        "model_version=synthetic-test-v1; unreviewed and not human-attested"
+    )
     doc["entries"][0]["locus"] = "OBR-3"
     doc["entries"][0]["element_kind"] = "field"
     doc["entries"][0]["usage"] = "UNKNOWN"
@@ -83,6 +86,62 @@ def test_missing_ai_provenance_cannot_be_passed_as_qualified_submission() -> Non
         preflight_mistral_reader_a(
             yaml.safe_dump(d).encode("utf-8"), source_use_authorized=True
         )
+
+
+def test_explicit_model_revision_required_for_normal_intake() -> None:
+    d = yaml.safe_load(_response())
+    d["notes"] = "Mistral AI-assisted; no pinned model revision"
+    with pytest.raises(ValueError, match="model_id and model_version"):
+        preflight_mistral_reader_a(
+            yaml.safe_dump(d).encode("utf-8"), source_use_authorized=True
+        )
+
+
+@pytest.mark.parametrize(
+    "revision", ["latest", "TBD", "unknown", "model-latest"]
+)
+def test_unpinned_or_placeholder_model_revision_rejected(revision: str) -> None:
+    d = yaml.safe_load(_response())
+    d["notes"] = (
+        f"Mistral AI-assisted; model_id=mistral-synthetic-test; "
+        f"model_version={revision}"
+    )
+    with pytest.raises(ValueError, match="model_id and model_version"):
+        preflight_mistral_reader_a(
+            yaml.safe_dump(d).encode("utf-8"), source_use_authorized=True
+        )
+
+
+def test_disclosed_exposure_is_byte_locked_but_scientifically_quarantined() -> None:
+    d = yaml.safe_load(_response())
+    d["independence"]["other_extractor_output_seen_before_completion"] = True
+    raw = yaml.safe_dump(d, sort_keys=False).encode("utf-8")
+    result = preflight_mistral_reader_a(raw, source_use_authorized=True)
+    assert result.status == "PRIVATE_AI_EXPOSURE_QUARANTINED_NOT_ELIGIBLE"
+    assert result.original_response_lock["status"] == (
+        "AI_FIRST_ROUND_EXPOSURE_QUARANTINED"
+    )
+    assert result.original_response_sha256 == result.original_response_lock[
+        "response_sha256"
+    ]
+    assert result.original_response_lock[
+        "declared_exposure_or_missing_independence_flags"
+    ] == ["other_extractor_output_seen_before_completion"]
+    assert result.metadata_schema_ready is False
+    assert result.independent_human_extraction_received is False
+    assert result.G1_qualified is False
+    with pytest.raises(ValueError, match="invalid extraction response lock version"):
+        verify_response_lock(raw, result.original_response_lock)
+
+
+def test_exposed_original_digest_changes_with_any_byte_change() -> None:
+    d = yaml.safe_load(_response())
+    d["independence"]["renderer_output_used_as_requirement_evidence"] = True
+    raw = yaml.safe_dump(d, sort_keys=False).encode("utf-8")
+    original = preflight_mistral_reader_a(raw, source_use_authorized=True)
+    altered = preflight_mistral_reader_a(raw + b"\\n", source_use_authorized=True)
+    assert original.original_response_sha256 != altered.original_response_sha256
+    assert original.status == altered.status
 
 
 def test_response_tampering_after_initial_lock_rejected() -> None:
