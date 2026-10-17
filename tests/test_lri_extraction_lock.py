@@ -216,3 +216,20 @@ def test_direct_comparison_does_not_accept_type_spoofed_locked_responses() -> No
     lock_b["qualified_G1"] = 0
     with pytest.raises(ValueError, match="original complete lock record"):
         compare_locked_extractions(raw_a, lock_a, raw_b, lock_b)
+
+
+
+def test_direct_verifier_rejects_equal_hashing_string_subclass_keys() -> None:
+    class LookalikeKey(str):
+        pass
+
+    raw = _submission("R-A", complete=True)
+    original = create_response_lock(raw)
+    spoofed = {
+        LookalikeKey(key) if key == "qualified_G1" else key: value
+        for key, value in original.items()
+    }
+    # These ordinary dictionaries compare equal even though a key is forged.
+    assert spoofed == original
+    with pytest.raises(ValueError, match="original complete lock record"):
+        verify_response_lock(raw, spoofed)
