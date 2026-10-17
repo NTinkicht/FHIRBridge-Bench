@@ -17,13 +17,11 @@ from hashlib import sha256
 from pathlib import Path
 
 from fhirbridge.lri_adjudication_handoff import build_adjudication_handoff
+from fhirbridge.lri_lock_json import load_coordinator_lock_json
 
 
 def _read_object(path: Path) -> dict:
-    value = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(value, dict):
-        raise ValueError("response lock file must contain a JSON object")
-    return value
+    return load_coordinator_lock_json(path.read_bytes())
 
 
 def main() -> int:

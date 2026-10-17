@@ -17,13 +17,11 @@ from fhirbridge.lri_extraction_lock import (
     compare_locked_extractions,
     create_response_lock,
 )
+from fhirbridge.lri_lock_json import load_coordinator_lock_json
 
 
 def _json(path: Path) -> dict:
-    content = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(content, dict):
-        raise ValueError("lock file must contain a JSON object")
-    return content
+    return load_coordinator_lock_json(path.read_bytes())
 
 
 def main() -> int:
