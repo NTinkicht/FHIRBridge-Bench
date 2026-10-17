@@ -141,9 +141,17 @@ def _same_lock_value(actual: Any, expected: Any) -> bool:
     if type(actual) is not type(expected):
         return False
     if isinstance(expected, dict):
+        # All generated custody-lock mapping keys are plain strings. Python
+        # dictionary equality accepts subclasses with equal hashes/values;
+        # rejecting those prevents key-identity spoofing by direct callers.
         return (
-            actual.keys() == expected.keys()
-            and all(_same_lock_value(actual[key], expected[key]) for key in expected)
+            len(actual) == len(expected)
+            and all(type(key) is str for key in actual)
+            and all(type(key) is str for key in expected)
+            and all(
+                key in actual and _same_lock_value(actual[key], expected[key])
+                for key in expected
+            )
         )
     if isinstance(expected, list):
         return len(actual) == len(expected) and all(
