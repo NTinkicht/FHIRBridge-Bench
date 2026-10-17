@@ -48,8 +48,12 @@ truth, LLM-generated transformed messages or verifier classifications.
 > Use a unique `extraction_id` for this original run and exactly:
 > `extractor.extractor_id: MISTRAL-READER-A` and
 > `extractor.role: AI_preliminary_extractor`.
-> Include the Mistral model/version and the literal phrase `AI-assisted`
-> in `extractor.prior_project_involvement` or `notes`.
+> Include the literal phrase `AI-assisted`, plus exact, nonfloating
+> `model_id=<mistral-specific-model>` and
+> `model_version=<exact-provider-revision>` values in `notes`
+> (no `latest`/unknown aliases), and the actual model/context provenance
+> in `extractor.prior_project_involvement`. These are **self-reported**
+> identifiers, not independently verified via a provider API.
 > Declare conflicts, prior context and any accidental exposure accurately.
 > Do **not** represent yourself as a human, claim independent human
 > adjudication, or claim scientific standards completeness.
@@ -102,6 +106,17 @@ If the input is incomplete/UNKNOWN, its original response can still be
 locked for later transparent adjudication. A syntactically complete-looking
 response does not establish standards completeness or qualified human
 review. The lock is a digest, not a signature.
+
+**Accidental exposure must be reported truthfully.** If the Mistral response
+declares a breach of one of the three isolation flags, the coordinator
+still preserves the unmodified original with a distinct
+`AI_FIRST_ROUND_EXPOSURE_QUARANTINED` SHA-256 receipt. This is **not**
+a normal `verify_response_lock` artifact, never qualifies as an independent
+source extraction, and makes the private CLI return **exit code 2** after
+securely recording the quarantine receipt. Do not edit the exposed original
+to set its disclosure flags back to false. If model/version provenance is
+missing, normal intake fails and the original must still be retained in
+private custody rather than rewritten to claim an unknown revision.
 
 ## Scientific guardrails
 
