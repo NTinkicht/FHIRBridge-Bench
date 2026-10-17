@@ -19,13 +19,13 @@ def _message(
         r"MSH|^~\&|SYNTHETIC|LAB|RECEIVER|LAB|20261018010000||ORU^R01|TEST-F014|P|2.5.1",
         "PID|1||PATIENT-01^^^SYNTHETIC^MR",
         "OBR|1||FILLER-001^LAB|111^Test A^99TEST",
-        f"SPM|1|{first_specimen}|",
         "OBX|1|NM|A^Analyte A^99TEST||5|mg/dL|||||F",
+        f"SPM|1|{first_specimen}|",
         "OBR|2||FILLER-002^LAB|222^Test B^99TEST",
-        f"SPM|2|{second_specimen}|",
     ]
     if second_observation:
         segments.append("OBX|1|NM|B^Analyte B^99TEST||9|mg/dL|||||F")
+    segments.append(f"SPM|2|{second_specimen}|")
     return "\r".join(segments) + "\r"
 
 
@@ -59,6 +59,41 @@ def test_f014_swaps_only_two_distinct_group_specimen_identifiers() -> None:
 def test_f014_rejects_identical_specimens_without_mutation() -> None:
     with pytest.raises(ValueError, match="no-op"):
         swap_specimen_identifiers(_message(second_specimen="SPEC-A^LAB"))
+
+
+def test_f014_rejects_normalized_ei_identifier_no_op() -> None:
+    with pytest.raises(ValueError, match="no-op"):
+        swap_specimen_identifiers(
+            _message(second_specimen="SPEC-A^LAB^^")
+        )
+
+
+def test_f014_rejects_unobservable_ei_component_only_swap() -> None:
+    # The current lifter uses EI-1 identifier value and EI-2 namespace.
+    # A different unprojected EI component is not an observable semantic fault.
+    with pytest.raises(ValueError, match="no-op"):
+        swap_specimen_identifiers(
+            _message(second_specimen="SPEC-A^LAB^UNSUPPORTED-DIFFERENCE")
+        )
+
+
+def test_f014_rejects_observation_after_selected_specimen() -> None:
+    lines = _message().split("\r")
+    # Deliberately place group one's only OBX *after* its SPM.
+    spm_index = next(i for i, line in enumerate(lines) if line.startswith("SPM|"))
+    obx_index = next(i for i, line in enumerate(lines) if line.startswith("OBX|"))
+    lines[spm_index], lines[obx_index] = lines[obx_index], lines[spm_index]
+    with pytest.raises(ValueError, match="OBX result before"):
+        swap_specimen_identifiers("\r".join(lines))
+
+
+def test_f014_accepts_distinct_namespace_as_scored_ei_difference() -> None:
+    mutation = swap_specimen_identifiers(
+        _message(first_specimen="SPEC-A^LAB1", second_specimen="SPEC-A^LAB2")
+    )
+    assert mutation.expected_classification == "MISATTRIBUTION"
+    assert "SPM|1|SPEC-A^LAB2" in mutation.artifact
+    assert "SPM|2|SPEC-A^LAB1" in mutation.artifact
 
 
 def test_f014_rejects_specimens_within_one_report_group() -> None:
