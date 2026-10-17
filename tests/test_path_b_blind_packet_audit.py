@@ -1,6 +1,7 @@
 """Blind reviewer ZIP release audit is structural, never expert signoff."""
 
 import json
+import runpy
 from dataclasses import FrozenInstanceError, replace
 from hashlib import sha256
 from io import BytesIO
@@ -10,11 +11,14 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 import pytest
 
 from fhirbridge.path_b_blind_packet_audit import audit_blind_packet_bytes
-from qualification.hl7v2.required_element_review.build_blind_packet import (
-    _SCHEMA,
-    _TEMPLATE,
-    _readme,
+
+# The qualification/ scripts are not an installed Python package under pytest.
+_builder = runpy.run_path(
+    "qualification/hl7v2/required_element_review/build_blind_packet.py"
 )
+_SCHEMA = _builder["_SCHEMA"]
+_TEMPLATE = _builder["_TEMPLATE"]
+_readme = _builder["_readme"]
 
 _PACKET_PATH = "qualification/hl7v2/required_element_review/generated/test-blind.zip"
 _GUIDE = "375f02fd5453b06ff1c51841e703c943c3132134fca53a122f5ccfed743461b7"
