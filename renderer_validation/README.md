@@ -6,7 +6,8 @@ machine-readable implementation declaration:
 
 ```bash
 python renderer_validation/validate_renderer_b_declaration.py \
-  path/to/renderer-b-declaration.yaml
+  path/to/renderer-b-declaration.yaml \
+  --expected-inputs path/to/private-custodian-expected-inputs.yaml
 ```
 
 The command first checks the declaration schema, then applies scientific
@@ -16,13 +17,24 @@ mapping utilities were reused, accidental exposure was declared, the
 declaration is incomplete, placeholders remain, or the frozen contract identity
 does not match.
 
-Use of an LLM during independent implementation is recorded as an audit warning
-rather than automatically treated as a failure. If it occurred, prompt/context
-provenance should be retained so reviewers can verify that Renderer A material
-was never supplied.
+**LLM-generated mapping code is a blocking violation of the current scientific
+clean-room independence protocol.** An AI-authored Codex prototype must declare
+`llm_generated_mapping_code_used: true`, retain its prompt/context provenance,
+and will produce `ready_for_differential_comparison: false`. The CLI returns
+**exit status 2** when that scientific comparison gate remains blocked.
 
-A schema-valid declaration is therefore necessary but not sufficient to open
-the A/B comparison phase.
+For controlled, explicitly exploratory AI-authored development comparisons,
+the report includes a separate
+`ready_for_exploratory_agent_comparison: true` ONLY when all other custody,
+schema, identity, exposure and handoff gates are satisfied. This output never
+qualifies scientific independence, G1 conformance, or confirmatory permission.
+An AI mapping-code prototype requires a prospective methodology amendment and
+independent review before it can be proposed as scientifically valid Renderer B.
+
+The direct Python assessment function also validates the packaged declaration
+and custodian-input schemas, rather than accepting incomplete mappings as ready
+just because a CLI wrapper was skipped. A schema-valid declaration remains
+necessary but not sufficient for any comparison.
 
 
 ## Current synchronization point
