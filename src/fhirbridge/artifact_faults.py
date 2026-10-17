@@ -133,7 +133,7 @@ def swap_specimen_identifiers(
     first_occurrence: int = 0,
     second_occurrence: int = 1,
 ) -> ArtifactMutation:
-    """F014: swap intact SPM-2 identifiers between two specimen contexts."""
+    """F014: swap SPM-2 across distinct single-specimen report/result contexts."""
 
     if first_occurrence == second_occurrence:
         raise ValueError("specimen occurrences must differ")
@@ -151,6 +151,44 @@ def swap_specimen_identifiers(
 
     first_index = spm_indexes[first_occurrence]
     second_index = spm_indexes[second_occurrence]
+
+    # This operator models a *cross-context* semantic attribution error,
+    # not an arbitrary exchange of two string fields in one report. Require
+    # two different OBR/result groups, each with exactly one associated SPM
+    # and at least one observation, before assigning an expected error label.
+    # Synthetic stimuli failing these preconditions are rejected, never
+    # treated as successfully qualified misattribution examples.
+    groups = _group_bounds(lines)
+    if len(groups) < 2:
+        raise ValueError("F014 requires at least two distinct OBR/result contexts")
+
+    selected_groups: list[int] = []
+    for selected in (first_index, second_index):
+        belonging = [
+            group_idx
+            for group_idx, (start, end) in enumerate(groups)
+            if start < selected < end
+        ]
+        if len(belonging) != 1:
+            raise ValueError("selected SPM must belong to exactly one OBR group")
+        group_idx = belonging[0]
+        start, end = groups[group_idx]
+        group_lines = lines[start + 1:end]
+        if sum(item.startswith("SPM|") for item in group_lines) != 1:
+            raise ValueError("F014 requires a unique SPM within each selected report group")
+        # This repository's supported ORU group shape places results
+        # BEFORE SPM. An OBX that appears after this SPM is rejected by
+        # the development structural validator and not lifted into the
+        # same result slice, so it cannot ground an F014 misattribution.
+        if not any(
+            lines[index].startswith("OBX|")
+            for index in range(start + 1, selected)
+        ):
+            raise ValueError("F014 requires an OBX result before each selected SPM")
+        selected_groups.append(group_idx)
+    if selected_groups[0] == selected_groups[1]:
+        raise ValueError("F014 selected specimens must belong to different OBR groups")
+
     first = lines[first_index].split("|")
     second = lines[second_index].split("|")
     while len(first) <= 2:
@@ -159,6 +197,23 @@ def swap_specimen_identifiers(
         second.append("")
     if not first[2] or not second[2]:
         raise ValueError("both specimen identifiers must be populated")
+
+    def lifted_ei_identity(raw: str) -> tuple[str, str | None]:
+        # The current independent SPM lifter scores EI-1 value and EI-2
+        # namespace. Empty trailing EI components are not independent
+        # specimen facts in that scored representation. A byte-only change
+        # must not be sold as a successful clinical misattribution mutant.
+        components = raw.split("^")
+        value = components[0]
+        namespace = components[1] if len(components) > 1 and components[1] else None
+        if not value:
+            raise ValueError("F014 requires a populated SPM-2 EI identifier value")
+        return (value, namespace)
+
+    if lifted_ei_identity(first[2]) == lifted_ei_identity(second[2]):
+        raise ValueError(
+            "F014 would be a no-op under the current specimen-lifter identity"
+        )
     first[2], second[2] = second[2], first[2]
     lines[first_index] = "|".join(first)
     lines[second_index] = "|".join(second)
