@@ -94,3 +94,19 @@ bounded R/C coverage denominator; and evidence that no unreviewed mandatory
 requirement is being called valid. Only then may a provisional G1 rule
 implementation enter qualification. No confirmatory model inference or
 sealed-case opening before a separate frozen protocol approval.
+
+
+### Original response YAML ambiguity guard
+
+Before retaining the first-round response lock, the coordinator-side loader rejects
+duplicate mapping keys at **every nesting level**, YAML merge keys (`<<`), and YAML
+aliases. This prevents a response from containing two conflicting source hashes,
+usage flags, or independence declarations where one YAML reader silently ignores
+the first value. The reviewer should use explicit mapping entries instead of
+anchors or shared aliases. Invalid responses must be returned for a new
+separately retained submission; never edit the first-round bytes in place.
+
+A successful lock only demonstrates that those exact response bytes were parsed
+unambiguously and retained under their hash. It is **not** a human signature,
+independence attestation, source completeness certificate, clinical approval,
+G1 conformance verdict, or permission to open sealed cases.
