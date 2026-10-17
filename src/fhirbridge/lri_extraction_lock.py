@@ -19,7 +19,15 @@ from fhirbridge.lri_required_element_review import (
 from fhirbridge.lri_source_identity import pinned_publication_hashes
 
 class _UniqueKeysExtractionLoader(yaml.SafeLoader):
-    """Reject reviewer YAML with ambiguous or inherited mapping keys."""
+    """Reject ambiguous mappings and shared YAML aliases in reviewer evidence."""
+
+    def compose_node(self, parent: yaml.Node | None, index: object) -> yaml.Node:
+        if self.check_event(yaml.AliasEvent):
+            raise yaml.composer.ComposerError(
+                None, None, "YAML aliases are not allowed in original reviewer submissions",
+                self.peek_event().start_mark,
+            )
+        return super().compose_node(parent, index)
 
     def construct_mapping(self, node: yaml.MappingNode, deep: bool = False) -> dict:
         if not isinstance(node, yaml.MappingNode):
