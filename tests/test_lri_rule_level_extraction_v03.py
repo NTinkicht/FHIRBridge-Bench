@@ -197,15 +197,44 @@ def test_conditional_predicate_never_becomes_ready_if_missing(condition) -> None
     a["entries"][1]["condition"] = condition
     blockers = assess_rule_level_v03(a)
     assert any("conditional predicate missing" in issue for issue in blockers)
-    if condition in (None, ""):
-        with pytest.raises(ValueError, match="schema error"):
-            create_v03_response_lock(_raw(a))
-    else:
-        # Preserve a syntactically valid but unresolved original response.
-        # Its immutable lock explicitly records the missing scientific fact.
-        lock = create_v03_response_lock(_raw(a))
-        assert lock["metadata_ready"] is False
-        assert lock["qualified_G1"] is False
+    with pytest.raises(ValueError, match="schema error|conditional predicate"):
+        create_v03_response_lock(_raw(a))
+
+
+@pytest.mark.parametrize(
+    ("kind", "field", "value", "expected"),
+    [
+        ("DATATYPE", "datatype", None, "datatype constraint missing"),
+        ("DATATYPE", "datatype", "TO_BE_FOUND", "datatype constraint missing"),
+        (
+            "VALUE_SET_BINDING",
+            "value_set_or_binding_ref",
+            None,
+            "value-set binding missing",
+        ),
+        (
+            "VALUE_SET_BINDING",
+            "value_set_or_binding_ref",
+            "TBD",
+            "value-set binding missing",
+        ),
+        (
+            "CONDITIONAL_PREDICATE",
+            "condition",
+            None,
+            "conditional predicate missing",
+        ),
+    ],
+)
+def test_constraint_kind_cannot_be_scientifically_empty(
+    kind: str, field: str, value, expected: str
+) -> None:
+    a = _extract("SYN-A")
+    a["entries"][0]["rule_kind"] = kind
+    a["entries"][0][field] = value
+    assert any(expected in problem for problem in assess_rule_level_v03(a))
+    with pytest.raises(ValueError, match="schema error|constraint missing|predicate missing|binding missing"):
+        create_v03_response_lock(_raw(a))
 
 
 def test_unresolved_entry_can_be_captured_but_never_certified() -> None:
