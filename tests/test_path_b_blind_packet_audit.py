@@ -19,6 +19,7 @@ _builder = runpy.run_path(
 _SCHEMA = _builder["_SCHEMA"]
 _TEMPLATE = _builder["_TEMPLATE"]
 _readme = _builder["_readme"]
+_canonical_member = _builder["_canonical_member"]
 
 _PACKET_PATH = "qualification/hl7v2/required_element_review/generated/test-blind.zip"
 _GUIDE = "375f02fd5453b06ff1c51841e703c943c3132134fca53a122f5ccfed743461b7"
@@ -44,8 +45,8 @@ def _zip(entries: list[tuple[str, bytes]], *, symlink: bool = False) -> bytes:
                 info.external_attr = (S_IFLNK | 0o777) << 16
                 archive.writestr(info, content)
             else:
-                # Match the actual neutral builder's string-name writestr.
-                archive.writestr(name, content)
+                # Match the neutral builder's explicit deterministic metadata.
+                archive.writestr(_canonical_member(name), content)
     return out.getvalue()
 
 
@@ -83,6 +84,34 @@ def _audit(packet: bytes, manifest: dict, trusted: dict[str, bytes]):
         expected_payloads=trusted,
         expected_packet_path=_PACKET_PATH,
     )
+
+
+def test_blind_zip_has_fixed_metadata_and_stable_bytes_across_builds() -> None:
+    payloads = sorted(_inputs().items())
+    original = _zip(payloads)
+    assert original == _zip(payloads)
+    with ZipFile(BytesIO(original), "r") as archive:
+        for entry in archive.infolist():
+            assert entry.date_time == (1980, 1, 1, 0, 0, 0)
+            assert entry.create_system == 3
+            assert entry.external_attr >> 16 == 0o100644
+    packet, manifest, trusted = _fixture()
+    assert packet == original
+    assert _audit(packet, manifest, trusted).status == "BLIND_PACKET_BYTES_MATCHED_ONLY"
+
+
+def test_timestamp_mutation_is_rejected_even_with_rehashed_packet() -> None:
+    packet, manifest, trusted = _fixture()
+    output = BytesIO()
+    with ZipFile(output, "w", compression=ZIP_DEFLATED) as archive:
+        for name, payload in sorted(trusted.items()):
+            info = _canonical_member(name)
+            info.date_time = (2026, 10, 18, 1, 0, 0)
+            archive.writestr(info, payload)
+    packet = output.getvalue()
+    manifest["packet_sha256"] = sha256(packet).hexdigest()
+    with pytest.raises(ValueError, match="ZIP envelope or serialization"):
+        _audit(packet, manifest, trusted)
 
 
 def test_clean_packet_only_establishes_byte_integrity() -> None:
