@@ -176,8 +176,15 @@ def swap_specimen_identifiers(
         group_lines = lines[start + 1:end]
         if sum(item.startswith("SPM|") for item in group_lines) != 1:
             raise ValueError("F014 requires a unique SPM within each selected report group")
-        if not any(item.startswith("OBX|") for item in group_lines):
-            raise ValueError("F014 requires an OBX result in each selected report group")
+        # This repository's supported ORU group shape places results
+        # BEFORE SPM. An OBX that appears after this SPM is rejected by
+        # the development structural validator and not lifted into the
+        # same result slice, so it cannot ground an F014 misattribution.
+        if not any(
+            lines[index].startswith("OBX|")
+            for index in range(start + 1, selected)
+        ):
+            raise ValueError("F014 requires an OBX result before each selected SPM")
         selected_groups.append(group_idx)
     if selected_groups[0] == selected_groups[1]:
         raise ValueError("F014 selected specimens must belong to different OBR groups")
@@ -190,8 +197,23 @@ def swap_specimen_identifiers(
         second.append("")
     if not first[2] or not second[2]:
         raise ValueError("both specimen identifiers must be populated")
-    if first[2] == second[2]:
-        raise ValueError("F014 would be a no-op: specimen identifiers are identical")
+
+    def lifted_ei_identity(raw: str) -> tuple[str, str | None]:
+        # The current independent SPM lifter scores EI-1 value and EI-2
+        # namespace. Empty trailing EI components are not independent
+        # specimen facts in that scored representation. A byte-only change
+        # must not be sold as a successful clinical misattribution mutant.
+        components = raw.split("^")
+        value = components[0]
+        namespace = components[1] if len(components) > 1 and components[1] else None
+        if not value:
+            raise ValueError("F014 requires a populated SPM-2 EI identifier value")
+        return (value, namespace)
+
+    if lifted_ei_identity(first[2]) == lifted_ei_identity(second[2]):
+        raise ValueError(
+            "F014 would be a no-op under the current specimen-lifter identity"
+        )
     first[2], second[2] = second[2], first[2]
     lines[first_index] = "|".join(first)
     lines[second_index] = "|".join(second)
