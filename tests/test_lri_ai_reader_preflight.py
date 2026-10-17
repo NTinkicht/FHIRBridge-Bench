@@ -243,6 +243,34 @@ def test_private_cli_original_lock_is_exclusive_and_never_overwritten(
     assert "FAIL_CLOSED" in capsys.readouterr().out
 
 
+def test_cli_immutably_quarantines_truthful_exposure(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    main = _intake_cli()["main"]
+    doc = yaml.safe_load(_response())
+    doc["independence"][
+        "project_required_element_inventory_seen_before_completion"
+    ] = True
+    original = tmp_path / "mistral-exposed-original.yaml"
+    raw = yaml.safe_dump(doc, sort_keys=False).encode("utf-8")
+    original.write_bytes(raw)
+    quarantine_path = tmp_path / "mistral-exposed.lock.json"
+    monkeypatch.setattr(sys, "argv", [
+        "intake_mistral_reader_a.py", str(original), str(quarantine_path),
+        "--source-use-authorized",
+    ])
+    assert main() == 2
+    receipt = json.loads(quarantine_path.read_text(encoding="utf-8"))
+    assert receipt["status"] == "AI_FIRST_ROUND_EXPOSURE_QUARANTINED"
+    assert receipt["human_independent_extraction"] is False
+    assert "PRIVATE_AI_EXPOSURE_QUARANTINED_NOT_ELIGIBLE" in capsys.readouterr().out
+    assert original.read_bytes() == raw
+    with pytest.raises(ValueError, match="invalid extraction response lock version"):
+        verify_response_lock(raw, receipt)
+    assert main() == 1
+    assert json.loads(quarantine_path.read_text(encoding="utf-8")) == receipt
+
+
 def test_cli_rejects_public_repository_paths_before_reading_private_evidence(
     tmp_path, monkeypatch, capsys
 ) -> None:
