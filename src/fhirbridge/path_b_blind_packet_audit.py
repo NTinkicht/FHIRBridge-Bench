@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from hashlib import sha256
+from io import BytesIO
 from pathlib import Path
 from stat import S_IFLNK
 from zipfile import ZIP_DEFLATED, BadZipFile, ZipFile
@@ -104,9 +105,19 @@ def audit_blind_packet_bytes(
         )
     ):
         raise ValueError("trusted reviewer input allowlist is not exact")
+    def reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
+        result: dict[str, object] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"duplicate manifest JSON key: {key}")
+            result[key] = value
+        return result
+
     try:
-        manifest = json.loads(manifest_bytes.decode("utf-8"))
-    except (UnicodeError, ValueError) as exc:
+        manifest = json.loads(
+            manifest_bytes.decode("utf-8"), object_pairs_hook=reject_duplicate_keys
+        )
+    except (UnicodeError, json.JSONDecodeError) as exc:
         raise ValueError("manifest is not valid UTF-8 JSON") from exc
     if not isinstance(manifest, dict) or set(manifest) != _MANIFEST_KEYS:
         raise ValueError("unexpected manifest keys or missing safety metadata")
@@ -138,8 +149,6 @@ def audit_blind_packet_bytes(
     contents = manifest["contents"]
     if not isinstance(contents, dict) or set(contents) != _ALLOWED_NAMES:
         raise ValueError("manifest contains unknown or missing ZIP members")
-
-    from io import BytesIO
 
     try:
         with ZipFile(BytesIO(packet_bytes), "r") as archive:
@@ -175,6 +184,17 @@ def audit_blind_packet_bytes(
                     raise ValueError(f"member manifest digest/size mismatch: {name}")
     except (BadZipFile, RuntimeError, OSError) as exc:
         raise ValueError("ZIP malformed or unreadable") from exc
+
+    # The neutral builder writes an exact deterministic archive with only
+    # three entries. A ZIP parser can ignore hidden data before/after that
+    # envelope, so checking only members and the manifest is insufficient.
+    # Rebuilding precisely also fails closed on trailing ZIP comments.
+    reconstructed = BytesIO()
+    with ZipFile(reconstructed, "w", compression=ZIP_DEFLATED) as canonical:
+        for name in sorted(_ALLOWED_NAMES):
+            canonical.writestr(name, expected_payloads[name])
+    if reconstructed.getvalue() != packet_bytes:
+        raise ValueError("ZIP envelope or serialization is not canonical")
 
     return PacketIntegrityAudit(
         packet_sha256=_sha(packet_bytes),
