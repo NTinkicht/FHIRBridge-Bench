@@ -31,6 +31,7 @@ packages = ["src/fhirbridge"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "src/fhirbridge/required_element_extraction.schema.json" = "fhirbridge/required_element_extraction.schema.json"
+"src/fhirbridge/lri_rule_level_extraction_v03.schema.json" = "fhirbridge/lri_rule_level_extraction_v03.schema.json"
 "renderer_validation/schema/renderer_implementation_declaration.schema.json" = "fhirbridge/renderer_implementation_declaration.schema.json"
 "renderer_validation/schema/renderer_b_expected_inputs.schema.json" = "fhirbridge/renderer_b_expected_inputs.schema.json"
 
