@@ -21,8 +21,8 @@ import yaml
 from jsonschema import Draft202012Validator
 
 from fhirbridge.lri_extraction_lock import (
-    _UniqueKeysExtractionLoader,
     _same_lock_value,
+    _UniqueKeysExtractionLoader,
 )
 from fhirbridge.lri_source_identity import pinned_publication_hashes
 
