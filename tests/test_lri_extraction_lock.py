@@ -163,3 +163,14 @@ def test_distinct_valid_nested_mapping_still_locks_and_verifies() -> None:
     lock = create_response_lock(original)
     assert lock["initial_extraction_metadata_ready"] is True
     assert verify_response_lock(original, lock)["extractor"]["extractor_id"] == "R-A"
+
+
+
+def test_yaml_alias_cannot_insert_shared_review_claims() -> None:
+    original = _submission("R-A", complete=True).decode("utf-8")
+    suspect = original.replace(
+        "  artifact_sha256: ", "  artifact_sha256: &guide ", 1
+    ).replace("notes: null", "notes: *guide", 1)
+    assert suspect != original
+    with pytest.raises(ValueError, match="not valid UTF-8 YAML"):
+        create_response_lock(suspect.encode("utf-8"))
