@@ -6,6 +6,7 @@ from hashlib import sha256
 from io import BytesIO
 from stat import S_IFLNK
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
+
 import pytest
 
 from fhirbridge.path_b_blind_packet_audit import audit_blind_packet_bytes
