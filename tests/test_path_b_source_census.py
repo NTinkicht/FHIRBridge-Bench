@@ -290,3 +290,72 @@ def test_source_census_json_with_drafts_stays_private_and_has_no_verdict() -> No
     report = _audit(json.loads(json.dumps(census)))
     assert report.status.endswith("TRIAGE_ONLY")
     assert report.G1_qualified is False
+
+
+
+def test_source_census_evidence_hash_changes_even_when_classification_is_same() -> None:
+    first = _census()
+    second = deepcopy(first)
+    second["candidate_requirements"][0]["source_pages"] = [153]
+    report_a = _audit(first)
+    report_b = _audit(second)
+    assert report_a.candidate_rule_ids_missing_from_both == (
+        report_b.candidate_rule_ids_missing_from_both
+    )
+    assert report_a.source_census_sha256 != report_b.source_census_sha256
+
+
+def test_exact_raw_census_whitespace_changes_digest_without_changing_triage() -> None:
+    census = _census()
+    raw = json.dumps(census).encode("utf-8")
+    indented = json.dumps(census, indent=2).encode("utf-8")
+    reviewer_a = _locked_reviewer("SYNTHETIC-A")
+    reviewer_b = _locked_reviewer("SYNTHETIC-B")
+
+    def check(data: bytes):
+        return audit_candidate_source_census(
+            raw_a=reviewer_a[0],
+            lock_a=reviewer_a[1],
+            raw_b=reviewer_b[0],
+            lock_b=reviewer_b[1],
+            census_bytes=data,
+        )
+
+    baseline, formatted = check(raw), check(indented)
+    assert baseline.candidate_loci_missing_from_both == formatted.candidate_loci_missing_from_both
+    assert baseline.source_census_sha256 != formatted.source_census_sha256
+    assert baseline.original_response_sha256 == formatted.original_response_sha256
+
+
+@pytest.mark.parametrize("locus", ["ORC-3 ", " ORC-3", "ORC-3\n"])
+def test_whitespace_locus_cannot_invent_a_double_omission(locus: str) -> None:
+    census = _census()
+    census["candidate_requirements"][1]["locus"] = locus
+    with pytest.raises(ValueError, match="candidate source requirement"):
+        _audit(census)
+
+
+def test_original_reviewer_locus_whitespace_cannot_invent_an_omission() -> None:
+    raw, _ = _locked_reviewer("SYNTHETIC-A")
+    original = yaml.safe_load(raw)
+    original["entries"][0]["locus"] = "ORC-3 "
+    altered = yaml.safe_dump(original, sort_keys=False).encode("utf-8")
+    with pytest.raises(ValueError, match="noncanonical original reviewer locus"):
+        _audit(_census(), first=(altered, create_response_lock(altered)))
+
+
+def test_duplicate_census_json_key_must_not_pick_last_value() -> None:
+    census = json.dumps(_census())
+    censored = census.replace(
+        '"status": ', '"status": "QUALIFIED", "status": ', 1
+    )
+    first = _locked_reviewer("SYNTHETIC-A")
+    second = _locked_reviewer("SYNTHETIC-B")
+    with pytest.raises(ValueError, match="duplicate reviewer-lock JSON key"):
+        audit_candidate_source_census(
+            raw_a=first[0],
+            lock_a=first[1],
+            raw_b=second[0],
+            lock_b=second[1],
+            census_bytes=censored.encode("utf-8"),
+        )
