@@ -10,9 +10,11 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from hashlib import sha256
 from typing import Any
 
 from fhirbridge.lri_adjudication_handoff import build_adjudication_handoff
+from fhirbridge.lri_lock_json import load_coordinator_lock_json
 from fhirbridge.lri_source_identity import pinned_publication_hashes
 
 _CENSUS_AREAS = (
@@ -42,6 +44,8 @@ class SourceCensusTriage:
     same_locus_rule_ids_requiring_source_comparison: tuple[str, ...]
     unreviewed_source_areas: tuple[str, ...]
     census_reviewer_id: str
+    original_response_sha256: tuple[str, str]
+    source_census_sha256: str
 
     @property
     def status(self) -> str:
@@ -137,7 +141,7 @@ def audit_candidate_source_census(
     lock_a: dict[str, Any],
     raw_b: bytes,
     lock_b: dict[str, Any],
-    census: dict[str, Any],
+    census_bytes: bytes,
 ) -> SourceCensusTriage:
     """Triages candidate third-source omissions against *locked original bytes*.
 
@@ -146,6 +150,7 @@ def audit_candidate_source_census(
     Every same-locus match is therefore still listed for human comparison.
     """
     handoff = build_adjudication_handoff(raw_a, lock_a, raw_b, lock_b)
+    census = load_coordinator_lock_json(census_bytes)
     status_by_area = _check_census(
         census, extractors=handoff["extractor_ids"]
     )
@@ -157,6 +162,8 @@ def audit_candidate_source_census(
     absent_loci: set[str] = set()
     same_locus_ids: list[str] = []
     observed = {row["locus"] for row in handoff["adjudication_rows"]}
+    if any(locus != locus.strip() for locus in observed):
+        raise ValueError("noncanonical original reviewer locus: whitespace drift")
     for item in candidates:
         if not isinstance(item, dict) or set(item) != {
             "census_rule_id", "locus", "usage", "condition", "coverage_area", "source_pages",
@@ -173,6 +180,7 @@ def audit_candidate_source_census(
             or identifier in unique_ids
             or type(locus) is not str
             or not locus.strip()
+            or locus != locus.strip()
             or type(area) is not str
             or status_by_area.get(area) != "SOURCE_PAGES_CHECKED"
             or usage not in ("R", "C")
@@ -198,4 +206,8 @@ def audit_candidate_source_census(
             area for area, status in status_by_area.items() if status == "UNREVIEWED"
         )),
         census_reviewer_id=census["census_reviewer_id"],
+        original_response_sha256=(
+            sha256(raw_a).hexdigest(), sha256(raw_b).hexdigest()
+        ),
+        source_census_sha256=sha256(census_bytes).hexdigest(),
     )
