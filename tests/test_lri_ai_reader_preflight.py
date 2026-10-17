@@ -96,7 +96,7 @@ def test_public_blank_template_cannot_impersonate_mistral() -> None:
         "rb",
     ) as source:
         raw = source.read()
-    with pytest.raises(ValueError, match="TO_BE_|AI Reader A"):
+    with pytest.raises(ValueError, match="placeholders|AI Reader A"):
         preflight_mistral_reader_a(raw, source_use_authorized=True)
 
 
