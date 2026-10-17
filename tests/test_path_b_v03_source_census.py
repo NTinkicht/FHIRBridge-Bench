@@ -206,9 +206,13 @@ def test_third_source_census_fails_closed_on_invalid_claims(alter: str) -> None:
 def test_v02_original_lock_cannot_be_passed_as_a_v03_source() -> None:
     from fhirbridge.lri_extraction_lock import create_response_lock
 
-    original = Path(
+    original_template = Path(
         "qualification/hl7v2/required_element_review/examples/extraction_template.yaml"
-    ).read_bytes()
+    ).read_text(encoding="utf-8")
+    legacy_doc = yaml.safe_load(original_template)
+    legacy_doc["extraction_id"] = "SYNTHETIC-LEGACY-CENSUS-CHECK"
+    legacy_doc["extractor"]["extractor_id"] = "LEGACY-CENSUS-READER"
+    original = yaml.safe_dump(legacy_doc, sort_keys=False).encode("utf-8")
     legacy = create_response_lock(original)
     with pytest.raises(ValueError, match="invalid v0.3 lock version"):
         _audit(first=(original, legacy))
