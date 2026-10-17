@@ -231,3 +231,62 @@ def test_clean_room_input_hash_mismatch_blocks_comparison() -> None:
 
     assert not readiness.ready_for_differential_comparison
     assert any("challenge_manifest_sha256" in x for x in readiness.blockers)
+
+
+
+def test_exploratory_codex_gate_rejects_incomplete_direct_python_declarations() -> None:
+    # Direct API callers historically bypassed shape checks performed by the
+    # standalone renderer declaration CLI. No field may be omitted to obtain
+    # a false "exploratory ready" result for a nominally AI-authored B.
+    for path in (
+        ("renderer_id",),
+        ("renderer_version",),
+        ("contributor", "identity"),
+        ("contributor", "role"),
+        ("implementation", "language"),
+        ("implementation", "source_commit"),
+        ("implementation_period", "started_on"),
+        ("implementation_period", "completed_on"),
+        ("clean_room_inputs", "contract_sha256"),
+    ):
+        declaration = _declaration()
+        declaration["independence"]["llm_generated_mapping_code_used"] = True
+        obj = declaration
+        for part in path[:-1]:
+            obj = obj[part]
+        del obj[path[-1]]
+        readiness = assess_renderer_b_declaration(
+            declaration, expected_clean_room_inputs=_expected_inputs()
+        )
+        assert not readiness.ready_for_exploratory_agent_comparison, path
+        assert not readiness.ready_for_differential_comparison, path
+        assert any("schema invalid" in b for b in readiness.blockers), path
+
+
+def test_exploratory_codex_gate_rejects_missing_fields_on_both_sides_of_handoff() -> None:
+    for missing in (
+        "challenge_id",
+        "starting_commit",
+        "challenge_manifest_sha256",
+        "contract_sha256",
+        "repository_full_name",
+    ):
+        declaration = _declaration()
+        declaration["independence"]["llm_generated_mapping_code_used"] = True
+        expected = _expected_inputs()
+        # Matching None == None must never be confused with verified custody.
+        del expected[missing]
+        del declaration["clean_room_inputs"][missing]
+        readiness = assess_renderer_b_declaration(
+            declaration, expected_clean_room_inputs=expected
+        )
+        assert not readiness.ready_for_exploratory_agent_comparison, missing
+        assert any("schema invalid" in b for b in readiness.blockers), missing
+
+
+def test_no_raw_declaration_may_be_granted_exploratory_readiness() -> None:
+    readiness = assess_renderer_b_declaration(
+        None, expected_clean_room_inputs=_expected_inputs()
+    )
+    assert not readiness.ready_for_exploratory_agent_comparison
+    assert not readiness.ready_for_differential_comparison
