@@ -12,8 +12,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
 from stat import S_IFLNK
-from typing import Any
-from zipfile import BadZipFile, ZIP_DEFLATED, ZipFile
+from zipfile import ZIP_DEFLATED, BadZipFile, ZipFile
 
 from .lri_source_identity import pinned_publication_hashes
 
