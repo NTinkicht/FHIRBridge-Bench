@@ -1,0 +1,36 @@
+errata_watch:
+  id: FHIRBRIDGE-LRI-ERRATA-WATCH-001
+  version: 0.1.0
+  status: unresolved_secondary_report_no_target_change
+  checked_at: "2026-10-10"
+  current_official_product:
+    title: HL7 Version 2.5.1 Implementation Guide Laboratory Results Interface Edition 5 US Realm
+    official_product_url: https://www.hl7.org/implement/standards/product_brief.cfm?product_id=279
+    current_stu_document_label: HL7 Version 2.5.1 Implementation Guide Laboratory Results Interface LRI Edition 5 US Realm with 2024DEC Errata
+    status_date: "2024-05-16"
+    current_state: Active
+    target_disposition: remains_current_benchmark_publication_target
+  secondary_report:
+    publisher: Association of Public Health Laboratories
+    page: APHL Detor HL7 Specifications
+    url: https://aphlinformatics.atlassian.net/wiki/spaces/DR/pages/3448602625/APHL%2BDetor%2BHL7%2BSpecifications
+    reported_phrase: LRI 5.1 errata
+    reported_scope: newborn_dried_bloodspot_multi_OBR_guidance
+    official_HL7_product_or_artifact_located: false
+    disposition: acquisition_watch_only
+  benchmark_relevance:
+    selected_profile: LRI_NG_FRU_Profile_V3
+    selected_specialty_component: general_laboratory_FRU
+    NDBS_component_in_primary_scope: false
+    immediate_protocol_change_required: false
+    reason: >-
+      The secondary report describes NDBS report-structure behavior, whereas the
+      bounded benchmark uses the general-laboratory FRU profile candidate.
+      However, any eventual official machine bundle must still be checked for
+      revision identity of the shared Common and NG components before freeze.
+  acquisition_requirements:
+    - do_not_replace_2024DEC_target_from_secondary_report_alone
+    - ask_artifact_provider_whether_any_post_2024DEC_official_errata_bundle_exists
+    - record_exact_profile_component_versions_from_received_machine_bundle
+    - compare_Common_NG_FRU_component_identity_against_2024DEC_publication
+    - if_newer_official_artifact_exists_open_protocol_amendment_before_freeze

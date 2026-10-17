@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/contract_review_response.schema.json",
+  "title": "FHIRBridge-Bench External Contract Review Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "reviewer",
+    "contract",
+    "rule_reviews",
+    "attestation"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reviewer_id", "expertise", "review_date"],
+      "properties": {
+        "reviewer_id": {"type": "string", "minLength": 1},
+        "expertise": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "review_date": {"type": "string", "format": "date"},
+        "conflicts_of_interest": {"type": "string"}
+      }
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {"const": "F2V-LAB-ORU-R01-001"},
+        "version": {"const": "0.2.0"}
+      }
+    },
+    "rule_reviews": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/ruleReview"}
+    },
+    "attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "independent_initial_classification",
+        "no_model_outputs_used",
+        "no_verifier_outputs_used",
+        "not_universal_mapping_endorsement"
+      ],
+      "properties": {
+        "independent_initial_classification": {"const": true},
+        "no_model_outputs_used": {"const": true},
+        "no_verifier_outputs_used": {"const": true},
+        "not_universal_mapping_endorsement": {"const": true}
+      }
+    }
+  },
+  "$defs": {
+    "projectability": {
+      "enum": [
+        "MUST_PRESERVE",
+        "MAY_TRANSFORM",
+        "MAY_LOSE",
+        "MUST_NOT_INFER",
+        "INDETERMINATE"
+      ]
+    },
+    "operation": {
+      "enum": [
+        "COPY",
+        "NORMALIZE",
+        "CODE_TRANSLATE",
+        "UNIT_CONVERT",
+        "AGGREGATE",
+        "DECOMPOSE",
+        "DERIVE_DECLARED",
+        "DROP_DECLARED"
+      ]
+    },
+    "ruleReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rule_id",
+        "projectability_decision",
+        "target_locus_defensible",
+        "accepted_operations",
+        "rejected_operations",
+        "equivalence_adequate",
+        "severity_plausible",
+        "evidence_sufficient",
+        "evidence_references",
+        "confidence"
+      ],
+      "properties": {
+        "rule_id": {"type": "string", "minLength": 1},
+        "projectability_decision": {"$ref": "#/$defs/projectability"},
+        "target_locus_defensible": {
+          "enum": ["YES", "NO", "PARTLY", "INDETERMINATE"]
+        },
+        "alternative_target_loci": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true,
+          "default": []
+        },
+        "accepted_operations": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/operation"},
+          "uniqueItems": true
+        },
+        "rejected_operations": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/operation"},
+          "uniqueItems": true
+        },
+        "rejected_operation_reasons": {
+          "type": "object",
+          "additionalProperties": {"type": "string", "minLength": 1}
+        },
+        "equivalence_adequate": {"enum": ["YES", "NO", "PARTLY", "INDETERMINATE"]},
+        "severity_plausible": {"enum": ["YES", "NO", "NOT_QUALIFIED"]},
+        "evidence_sufficient": {"enum": ["YES", "NO", "PARTLY"]},
+        "evidence_references": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "main_concern": {"type": "string"},
+        "confidence": {"enum": ["HIGH", "MODERATE", "LOW"]}
+      }
+    }
+  }
+}

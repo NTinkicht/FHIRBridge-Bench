@@ -1,0 +1,95 @@
+{
+  "artifact_role": "current_gvt_vendor_profile_comparator_only",
+  "freeze_disposition": "does_not_satisfy_lri_edition5_machine_profile_gate",
+  "source_scope": "Valitheus GVT / Labcorp Profile",
+  "downloaded_bundle": {
+    "profile": {
+      "filename": "Labcorp_v20250530-Profile.xml",
+      "sha256": "ca4165807fe3c5d50fd8ec4ea301258121f0b6da626c5da401d999d5ad5f8116"
+    },
+    "constraints": {
+      "filename": "Labcorp_v20250530-Constraints.zip",
+      "sha256": "90f247fae60709c9d43ebf0cc88865ab246a358d45431041ba5baa18b7e7d451",
+      "member": "Labcorp_v20250530/Constraints1.xml"
+    },
+    "co_constraints": {
+      "filename": "Labcorp_v20250530-CoConstraints.xml",
+      "sha256": "219b87b9fe41da25a2d3748dfcd9fae87c14a79a659bc8af2aead559eb59a809"
+    },
+    "value_sets": {
+      "filename": "Labcorp_v20250530-Valuesets.xml",
+      "sha256": "b299dbe2d43b25bb11ace0cb2952ca0ce74a2430ed47e6325197831df5225e0f"
+    },
+    "value_set_bindings": {
+      "filename": "Labcorp_v20250530-ValueSetBindings.xml",
+      "sha256": "514a9e39f2199bde3a85a1c76b97d311f07f0d490e2a0f9886394527070da844"
+    },
+    "slicings": {
+      "filename": "Labcorp_v20250530-Slicings.xml",
+      "sha256": "87381c42a9b7daa3611824c73ba476d95d3d607198212fe67a7fa3219d7cf034"
+    }
+  },
+  "schema_lineage": {
+    "nist_hl7_v2_schemas_version": "1.7.0"
+  },
+  "profile_metadata": {
+    "conformance_profile_metadata_name": "Quest Profile",
+    "message_name": "Labcorp Profile",
+    "hl7_version": "2.5.1",
+    "message_type": "ORU",
+    "event": "R01",
+    "structure": "ORU_R01",
+    "specification_name": "No Version Info",
+    "profile_version": "null"
+  },
+  "target_search": {
+    "target_profile_name": "LRI_NG_FRU_Profile_V3",
+    "target_profile_oid": "2.16.840.1.113883.9.195.3.25",
+    "target_profile_name_found_anywhere_in_bundle": false,
+    "target_profile_oid_found_anywhere_in_bundle": false,
+    "edition5_marker_found_anywhere_in_bundle": false,
+    "2024dec_marker_found_anywhere_in_bundle": false,
+    "lri_marker_found_anywhere_in_bundle": false
+  },
+  "structural_differences_from_authoritative_lri_edition5_publication": {
+    "ORDER_OBSERVATION": {
+      "usage": "R",
+      "cardinality": "1..*"
+    },
+    "ORC": {
+      "labcorp_profile": "O [0..1]",
+      "edition5_publication": "R [1..1]",
+      "disposition": "incompatible_with_selected_confirmatory_target"
+    },
+    "OBR": {
+      "labcorp_profile": "R [1..1]",
+      "edition5_publication": "R [1..1]"
+    },
+    "OBR_3_filler_order_number": {
+      "labcorp_profile": "R [1..1]",
+      "edition5_publication": "R [1..1]"
+    },
+    "OBR_16_ordering_provider": {
+      "labcorp_profile": "RE [0..*]",
+      "edition5_publication": "required_ordering_provider_semantics",
+      "disposition": "not_equivalent"
+    },
+    "MSH_21_message_profile_identifier": {
+      "labcorp_profile": "O [0..*]",
+      "disposition": "does_not_identify_lri_edition5_profile"
+    }
+  },
+  "scientific_use": {
+    "allowed": [
+      "secondary_real_world_vendor_profile_comparator",
+      "robustness_or_external_validity_discussion",
+      "non_ground_truth_structural_differential_testing"
+    ],
+    "prohibited": [
+      "confirmatory_lri_edition5_ground_truth",
+      "substitute_for_lri_ng_fru_profile_v3",
+      "satisfy_hl7v2_profile_freeze_gate"
+    ]
+  },
+  "conclusion": "This is a valid modern GVT-style Labcorp/Quest-derived ORU_R01 bundle, but it is not the LRI Edition 5 + 2024DEC LRI_NG_FRU_Profile_V3 artifact required by FHIRBridge-Bench."
+}

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/case_assignment_manifest.schema.json",
+  "title": "FHIRBridge Sealed Expert Case Assignment Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "assignment_id",
+    "status",
+    "created_at",
+    "sealed_set_opened",
+    "reviewer_roster_id",
+    "reviewer_roster_sha256",
+    "sealed_case_manifest_sha256",
+    "assignment_method",
+    "assignments"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "assignment_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["incomplete_template", "locked_preopening"]},
+    "created_at": {"type": ["string", "null"], "format": "date-time"},
+    "sealed_set_opened": {"const": false},
+    "reviewer_roster_id": {"type": "string", "minLength": 1},
+    "reviewer_roster_sha256": {"$ref": "#/$defs/sha256"},
+    "sealed_case_manifest_sha256": {"$ref": "#/$defs/sha256"},
+    "assignment_method": {
+      "enum": [
+        "deterministic_balanced_precontent",
+        "manual_precontent_preregistered"
+      ]
+    },
+    "assignments": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/caseAssignment"}
+    },
+    "notes": {"type": ["string", "null"]}
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    },
+    "caseAssignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_id", "primary_reviewer_ids"],
+      "properties": {
+        "case_id": {"type": "string", "minLength": 1},
+        "primary_reviewer_ids": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

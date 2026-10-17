@@ -1,0 +1,89 @@
+execution_policy:
+  id: FHIRBRIDGE-MODEL-EXECUTION-001
+  version: 0.3.0
+  status: frozen_provider_independent
+  scope: confirmatory_LLM_arms
+  synthetic_data_only: true
+
+generation_attempt:
+  provider_generation_calls_per_case_model:
+    direct_structured_llm: 1
+    mapping_aware_llm: 1
+    mapping_aware_plus_syntax_repair: 0
+  repair_arm_source_strategy: mapping_aware_llm
+  repair_arm_same_raw_response_required: true
+  hidden_reprompting: prohibited
+  silent_model_fallback: prohibited
+  silent_prompt_fallback: prohibited
+  automatic_parameter_relaxation: prohibited
+  context_truncation_without_recording: prohibited
+
+retry_policy:
+  maximum_attempts: 1
+  retry_on: []
+  rationale: >-
+    A retry can create a second stochastic sample when the provider does not
+    support a reproducible seed. Confirmatory execution therefore records the
+    first provider/transport failure as a measurement failure rather than
+    silently replacing it with another generation.
+
+timeout:
+  seconds: 120
+  timeout_outcome: MEASUREMENT_FAILURE
+  no_retry_after_timeout: true
+
+provider_failure_outcomes:
+  transport_error: MEASUREMENT_FAILURE
+  rate_limit: MEASUREMENT_FAILURE
+  provider_5xx: MEASUREMENT_FAILURE
+  timeout: MEASUREMENT_FAILURE
+  authentication_or_configuration_error: MEASUREMENT_FAILURE
+
+derived_arm_failure_outcomes:
+  mapping_source_failed: MEASUREMENT_FAILURE_UPSTREAM
+  syntax_repair_exception: MEASUREMENT_FAILURE_POSTPROCESSING
+
+model_output_outcomes:
+  empty_successful_response: STRUCTURAL_INVALID_CANDIDATE
+  refusal_or_non_HL7_text: STRUCTURAL_INVALID_CANDIDATE
+  malformed_HL7_text: STRUCTURAL_INVALID_CANDIDATE
+  semantic_verdict: determined_downstream_only
+
+strategy_postprocessing:
+  direct_structured_llm:
+    syntax_repair: prohibited
+  mapping_aware_llm:
+    syntax_repair: prohibited
+  mapping_aware_plus_syntax_repair:
+    provider_call: prohibited
+    provider_attempt_number: null
+    provider_request_id: null
+    source_execution_id: required_mapping_aware_llm_same_case_same_model
+    raw_response_source: mapping_aware_llm_same_case_same_model
+    raw_response_hash_must_equal_source_mapping_hash: true
+    syntax_repair: deterministic_allowlisted_only
+    semantic_field_rewrite: prohibited
+
+model_specific_freeze_requirements:
+  - provider
+  - model_id
+  - model_revision_or_snapshot
+  - temperature
+  - top_p
+  - max_output_tokens
+  - seed_policy
+  - seed_when_supported
+  - structured_output_mode
+
+recording_requirements:
+  - case_id
+  - model_key
+  - strategy_id
+  - request_started_at
+  - request_completed_at_or_failure_at
+  - provider_request_id_when_available
+  - provider_attempt_number_or_null_for_derived_repair
+  - source_execution_id_for_derived_repair
+  - outcome_class
+  - raw_response_sha256_when_response_exists
+  - normalized_response_sha256_when_postprocessing_applies

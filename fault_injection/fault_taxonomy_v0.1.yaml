@@ -1,0 +1,205 @@
+fault_suite:
+  id: FHIRBRIDGE-FAULTS-001
+  version: 0.1.0
+  status: draft
+  purpose: >-
+    Seeded semantic faults used to qualify verifier sensitivity and error-class
+    behavior before confirmatory LLM evaluation. Seeded faults support instrument
+    validation but do not replace blinded expert review of naturally occurring
+    model errors.
+
+principles:
+  - Each single-fault mutant changes exactly one semantic construct where practical.
+  - Fault generation code must be separate from verifier decision code.
+  - A subset of faults must be authored by a person who has not implemented the verifier.
+  - Structural validity is varied independently from semantic fidelity where possible.
+  - Confirmatory seeded-fault cases are frozen before final verifier qualification.
+
+precedence:
+  - MISATTRIBUTION
+  - CORRUPTION
+  - OMISSION
+  - FABRICATION
+
+fault_classes:
+  - id: F001
+    name: unsupported_observation_fabrication
+    expected_class: FABRICATION
+    description: Add a clinically meaningful OBX/Observation fact with no canonical source fact or licensed derivation.
+    target_examples: [OBX-3, OBX-5]
+    structural_validity_expected: valid
+    default_severity: S2
+
+  - id: F002
+    name: numeric_value_corruption
+    expected_class: CORRUPTION
+    description: Change a grounded numeric result value while preserving code, unit, patient, report, and syntax.
+    target_examples: [OBX-5, Observation.valueQuantity.value]
+    structural_validity_expected: valid
+    default_severity: S3
+
+  - id: F003
+    name: unit_corruption_without_joint_conversion
+    expected_class: CORRUPTION
+    description: Change the unit without the mathematically corresponding value conversion, or change value without a matching unit conversion.
+    target_examples: [OBX-6, Observation.valueQuantity]
+    structural_validity_expected: valid
+    default_severity: S3
+
+  - id: F004
+    name: terminology_code_corruption
+    expected_class: CORRUPTION
+    description: Replace a grounded report/observation/specimen code with a non-equivalent code while retaining syntactic validity.
+    target_examples: [OBR-4, OBX-3, SPM-4]
+    structural_validity_expected: valid
+    default_severity: S2
+
+  - id: F005
+    name: patient_identifier_corruption
+    expected_class: CORRUPTION
+    description: Modify a patient identifier value or assigning authority without an allowed namespace transformation.
+    target_examples: [PID-3, Patient.identifier]
+    structural_validity_expected: valid
+    default_severity: S3
+
+  - id: F006
+    name: patient_result_misattribution
+    expected_class: MISATTRIBUTION
+    description: Attach an otherwise correct result to the wrong patient while leaving the value/code internally consistent.
+    target_examples: [PID-3_with_OBR_OBX_group]
+    structural_validity_expected: valid
+    default_severity: S3
+
+  - id: F007
+    name: report_observation_misattribution
+    expected_class: MISATTRIBUTION
+    description: Attach a valid observation to the wrong DiagnosticReport/OBR group in a multi-report case.
+    target_examples: [DiagnosticReport.result, ORU_ORDER_OBSERVATION_group]
+    structural_validity_expected: valid
+    default_severity: S3
+
+  - id: F008
+    name: required_observation_omission
+    expected_class: OMISSION
+    description: Remove a required canonical observation from the target while preserving structural validity of the remaining artifact.
+    target_examples: [OBX_segment, DiagnosticReport.result]
+    structural_validity_expected: valid
+    default_severity: S3
+
+  - id: F009
+    name: required_report_time_omission
+    expected_class: OMISSION
+    description: Remove report effective/issued time where the frozen contract marks it as required for the source status.
+    target_examples: [OBR-7, OBR-22]
+    structural_validity_expected: depends_on_target_profile
+    default_severity: S2
+
+  - id: F010
+    name: temporal_corruption
+    expected_class: CORRUPTION
+    description: Shift a report, observation, or specimen time while preserving a syntactically valid timestamp.
+    target_examples: [OBR-7, OBR-22, OBX-14, SPM-17]
+    structural_validity_expected: valid
+    default_severity: S2
+
+  - id: F011
+    name: result_status_corruption
+    expected_class: CORRUPTION
+    description: Change report or observation status to a non-equivalent state without source support.
+    target_examples: [OBR-25, OBX-11]
+    structural_validity_expected: valid
+    default_severity: S2
+
+  - id: F012
+    name: interpretation_corruption
+    expected_class: CORRUPTION
+    description: Change a normal/high/low interpretation to a non-equivalent code while leaving value and range unchanged.
+    target_examples: [OBX-8, Observation.interpretation]
+    structural_validity_expected: valid
+    default_severity: S2
+
+  - id: F013
+    name: reference_range_corruption
+    expected_class: CORRUPTION
+    description: Alter the structured reference range or its semantic bounds while retaining valid syntax.
+    target_examples: [OBX-7, Observation.referenceRange]
+    structural_validity_expected: valid
+    default_severity: S2
+
+  - id: F014
+    name: specimen_identifier_misattribution
+    expected_class: MISATTRIBUTION
+    description: Attach a valid specimen identifier to the wrong report/result context.
+    target_examples: [SPM-2, DiagnosticReport.specimen]
+    structural_validity_expected: valid
+    default_severity: S3
+
+  - id: F015
+    name: specimen_type_corruption
+    expected_class: CORRUPTION
+    description: Replace specimen type with a non-equivalent coded concept.
+    target_examples: [SPM-4, Specimen.type]
+    structural_validity_expected: valid
+    default_severity: S2
+
+  - id: F016
+    name: unauthorized_derived_assertion
+    expected_class: FABRICATION
+    description: Introduce a derived clinical assertion that is not licensed by the projectability contract.
+    target_examples: [NTE, OBX-5, DiagnosticReport.conclusion]
+    structural_validity_expected: valid
+    default_severity: S2
+
+  - id: F017
+    name: silent_drop_of_permitted_loss_manifest
+    expected_class: LOSS_DECLARATION_ERROR
+    description: Omit a required loss declaration for a fact whose loss is permitted by the contract. This is not counted as a primary semantic error unless the fact was actually MUST_PRESERVE.
+    target_examples: [loss_manifest]
+    structural_validity_expected: valid
+    default_severity: S1
+    primary_endpoint_eligible: false
+
+  - id: F018
+    name: syntax_only_fault
+    expected_class: STRUCTURAL_ERROR
+    description: Introduce a structural/schema error without changing the intended canonical clinical facts.
+    target_examples: [malformed_v2_field, invalid_fhir_cardinality]
+    structural_validity_expected: invalid
+    default_severity: S1
+    purpose: negative_control_for_semantic_verifier
+    primary_endpoint_eligible: false
+
+multi_fault_templates:
+  - id: MF001
+    name: value_plus_unit_joint_corruption
+    components: [F002, F003]
+    expected_resolution: CORRUPTION
+  - id: MF002
+    name: patient_swap_plus_valid_result
+    components: [F006]
+    expected_resolution: MISATTRIBUTION
+  - id: MF003
+    name: omitted_required_result_plus_fabricated_replacement
+    components: [F008, F001]
+    expected_resolution: >-
+      Score at canonical-fact level: the missing required fact is OMISSION and the
+      unrelated added fact is FABRICATION unless a one-to-one erroneous grounding
+      establishes CORRUPTION/MISATTRIBUTION under precedence rules.
+
+qualification_targets:
+  single_faults_per_class_minimum: 50
+  confirmatory_faults_authored_blind_to_verifier_minimum: 25
+  multi_fault_cases_minimum: 100
+  report_by:
+    - direction
+    - error_class
+    - severity
+    - structural_validity
+    - message_scenario
+
+not_ground_truth:
+  note: >-
+    Seeded faults demonstrate whether the instrument detects errors that were
+    intentionally inserted. They do not establish coverage of unanticipated or
+    naturally occurring model errors; the sealed expert-validation set remains
+    required for criterion validation.

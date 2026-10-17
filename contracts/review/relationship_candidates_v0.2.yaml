@@ -1,0 +1,133 @@
+candidate_set:
+  id: F2V-LAB-ORU-REL-CANDIDATES-001
+  version: 0.2.0
+  status: external_review_required
+  parent_contract:
+    id: F2V-LAB-ORU-R01-001
+    version: 0.3.0
+  purpose: >-
+    Candidate relationship/projectability rules surfaced by the grouped-ORU
+    development slice. They are deliberately not part of confirmatory scoring
+    until independent LRI/FHIR review determines whether the target grouping
+    semantics are stable enough for Contract v1.0.
+
+candidates:
+  - candidate_rule_id: REPORT_RESULT_MEMBERSHIP_001
+    canonical_relation: diagnostic_report.has_result
+    source_semantics:
+      fhir_paths:
+        - DiagnosticReport.result
+      relation: DiagnosticReport_to_Observation
+    target_semantics:
+      candidate_locus:
+        - ORU_R01.ORDER_OBSERVATION.OBSERVATION
+        - OBR_group_membership_of_OBX
+      interpretation: >-
+        A result Observation represented by an OBX is expected to remain in the
+        ORDER_OBSERVATION group corresponding to its source DiagnosticReport.
+    current_projectability: INDETERMINATE
+    candidate_failure_class_if_scored: MISATTRIBUTION
+    candidate_severity: S3
+    reasons_review_required:
+      - Group membership is structural rather than a single HL7 field.
+      - Multiple legitimate panel/component representations may exist.
+      - The exact LRI Edition 5 profile bundle has not yet been frozen.
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-message-oru-r01-to-bundle.html
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obr-to-diagnosticreport.html
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obx-to-observation.html
+    external_review_questions:
+      - Is report-to-result group membership semantically mandatory in the selected LRI slice?
+      - Can the same source relationship be represented by more than one legal ORU grouping pattern?
+      - What exact structural evidence is sufficient to classify wrong-group placement as misattribution?
+
+  - candidate_rule_id: REPORT_SPECIMEN_MEMBERSHIP_001
+    canonical_relation: diagnostic_report.has_specimen
+    source_semantics:
+      fhir_paths:
+        - DiagnosticReport.specimen
+      relation: DiagnosticReport_to_Specimen
+    target_semantics:
+      candidate_locus:
+        - ORU_R01.ORDER_OBSERVATION.SPECIMEN
+        - OBR_group_membership_of_SPM
+      interpretation: >-
+        A source specimen associated with a report is expected to remain in the
+        corresponding ORDER_OBSERVATION context when represented by SPM.
+    current_projectability: INDETERMINATE
+    candidate_failure_class_if_scored: MISATTRIBUTION
+    candidate_severity: S3
+    reasons_review_required:
+      - SPM usage and cardinality must be checked against the exact LRI Edition 5 profile.
+      - Structural grouping semantics may differ across laboratory implementation patterns.
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-message-oru-r01-to-bundle.html
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-spm-to-specimen.html
+    external_review_questions:
+      - Is wrong-report SPM placement a stable semantic misattribution under LRI Edition 5?
+      - Which grouping/cardinality constraints must be satisfied before this relation is scored?
+
+  - candidate_rule_id: OBSERVATION_SPECIMEN_MEMBERSHIP_001
+    canonical_relation: observation.specimen
+    source_semantics:
+      fhir_paths:
+        - Observation.specimen
+      relation: Observation_to_Specimen
+    target_semantics:
+      candidate_locus:
+        - ORU_R01.ORDER_OBSERVATION.SPECIMEN.OBSERVATION
+        - SPM_context_of_OBX
+      interpretation: >-
+        An Observation that explicitly references a source specimen should not
+        become associated with a different specimen context in the target.
+    current_projectability: INDETERMINATE
+    candidate_failure_class_if_scored: MISATTRIBUTION
+    candidate_severity: S3
+    reasons_review_required:
+      - The association is encoded by message structure/context rather than one field.
+      - The exact LRI Edition 5 specimen grouping rules require independent review.
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obx-to-observation.html
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-spm-to-specimen.html
+    external_review_questions:
+      - Is SPM context sufficient to establish Observation-to-Specimen attribution?
+      - Are there legal alternate representations that require an equivalence class?
+
+
+  - candidate_rule_id: OBSERVATION_SUBJECT_ATTRIBUTION_001
+    canonical_relation: observation.subject_ref
+    source_semantics:
+      fhir_paths:
+        - Observation.subject
+      relation: Observation_to_Patient
+    target_semantics:
+      candidate_locus:
+        - ORU_R01.PATIENT_RESULT.PATIENT.PID
+        - patient_context_containing_ORDER_OBSERVATION_OBX
+      interpretation: >-
+        An Observation explicitly attributed to the source patient must remain
+        within the corresponding patient-result context in the target. Moving an
+        otherwise correct result into another patient's context is a semantic
+        misattribution even when the OBX clinical payload is unchanged.
+    current_projectability: INDETERMINATE
+    candidate_failure_class_if_scored: MISATTRIBUTION
+    candidate_severity: S3
+    reasons_review_required:
+      - Patient attribution is carried partly by ORU message/group context rather than one OBX field.
+      - The current v0.3 draft contract scores patient identifiers and result content but not subject_ref itself.
+      - The exact LRI Edition 5 profile and legal grouping alternatives must be checked before automatic scoring.
+    evidence:
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-message-oru-r01-to-bundle.html
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-pid-to-patient.html
+      - https://hl7.org/fhir/uv/v2mappings/ConceptMap-segment-obx-to-observation.html
+    external_review_questions:
+      - Is Observation-to-patient attribution mandatory and stable in the selected LRI Edition 5 slice?
+      - What exact PID/PATIENT_RESULT grouping evidence is sufficient to establish the patient context of an OBX?
+      - Are there legal alternate representations where patient attribution is conveyed outside the immediate PATIENT_RESULT group?
+      - If promoted, should wrong-patient placement be an S3 MISATTRIBUTION primary-endpoint failure?
+
+freeze_rule:
+  - No candidate becomes endpoint-eligible because Renderer A, Renderer B, or an LLM uses the same grouping.
+  - Promotion requires independent external review against the exact LRI Edition 5 plus 2024DEC target.
+  - Unresolved disagreement remains INDETERMINATE.
+  - Any promoted rule must be incorporated into the versioned Contract v1.0 before confirmatory inference.

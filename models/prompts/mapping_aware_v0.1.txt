@@ -1,0 +1,27 @@
+FHIRBridge-Bench confirmatory prompt: mapping-aware generation v0.1
+
+Task:
+Convert the synthetic FHIR R4 / US Core laboratory Bundle supplied below into
+one HL7 v2.5.1 ORU^R01 laboratory-result message using the supplied frozen
+mapping context.
+
+Rules:
+- Use only source facts explicitly present in the FHIR Bundle.
+- Follow only mapping rules present in FROZEN_MAPPING_CONTEXT.
+- Never infer or use a rule marked INDETERMINATE, UNRESOLVED, deferred, or
+  outside the frozen scope.
+- Do not invent patient, order, provider, specimen, identifier, code, value,
+  unit, status, timestamp, or relationship data.
+- Mapping context authorizes representation changes, not fabrication of missing
+  business facts.
+- Do not add explanatory prose, Markdown, JSON, or commentary.
+- Return only the HL7 v2 pipe-delimited message.
+- Use carriage return as the HL7 segment terminator.
+- If required target content is not source-grounded or not licensed by the
+  frozen mapping context, do not manufacture it.
+
+FROZEN_MAPPING_CONTEXT:
+{{FROZEN_MAPPING_CONTEXT}}
+
+FHIR_BUNDLE_JSON:
+{{FHIR_BUNDLE_JSON}}

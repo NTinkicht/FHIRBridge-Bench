@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/analysis_row.schema.json",
+  "title": "FHIRBridge Confirmatory Analysis Row",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "model_key",
+    "analysis_cluster_id",
+    "source_input_sha256",
+    "arms"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_input_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "arms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deterministic_baseline",
+        "direct_structured_llm",
+        "mapping_aware_llm",
+        "mapping_aware_plus_syntax_repair"
+      ],
+      "properties": {
+        "deterministic_baseline": {
+          "$ref": "#/$defs/armState"
+        },
+        "direct_structured_llm": {
+          "$ref": "#/$defs/armState"
+        },
+        "mapping_aware_llm": {
+          "$ref": "#/$defs/armState"
+        },
+        "mapping_aware_plus_syntax_repair": {
+          "$ref": "#/$defs/armState"
+        }
+      }
+    },
+    "analysis_cluster_id": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    },
+    "armState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "structural_outcome",
+        "semantic_verdict",
+        "semantic_evaluation_reason",
+        "vur_eligible",
+        "vfy_success",
+        "structural_evidence_sha256",
+        "semantic_evidence_sha256"
+      ],
+      "properties": {
+        "structural_outcome": {
+          "enum": [
+            "VALID",
+            "INVALID",
+            "MEASUREMENT_FAILURE",
+            "POLICY_UNRESOLVED"
+          ]
+        },
+        "semantic_verdict": {
+          "enum": [
+            "FAITHFUL",
+            "UNFAITHFUL",
+            "INDETERMINATE"
+          ]
+        },
+        "semantic_evaluation_reason": {
+          "enum": [
+            "PRIMARY_SEMANTIC_EVALUATION",
+            "STRUCTURAL_NOT_VALID",
+            "VERIFIER_RUNTIME_INDETERMINATE"
+          ]
+        },
+        "vur_eligible": {
+          "type": "boolean"
+        },
+        "vfy_success": {
+          "type": "boolean"
+        },
+        "structural_evidence_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "semantic_evidence_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}

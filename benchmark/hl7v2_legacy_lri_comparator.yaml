@@ -1,0 +1,45 @@
+comparator:
+  id: NIST-LEGACY-LRI-R2-2016
+  status: legacy_differential_only
+  used_as_ground_truth: false
+  confirmatory_eligible: false
+  purpose: >-
+    Preserve a reproducible historical NIST LRI profile/context pair as a
+    differential development comparator. This artifact predates LRI Edition 5
+    and MUST NOT be substituted for the study's Edition 5 + 2024DEC target.
+
+source:
+  repository: usnistgov/hit-core-hl7v2
+  repository_commit: 3ee9df7d3345944f4a70cccf9be504e499a24c1b
+  profile_path: hit-core-hl7v2-service/src/test/resources/profiles/1_1_2_Profile.xml
+  profile_git_blob_sha: 5b1dd8d674a255e68f3563bcb685023937d776b2
+  constraints_path: hit-core-hl7v2-service/src/test/resources/constraints/1_1_2_Constraints.xml
+  constraints_git_blob_sha: ba5605fd90f75790846b7d185ab2f0c13db3fb4c
+
+profile_metadata:
+  hl7_version: "2.5.1"
+  message_type: ORU
+  event_type: R01
+  message_structure: ORU_R01
+  metadata_name: LOI integration profile
+  metadata_version: "1.0.0"
+  metadata_date: "2016-02-23"
+  constraints_metadata_name: LRI R2 conformance context
+  constraints_metadata_version: "1.0.0"
+  constraints_metadata_date: "2016-02-19"
+
+observed_structure:
+  orc_usage_in_legacy_profile: required
+  obr_usage_in_legacy_profile: required
+  order_observation_group_cardinality: "1..*"
+  specimen_group_usage: recommended_or_empty
+  note: >-
+    These observations are evidence about a historical NIST LRI profile only.
+    They do not establish Edition 5 cardinalities or reverse-mapping truth.
+
+safeguards:
+  - never_use_as_edition5_profile
+  - never_use_as_confirmatory_structural_oracle
+  - never_change_projectability_contract_based_on_this_artifact_alone
+  - disagreements_are_development_evidence_only
+  - exact_edition5_profile_bundle_still_required

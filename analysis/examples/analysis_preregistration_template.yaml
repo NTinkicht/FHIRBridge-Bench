@@ -1,0 +1,72 @@
+schema_version: "0.5.0"
+analysis_id: "ANALYSIS-TO-BE-ASSIGNED"
+status: incomplete_template
+created_at: null
+sealed_set_opened: false
+frozen_inputs:
+  repository_commit: "0000000"
+  projectability_contract_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  structural_validity_policy_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  statistical_analysis_plan_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  model_prompt_configuration_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  sample_size_preregistration_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  primary_vur_hypothesis_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+primary_estimand:
+  name: VUR
+  direction: FHIR_to_HL7v2
+  structural_condition: VALID
+  semantic_condition: determinate_FAITHFUL_or_UNFAITHFUL
+primary_hypothesis:
+  record_id: "PRIMARY-VUR-TO-BE-FROZEN"
+  nontrivial_vur_threshold: 0.01
+  model_strategy_aggregation_policy: "TO_BE_FROZEN"
+  inference_method: "TO_BE_FROZEN"
+  alpha: 0.05
+  sidedness: one_sided
+  cluster_id_field: analysis_cluster_id
+  decision_rule: "TO_BE_FROZEN"
+paired_comparisons:
+  analysis_set_rule: both_arms_VALID_and_semantic_determinate_for_VUR
+  cluster_id_field: "analysis_cluster_id"
+  model_keys:
+    - "MODEL-TO-BE-FROZEN"
+  comparison_family:
+    - comparison_id: "MODEL-TO-BE-FROZEN__BASELINE_vs_DIRECT"
+      model_key: "MODEL-TO-BE-FROZEN"
+      arm_a: deterministic_baseline
+      arm_b: direct_structured_llm
+    - comparison_id: "MODEL-TO-BE-FROZEN__BASELINE_vs_MAPPING"
+      model_key: "MODEL-TO-BE-FROZEN"
+      arm_a: deterministic_baseline
+      arm_b: mapping_aware_llm
+    - comparison_id: "MODEL-TO-BE-FROZEN__BASELINE_vs_REPAIR"
+      model_key: "MODEL-TO-BE-FROZEN"
+      arm_a: deterministic_baseline
+      arm_b: mapping_aware_plus_syntax_repair
+    - comparison_id: "MODEL-TO-BE-FROZEN__DIRECT_vs_MAPPING"
+      model_key: "MODEL-TO-BE-FROZEN"
+      arm_a: direct_structured_llm
+      arm_b: mapping_aware_llm
+    - comparison_id: "MODEL-TO-BE-FROZEN__DIRECT_vs_REPAIR"
+      model_key: "MODEL-TO-BE-FROZEN"
+      arm_a: direct_structured_llm
+      arm_b: mapping_aware_plus_syntax_repair
+    - comparison_id: "MODEL-TO-BE-FROZEN__MAPPING_vs_REPAIR"
+      model_key: "MODEL-TO-BE-FROZEN"
+      arm_a: mapping_aware_llm
+      arm_b: mapping_aware_plus_syntax_repair
+multiplicity:
+  secondary_pairwise_method: Holm
+  comparison_family_size: 6
+bootstrap:
+  method: paired_cluster_percentile
+  iterations: 10000
+  seed: 20261010
+  confidence_level: 0.95
+mcnemar:
+  method: exact_binomial
+  sidedness: two_sided
+  scope: model_specific_only
+companion_estimand:
+  name: VFY
+  denominator: all_attempted_transformations

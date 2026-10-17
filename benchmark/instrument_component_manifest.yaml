@@ -1,0 +1,82 @@
+instrument_component_manifest:
+  id: FHIRBRIDGE-INSTRUMENT-COMPONENTS-001
+  version: 0.1.0
+  status: frozen_component_boundary
+  hash_method: path_bound_sha256_manifest_v1
+  note: >-
+    Each component digest is computed from the ordered relative file paths and
+    SHA-256 of each file. Only the explicitly listed files belong to the frozen
+    component; untracked/runtime files such as __pycache__ cannot affect it.
+
+components:
+  projectability_contract:
+    artifact_id: projectability-contract
+    paths:
+      - contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml
+
+  verifier:
+    artifact_id: semantic-verifier
+    paths:
+      - src/fhirbridge/verifier/__init__.py
+      - src/fhirbridge/verifier/classifier.py
+      - src/fhirbridge/verifier/contract_classifier.py
+      - src/fhirbridge/verifier/decision_record.py
+      - src/fhirbridge/verifier/equivalence.py
+      - src/fhirbridge/verifier/grounding.py
+      - src/fhirbridge/verifier/model.py
+      - src/fhirbridge/verifier/policy.py
+
+  fhir_lifter:
+    artifact_id: fhir-r4-lifter
+    paths:
+      - src/fhirbridge/lifters/__init__.py
+      - src/fhirbridge/lifters/base.py
+      - src/fhirbridge/lifters/fhir_r4.py
+      - src/fhirbridge/verifier/model.py
+
+  hl7v2_lifter:
+    artifact_id: hl7-v251-oru-lifter
+    paths:
+      - src/fhirbridge/lifters/__init__.py
+      - src/fhirbridge/lifters/base.py
+      - src/fhirbridge/lifters/hl7v251_oru.py
+      - src/fhirbridge/verifier/model.py
+
+  canonical_schema:
+    artifact_id: canonical-clinical-fact-graph-schema
+    paths:
+      - canonical/schema/clinical_fact.schema.yaml
+      - canonical/schema/clinical_fact_graph.schema.yaml
+
+  deterministic_baseline_renderer:
+    artifact_id: deterministic-fhir-to-hl7v2-baseline-renderer
+    paths:
+      - src/fhirbridge/renderers/__init__.py
+      - src/fhirbridge/renderers/base.py
+      - src/fhirbridge/renderers/fhir_r4_a.py
+      - src/fhirbridge/renderers/hl7v251_oru_a.py
+    note: >-
+      The full renderers package is frozen because importing the HL7 v2
+      renderer executes the package initializer, which imports both concrete
+      renderer modules. The FHIR renderer is not a baseline arm, but its
+      imported module bytes belong to the exact runtime code surface.
+
+  severity_policy:
+    artifact_id: severity-policy
+    paths:
+      - benchmark/severity_policy_frozen.yaml
+    availability: produced_only_after_expert_calibration
+
+  precedence_policy:
+    artifact_id: error-precedence-policy
+    paths:
+      - benchmark/error_precedence_policy_frozen.yaml
+    availability: produced_only_after_independent_review
+
+freeze_rules:
+  all_paths_must_exist: true
+  duplicate_paths_within_component_prohibited: true
+  absolute_paths_prohibited: true
+  parent_traversal_prohibited: true
+  symlinks_prohibited: true
+  component_digest_recomputed_before_authorization: true

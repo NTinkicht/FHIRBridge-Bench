@@ -1,0 +1,15 @@
+schema_version: "0.1.0"
+assignment_id: "ASSIGNMENT-TO-BE-ASSIGNED"
+status: incomplete_template
+created_at: null
+sealed_set_opened: false
+reviewer_roster_id: "ROSTER-TO-BE-ASSIGNED"
+reviewer_roster_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+sealed_case_manifest_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+assignment_method: deterministic_balanced_precontent
+assignments:
+  - case_id: "CASE-TO-BE-ASSIGNED"
+    primary_reviewer_ids:
+      - "PRIMARY-A-TO-BE-ASSIGNED"
+      - "PRIMARY-B-TO-BE-ASSIGNED"
+notes: null

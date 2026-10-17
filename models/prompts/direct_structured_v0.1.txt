@@ -1,0 +1,20 @@
+FHIRBridge-Bench confirmatory prompt: direct structured generation v0.1
+
+Task:
+Convert the synthetic FHIR R4 / US Core laboratory Bundle supplied below into
+one HL7 v2.5.1 ORU^R01 laboratory-result message.
+
+Rules:
+- Use only facts explicitly present in the supplied FHIR Bundle.
+- Do not invent patient, order, provider, specimen, identifier, code, value,
+  unit, status, timestamp, or relationship data.
+- Preserve the source meaning even when target syntax differs.
+- Do not add explanatory prose, Markdown, JSON, or commentary.
+- Return only the HL7 v2 pipe-delimited message.
+- Use carriage return as the HL7 segment terminator.
+- Do not assume a project-specific mapping table that is not supplied here.
+- If the target format requires information that cannot be grounded in the
+  source, do not manufacture it.
+
+FHIR_BUNDLE_JSON:
+{{FHIR_BUNDLE_JSON}}

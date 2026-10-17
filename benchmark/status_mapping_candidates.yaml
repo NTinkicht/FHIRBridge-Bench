@@ -1,0 +1,106 @@
+status_mapping_candidates:
+  id: FHIRBRIDGE-STATUS-MAP-001
+  version: 0.1.0
+  status: draft_external_review_required
+  scientific_role: prefreeze_mapping_inventory
+  warning: >-
+    These mappings are not confirmatory truth. They separate currently
+    evidence-supported one-to-one reverse mappings from ambiguous or unsupported
+    reverse mappings so Renderer A cannot silently collapse status semantics.
+
+sources:
+  fhir_r4_observation_status:
+    url: https://hl7.org/fhir/R4/valueset-observation-status.html
+    version: "4.0.1"
+  fhir_r4_diagnostic_report_status:
+    url: https://hl7.org/fhir/R4/valueset-diagnostic-report-status.html
+    version: "4.0.1"
+  v2_to_fhir_obr25:
+    url: https://www.hl7.org/fhir/uv/v2mappings/ConceptMap-table-hl70123-queries-to-diagnostic-report-status.html
+    version: "1.0.0"
+    status: informative_experimental
+  v2_to_fhir_obx11:
+    url: https://www.hl7.org/fhir/uv/v2mappings/ConceptMap-table-hl70085-to-observation-status.html
+    version: "1.0.0"
+    status: informative_experimental
+
+diagnostic_report_to_obr25:
+  direction: FHIR_to_v2_reverse_candidate
+  safe_unique_inverse:
+    partial: R
+    preliminary: P
+    corrected: C
+    final: F
+    cancelled: X
+  unresolved:
+    registered:
+      reason: v2_O_I_and_S_all_map_to_registered_so_reverse_is_not_unique
+    amended:
+      reason: current_v2_to_FHIR_map_has_no_equivalent_source_code
+    appended:
+      reason: current_v2_to_FHIR_map_has_no_equivalent_source_code
+    entered-in-error:
+      reason: current_v2_to_FHIR_map_has_no_equivalent_source_code
+    unknown:
+      reason: current_v2_to_FHIR_map_has_no_equivalent_source_code
+  primary_scenario_values:
+    - preliminary
+    - final
+    - corrected
+  current_primary_slice_supported_by_unique_inverse: true
+
+observation_to_obx11:
+  direction: FHIR_to_v2_reverse_candidate
+  safe_unique_inverse:
+    amended: A
+    corrected: C
+    final: F
+    preliminary: P
+    cancelled: X
+  unresolved:
+    registered:
+      reason: current_v2_to_FHIR_map_has_no_equivalent_source_code
+    partial:
+      reason: current_v2_to_FHIR_map_does_not_map_R_or_deprecated_S_to_partial
+    appended:
+      reason: v2_B_is_not_mapped_in_current_conceptmap
+    entered-in-error:
+      reason: both_v2_D_and_W_map_to_entered_in_error_so_reverse_is_not_unique
+    unknown:
+      reason: current_v2_to_FHIR_map_has_no_equivalent_source_code
+  primary_scenario_values:
+    - preliminary
+    - final
+    - corrected
+  current_primary_slice_supported_by_unique_inverse: true
+
+v2_to_canonical_lifter_candidates:
+  OBR_25:
+    O: registered
+    I: registered
+    S: registered
+    P: preliminary
+    C: corrected
+    R: partial
+    F: final
+    X: cancelled
+  OBX_11:
+    A: amended
+    C: corrected
+    D: entered-in-error
+    F: final
+    P: preliminary
+    X: cancelled
+    W: entered-in-error
+
+renderer_a_prefreeze_policy:
+  use_separate_OBR25_and_OBX11_maps: true
+  unsupported_reverse_mapping_behavior: fail_closed
+  default_unknown_v2_code: prohibited
+  primary_slice_only_until_review: true
+
+freeze_requirements:
+  - independent_external_review_of_reverse_status_maps
+  - exact_LRI_Edition5_profile_binding_check
+  - status_map_version_pinned_in_contract_v1
+  - Renderer_B_receives_only_frozen_reviewed_status_map_not_Renderer_A_table

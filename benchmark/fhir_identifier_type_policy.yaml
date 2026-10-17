@@ -1,0 +1,51 @@
+policy:
+  id: FHIRBRIDGE-FHIR-IDENTIFIER-TYPE-001
+  version: 0.1.0
+  status: prefreeze_representation_policy
+  scope: FHIR_R4_patient_identifier_type
+  source_standard:
+    value_set_url: http://hl7.org/fhir/ValueSet/identifier-type
+    fhir_version: 4.0.1
+    binding_strength: extensible
+    included_v2_0203_codes:
+      - DL
+      - PPN
+      - BRN
+      - MR
+      - MCN
+      - EN
+      - TAX
+      - NIIP
+      - PRN
+      - MD
+      - DR
+      - ACSN
+      - UDI
+      - SNO
+      - SB
+      - PLAC
+      - FILL
+      - JHN
+  canonical_identifier_types:
+    MR:
+      fhir_representation:
+        coding_system: http://terminology.hl7.org/CodeSystem/v2-0203
+        coding_code: MR
+      disposition: represented_with_standard_code
+    PI:
+      fhir_representation: omitted
+      disposition: local_source_label_not_asserted_as_FHIR_R4_IdentifierType
+      rationale: >-
+        v2-0203 contains PI as Patient internal identifier, but FHIR R4's
+        published IdentifierType value set does not include PI. The bounded
+        primary contract requires patient identifier value and namespace
+        preservation, not preservation of the local source type label. The
+        renderer therefore preserves the identifier value/system and does not
+        invent a substitute type or emit an uncoded CodeableConcept that causes
+        a validator warning.
+  scientific_boundary:
+    patient_identifier_value_preserved: true
+    patient_identifier_namespace_preserved: true
+    local_PI_type_label_primary_endpoint_scored: false
+    no_PI_to_MR_substitution: true
+    no_uncoded_PI_CodeableConcept: true

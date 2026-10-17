@@ -1,0 +1,45 @@
+sample_size_method:
+  id: FHIRBRIDGE-SAMPLE-SIZE-METHOD-001
+  version: 0.2.0
+  status: method_preregistered_numeric_plan_pending_pilot
+  source_sap: docs/statistical_analysis_plan.md
+  implementation: src/fhirbridge/sample_size_planning.py
+  pilot_input_schema: analysis/schema/pilot_sample_size_inputs.schema.json
+  pilot_input_template: analysis/examples/pilot_sample_size_inputs_template.yaml
+  final_record_builder: analysis/build_sample_size_preregistration.py
+  final_record_schema: analysis/schema/sample_size_preregistration.schema.json
+  primary_VUR_precision:
+    interval: Wilson_95_percent
+    expected_rate_source: pilot_only
+    target_half_width: must_be_fixed_in_pilot_derived_record_before_confirmatory_inference
+    cluster_adjustment:
+      design_effect: "1 + (mean_cluster_size - 1) * ICC"
+    denominator_retention:
+      source: pilot_valid_and_semantic_determinate_rate
+      inflation: "cluster_inflated_n / expected_analysis_retention"
+  paired_secondary_planning:
+    comparison_family: analysis/core_confirmatory_design.yaml
+    planning_method: normal_approximation_for_McNemar_sample_size_only
+    confirmatory_test: two_sided_exact_binomial_McNemar
+    familywise_alpha: 0.05
+    power: 0.80
+    multiplicity_test_method: Holm
+    planning_alpha_policy: Bonferroni_upper_bound_for_Holm_family_dynamic_6M
+    family_size_rule: six_strategy_contrasts_times_number_of_frozen_LLM_models
+    frozen_model_source: models/model_prompt_freeze.yaml
+    discordant_probabilities:
+      p10_source: pilot_only
+      p01_source: pilot_only
+    cluster_adjustment:
+      design_effect: "1 + (mean_cluster_size - 1) * ICC"
+    pair_retention:
+      source: pilot_both_arms_valid_and_determinate_rate
+  final_case_count_rule: >-
+    Use the maximum independent source-cluster count required by the primary VUR
+    precision plan and every predeclared paired-comparison planning constraint.
+    Analysis-row requirements are never mislabeled as independent source cases.
+  forbidden:
+    - use_sealed_set_outcomes_for_sample_size
+    - choose_case_count_after_confirmatory_outcomes
+    - drop_predeclared_pairwise_comparison_because_it_requires_more_cases
+    - reinterpret_McNemar_planning_approximation_as_confirmatory_test

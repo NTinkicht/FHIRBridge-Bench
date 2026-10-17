@@ -1,0 +1,37 @@
+schema_version: "0.2.0"
+extraction_id: "TO_BE_ASSIGNED"
+extractor:
+  extractor_id: "TO_BE_ASSIGNED"
+  role: "independent_LRI_required_element_extractor"
+  conflicts_of_interest: ""
+  prior_project_involvement: ""
+source:
+  artifact_type: edition5_publication_pdf
+  artifact_sha256: "375f02fd5453b06ff1c51841e703c943c3132134fca53a122f5ccfed743461b7"
+  errata_artifact_sha256: "32eeb375ecb78dd77acb01ed388e30c554688e55a8a4d58df05dd0e7a791700f"
+  profile_name: LRI_NG_FRU_Profile_V3
+  components:
+    - LRI_Common_Component_V3
+    - LRI_NG_Component_R1
+    - LAB_FRU_Component
+  edition: "5"
+  errata: 2024DEC
+independence:
+  other_extractor_output_seen_before_completion: false
+  project_required_element_inventory_seen_before_completion: false
+  renderer_output_used_as_requirement_evidence: false
+entries:
+  - locus: "TO_BE_EXTRACTED"
+    element_kind: field
+    usage: UNKNOWN
+    cardinality: "TO_BE_EXTRACTED"
+    datatype: null
+    max_length: null
+    condition: null
+    value_set_or_binding_ref: null
+    source_grounding_classification: UNRESOLVED
+    classification_rationale: "TO_BE_EXTRACTED"
+    evidence:
+      - "TO_BE_EXTRACTED"
+extraction_complete: false
+notes: null

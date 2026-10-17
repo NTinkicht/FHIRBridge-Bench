@@ -1,0 +1,201 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://fhirbridge-bench.org/schema/semantic_decision.schema.yaml"
+title: FHIRBridge Semantic Verification Decision
+type: object
+required:
+  - decision_id
+  - verifier_version
+  - contract
+  - classification
+  - primary_endpoint_eligible
+  - evidence
+properties:
+  decision_id:
+    type: string
+    minLength: 1
+  verifier_version:
+    type: string
+    minLength: 1
+  contract:
+    type: object
+    required:
+      - contract_id
+      - contract_version
+      - rule_ids
+    properties:
+      contract_id:
+        type: string
+        minLength: 1
+      contract_version:
+        type: string
+        minLength: 1
+      rule_ids:
+        type: array
+        uniqueItems: true
+        items:
+          type: string
+          minLength: 1
+        description: >-
+          Exact projectability-rule identifiers governing this decision. The
+          array may be empty only for a non-endpoint decision for which no
+          contract rule places the disputed dimension in scoring scope. Fake
+          aggregate rule identifiers are forbidden.
+    additionalProperties: false
+  source_fact_ids:
+    type: array
+    uniqueItems: true
+    items:
+      type: string
+  target_fact_ids:
+    type: array
+    uniqueItems: true
+    items:
+      type: string
+  target_paths:
+    type: array
+    uniqueItems: true
+    items:
+      type: string
+  allowed_operation:
+    type: [string, "null"]
+    enum:
+      - COPY
+      - NORMALIZE
+      - CODE_TRANSLATE
+      - UNIT_CONVERT
+      - AGGREGATE
+      - DECOMPOSE
+      - DERIVE_DECLARED
+      - DROP_DECLARED
+      - null
+  classification:
+    type: string
+    enum:
+      - VERIFIED_EQUIVALENT
+      - LICENSED_NORMALIZATION
+      - LICENSED_DERIVATION
+      - DECLARED_LOSS
+      - FABRICATION
+      - CORRUPTION
+      - OMISSION
+      - MISATTRIBUTION
+      - INDETERMINATE
+      - STRUCTURAL_ERROR
+  error_subtype:
+    type: [string, "null"]
+    enum:
+      - value
+      - terminology
+      - unit
+      - identifier
+      - reference
+      - temporal
+      - status
+      - relationship
+      - attribution
+      - unsupported_assertion
+      - other
+      - null
+  severity:
+    type: [string, "null"]
+    enum:
+      - S0
+      - S1
+      - S2
+      - S3
+      - null
+  primary_endpoint_eligible:
+    type: boolean
+  source_payload:
+    type: [object, "null"]
+    additionalProperties: true
+  target_payload:
+    type: [object, "null"]
+    additionalProperties: true
+  evidence:
+    type: object
+    required:
+      - rationale_code
+    properties:
+      rationale_code:
+        type: string
+        minLength: 1
+      terminology_checks:
+        type: array
+        items:
+          type: object
+          additionalProperties: true
+      ucum_checks:
+        type: array
+        items:
+          type: object
+          additionalProperties: true
+      relationship_checks:
+        type: array
+        items:
+          type: object
+          additionalProperties: true
+      temporal_checks:
+        type: array
+        items:
+          type: object
+          additionalProperties: true
+      parser_warnings:
+        type: array
+        items:
+          type: string
+      structural_validation_ref:
+        type: [string, "null"]
+      decision_details:
+        type: object
+        additionalProperties: true
+        description: >-
+          Machine-readable classifier and grounding evidence that is useful for
+          audit but is not itself an additional scoring rule.
+    additionalProperties: false
+  model_claimed_provenance:
+    type: [object, "null"]
+    properties:
+      present:
+        type: boolean
+      claim_id:
+        type: [string, "null"]
+      source_paths:
+        type: array
+        items:
+          type: string
+      target_paths:
+        type: array
+        items:
+          type: string
+      claimed_operation:
+        type: [string, "null"]
+      verification_status:
+        type: string
+        enum:
+          - not_evaluated
+          - verified
+          - rejected
+          - partially_verified
+    additionalProperties: false
+  explanation:
+    type: [string, "null"]
+    description: >-
+      Human-readable rendering of structured evidence. This field is never the
+      authoritative basis for scoring.
+allOf:
+  - if:
+      properties:
+        primary_endpoint_eligible:
+          const: true
+      required:
+        - primary_endpoint_eligible
+    then:
+      properties:
+        contract:
+          properties:
+            rule_ids:
+              minItems: 1
+          required:
+            - rule_ids
+additionalProperties: false

@@ -1,0 +1,48 @@
+schema_version: "0.2.0"
+renderer_id: "RENDERER-B-TO-BE-ASSIGNED"
+renderer_version: "0.1.0-dev"
+contributor:
+  identity: "TO_BE_COMPLETED_BY_INDEPENDENT_IMPLEMENTER"
+  role: "independent_renderer_b_implementer"
+  organization: null
+implementation:
+  language: "TO_BE_COMPLETED"
+  major_libraries: []
+  source_commit: "0000000"
+  implementation_notes: null
+clean_room_inputs:
+  repository_full_name: "NTinkicht/FHIRBridge-Bench"
+  branch: "renderer-b-cleanroom"
+  starting_commit: "0000000000000000000000000000000000000000"
+  challenge_id: "FHIRBRIDGE-RENDERER-B-DEV-001"
+  challenge_version: "0.2.0"
+  challenge_manifest_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  contract_path: "contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml"
+  contract_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+contract:
+  contract_id: "F2V-LAB-ORU-R01-001"
+  contract_version: "0.3.0"
+standards_sources:
+  - name: "HL7 FHIR R4"
+    version_or_date: "R4"
+    reference: null
+  - name: "HL7 v2.5.1 Laboratory Results Interface"
+    version_or_date: "v2.5.1 / applicable LRI profile"
+    reference: null
+implementation_period:
+  started_on: "2099-01-01"
+  completed_on: null
+independence:
+  renderer_a_source_inspected_before_initial_commit: false
+  renderer_a_outputs_inspected_before_initial_commit: false
+  renderer_a_mapping_code_reused: false
+  llm_generated_mapping_code_used: false
+  shared_semantic_mapping_utility_used: false
+  accidental_exposure: null
+  same_language_as_renderer_a_rationale: null
+  declaration_complete: false
+terminology_dependencies: []
+known_unsupported_cases:
+  - "HL7 v2 order-context projection remains unsupported until exact Edition 5 machine-profile qualification and external review"
+  - "TO_BE_COMPLETED_BY_INDEPENDENT_IMPLEMENTER"
+signed_statement: null

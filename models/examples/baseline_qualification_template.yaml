@@ -1,0 +1,58 @@
+schema_version: "0.1.0"
+qualification_id: "BASELINE-QUALIFICATION-TO-BE-ASSIGNED"
+status: incomplete_template
+created_at: null
+repository_commit: "0000000"
+contract:
+  id: F2V-LAB-ORU-R01-001
+  version: "0.3.0"
+  sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  freeze_status: frozen
+target_profile:
+  name: LRI_NG_FRU_Profile_V3
+  edition: "5"
+  errata: 2024DEC
+  profile_bundle_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  qualification_report_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+renderer_component:
+  component_name: deterministic_baseline_renderer
+  artifact_id: deterministic-fhir-to-hl7v2-baseline-renderer
+  sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+primary_family_evidence:
+  - &placeholder_family
+    template_id: LAB-001
+    order_context_present: true
+    structural_validity: VALID
+    semantic_verdict: FAITHFUL
+    validation_record_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  - <<: *placeholder_family
+    template_id: LAB-002
+  - <<: *placeholder_family
+    template_id: LAB-003
+  - <<: *placeholder_family
+    template_id: LAB-004
+  - <<: *placeholder_family
+    template_id: LAB-005
+  - <<: *placeholder_family
+    template_id: LAB-006
+  - <<: *placeholder_family
+    template_id: LAB-007
+  - <<: *placeholder_family
+    template_id: LAB-008
+  - <<: *placeholder_family
+    template_id: LAB-009
+  - <<: *placeholder_family
+    template_id: LAB-010
+  - <<: *placeholder_family
+    template_id: LAB-011
+aggregate:
+  primary_family_count: 11
+  all_primary_families_structurally_valid: true
+  all_primary_families_semantically_faithful: true
+  order_context_supported: true
+  exact_profile_validation_used: true
+attestation:
+  no_invented_business_facts: true
+  development_placeholder_codes_absent: true
+  same_frozen_instrument_used_for_all_families: true
+  confirmatory_model_outputs_not_used: true

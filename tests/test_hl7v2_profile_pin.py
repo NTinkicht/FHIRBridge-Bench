@@ -1,0 +1,178 @@
+from copy import deepcopy
+from pathlib import Path
+
+import pytest
+import yaml
+
+from fhirbridge.hl7v2_profile_bundle import compute_profile_bundle_manifest
+from fhirbridge.hl7v2_profile_pin import (
+    assert_hl7_profile_pin_frozen,
+    assert_profile_bundle_matches_pin,
+    assess_hl7_profile_pin,
+)
+
+_PROFILE_PIN = "benchmark/hl7v2_lri_profile_pin.yaml"
+
+
+def _document() -> dict:
+    with open(_PROFILE_PIN, encoding="utf-8") as handle:
+        return yaml.safe_load(handle)
+
+
+def _set_path(document: dict, dotted_path: str, value) -> None:
+    current = document
+    parts = dotted_path.split(".")
+    for part in parts[:-1]:
+        current = current[part]
+    current[parts[-1]] = value
+
+
+def test_candidate_lri_profile_pin_is_not_freeze_ready() -> None:
+    readiness = assess_hl7_profile_pin(_document())
+
+    assert readiness.status == "candidate"
+    assert not readiness.ready
+    assert "acquisition.igamt_export_identifier" in readiness.unresolved_paths
+    assert "bundle.aggregate_sha256" in readiness.unresolved_paths
+    assert (
+        "identity_verification.independent_profile_provenance_reviewed"
+        in readiness.false_boolean_paths
+    )
+    assert readiness.exact_value_mismatches == ()
+
+
+@pytest.mark.parametrize(
+    ("path", "wrong_value"),
+    (
+        ("target.hl7_version", "2.3.1"),
+        ("target.message_type", "ADT"),
+        ("target.event_type", "A01"),
+        ("target.message_structure", "ADT_A01"),
+        ("target.implementation_guide_edition", "2016"),
+        ("target.errata", "2016"),
+    ),
+)
+def test_wrong_or_stale_profile_identity_blocks_freeze(
+    path: str,
+    wrong_value: str,
+) -> None:
+    document = _document()
+    _set_path(document, path, wrong_value)
+
+    readiness = assess_hl7_profile_pin(document)
+
+    assert not readiness.ready
+    assert path in readiness.exact_value_mismatches
+
+
+def test_profile_pin_cannot_claim_frozen_while_unresolved() -> None:
+    document = _document()
+    document["profile_pin"]["status"] = "frozen"
+
+    with pytest.raises(ValueError, match="cannot be marked frozen"):
+        assess_hl7_profile_pin(document)
+
+
+def test_fully_qualified_profile_pin_can_be_frozen() -> None:
+    document = deepcopy(_document())
+    gate = document["freeze_gate"]
+
+    for path in gate["required_resolved_paths"]:
+        _set_path(document, path, f"resolved:{path}")
+    for path in gate["required_true_paths"]:
+        _set_path(document, path, True)
+    document["profile_pin"]["status"] = "frozen"
+
+    readiness = assess_hl7_profile_pin(document)
+
+    assert readiness.ready
+    assert readiness.unresolved_paths == ()
+    assert readiness.false_boolean_paths == ()
+    assert readiness.exact_value_mismatches == ()
+    assert_hl7_profile_pin_frozen(document)
+
+
+def test_complete_but_unfrozen_profile_pin_is_rejected_for_confirmatory_use() -> None:
+    document = deepcopy(_document())
+    gate = document["freeze_gate"]
+
+    for path in gate["required_resolved_paths"]:
+        _set_path(document, path, f"resolved:{path}")
+    for path in gate["required_true_paths"]:
+        _set_path(document, path, True)
+
+    with pytest.raises(ValueError, match="status must be frozen"):
+        assert_hl7_profile_pin_frozen(document)
+
+
+def test_profile_bundle_pin_guard_accepts_exact_hashes(tmp_path: Path) -> None:
+    root = tmp_path / "bundle"
+    root.mkdir()
+    (root / "PROFILE.xml").write_text(
+        '<ConformanceProfile HL7Version="2.5.1"><Messages>'
+        '<Message ID="ORU" Type="ORU" Event="R01" StructID="ORU_R01"/>'
+        '</Messages></ConformanceProfile>',
+        encoding="utf-8",
+    )
+    (root / "CONSTRAINTS.xml").write_text("<constraints/>", encoding="utf-8")
+    manifest = compute_profile_bundle_manifest(root)
+    profile = next(item for item in manifest.files if item.name == "PROFILE.xml")
+    pin = {
+        "bundle": {
+            "aggregate_sha256": manifest.aggregate_sha256,
+            "profile_xml_sha256": profile.sha256,
+        }
+    }
+
+    observed = assert_profile_bundle_matches_pin(root, pin)
+
+    assert observed == manifest
+
+
+def test_profile_bundle_pin_guard_rejects_comparator_substitution(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "bundle"
+    root.mkdir()
+    profile_path = root / "PROFILE.xml"
+    profile_path.write_text(
+        '<ConformanceProfile HL7Version="2.5.1"><Messages>'
+        '<Message ID="TARGET" Type="ORU" Event="R01" StructID="ORU_R01"/>'
+        '</Messages></ConformanceProfile>',
+        encoding="utf-8",
+    )
+    target = compute_profile_bundle_manifest(root)
+    target_profile = next(item for item in target.files if item.name == "PROFILE.xml")
+    pin = {
+        "bundle": {
+            "aggregate_sha256": target.aggregate_sha256,
+            "profile_xml_sha256": target_profile.sha256,
+        }
+    }
+
+    profile_path.write_text(
+        '<ConformanceProfile HL7Version="2.5.1"><Messages>'
+        '<Message ID="HISTORICAL" Type="ORU" Event="R01" StructID="ORU_R01"/>'
+        '</Messages></ConformanceProfile>',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="does not match the pinned Edition 5 artifact"):
+        assert_profile_bundle_matches_pin(root, pin)
+
+
+def test_profile_bundle_pin_guard_rejects_unresolved_hashes(tmp_path: Path) -> None:
+    root = tmp_path / "bundle"
+    root.mkdir()
+    (root / "PROFILE.xml").write_text("<profile/>", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="must be a resolved 64-character SHA-256"):
+        assert_profile_bundle_matches_pin(
+            root,
+            {
+                "bundle": {
+                    "aggregate_sha256": "unresolved",
+                    "profile_xml_sha256": "unresolved",
+                }
+            },
+        )

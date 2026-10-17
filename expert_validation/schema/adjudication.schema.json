@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/adjudication.schema.json",
+  "title": "FHIRBridge-Bench Expert Adjudication Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "primary_reviews",
+    "adjudicator",
+    "adjudicated_verdict",
+    "rationale",
+    "contract"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "case_id": {"type": "string", "minLength": 1},
+    "primary_reviews": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {"$ref": "#/$defs/primaryReview"}
+    },
+    "adjudicator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reviewer_id", "review_date"],
+      "properties": {
+        "reviewer_id": {"type": "string", "minLength": 1},
+        "review_date": {"type": "string", "format": "date"}
+      }
+    },
+    "adjudicated_verdict": {
+      "enum": ["YES", "NO", "INDETERMINATE"]
+    },
+    "rationale": {"type": "string", "minLength": 1},
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1}
+      }
+    },
+    "post_label_reference_used": {
+      "type": "boolean",
+      "default": false
+    },
+    "post_label_reference_description": {"type": "string"}
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "primaryReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_id",
+        "annotation_sha256",
+        "major_semantic_error"
+      ],
+      "properties": {
+        "reviewer_id": {"type": "string", "minLength": 1},
+        "annotation_sha256": {"$ref": "#/$defs/sha256"},
+        "major_semantic_error": {"enum": ["YES", "NO", "INDETERMINATE"]}
+      }
+    }
+  }
+}

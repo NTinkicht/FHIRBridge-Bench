@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/baseline_family_evidence.schema.json",
+  "title": "FHIRBridge Deterministic Baseline Family Qualification Evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "evidence_id",
+    "template_id",
+    "repository_commit",
+    "contract",
+    "target_profile",
+    "renderer_component",
+    "order_context_present",
+    "structural",
+    "semantic",
+    "attestation"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "evidence_id": {"type": "string", "minLength": 1},
+    "template_id": {
+      "type": "string",
+      "pattern": "^LAB-(00[1-9]|01[01])$"
+    },
+    "repository_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{7,40}$"
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "sha256"],
+      "properties": {
+        "id": {"const": "F2V-LAB-ORU-R01-001"},
+        "version": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "target_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "edition",
+        "errata",
+        "profile_bundle_sha256",
+        "qualification_report_sha256"
+      ],
+      "properties": {
+        "name": {"const": "LRI_NG_FRU_Profile_V3"},
+        "edition": {"const": "5"},
+        "errata": {"const": "2024DEC"},
+        "profile_bundle_sha256": {"$ref": "#/$defs/sha256"},
+        "qualification_report_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "renderer_component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["component_name", "artifact_id", "sha256"],
+      "properties": {
+        "component_name": {"const": "deterministic_baseline_renderer"},
+        "artifact_id": {
+          "const": "deterministic-fhir-to-hl7v2-baseline-renderer"
+        },
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "order_context_present": {"const": true},
+    "structural": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "validator_evidence_sha256"],
+      "properties": {
+        "outcome": {"const": "VALID"},
+        "validator_evidence_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "semantic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verdict", "verifier_evidence_sha256"],
+      "properties": {
+        "verdict": {"const": "FAITHFUL"},
+        "verifier_evidence_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "no_invented_business_facts",
+        "development_placeholder_codes_absent",
+        "confirmatory_model_outputs_not_used"
+      ],
+      "properties": {
+        "no_invented_business_facts": {"const": true},
+        "development_placeholder_codes_absent": {"const": true},
+        "confirmatory_model_outputs_not_used": {"const": true}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    }
+  }
+}

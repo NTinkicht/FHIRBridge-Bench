@@ -1,0 +1,91 @@
+analysis_design:
+  id: FHIRBRIDGE-CONFIRMATORY-DESIGN-001
+  version: 0.2.0
+  status: predeclared_before_confirmatory_inference
+  source_protocol: docs/research_protocol.md
+  path_b_transition:
+    selected_for_development: true
+    bounded_ruleset_qualified: false
+    current_design_is_not_frozen: true
+    current_conditional_VUR_contrast_cannot_be_activated: true
+    candidate_alternative: analysis/path_b_estimand_candidate.yaml
+    require_PI_approval_of_final_estimand: true
+    require_independent_statistics_review: true
+  primary_direction: FHIR_to_HL7v2
+  model_factor:
+    design: crossed
+    source: models/model_prompt_freeze.yaml
+    rule: >-
+      Every frozen LLM model family is evaluated under all three LLM strategy
+      conditions. Model identity/configuration is not allowed to vary by
+      strategy. The deterministic baseline is model-independent.
+    pairwise_test_unit: source_instance_within_one_frozen_model_family
+    global_summary_row_identity: source_instance_x_model_key
+    clustering: analysis_cluster_id
+  core_arms:
+    - arm_id: deterministic_baseline
+      role: standards_based_deterministic_reference
+    - arm_id: direct_structured_llm
+      role: direct_structured_generation
+    - arm_id: mapping_aware_llm
+      role: mapping_aware_generation
+    - arm_id: mapping_aware_plus_syntax_repair
+      role: mapping_aware_generation_plus_syntax_validator_repair
+  primary_estimand:
+    name: VUR
+    comparison_mode: strategy_specific_estimation_across_frozen_model_families_and_preregistered_threshold_test
+  companion_estimand:
+    name: VFY
+    denominator: all_attempted_transformations
+  paired_secondary_comparison_family:
+    unit: model_specific_strategy_contrast
+    multiplicity_method: Holm
+    family_size_rule: six_strategy_contrasts_times_number_of_frozen_LLM_models
+    comparison_id_rule: MODEL_KEY_double_underscore_BASE_COMPARISON_ID
+    base_comparisons:
+      - comparison_id: BASELINE_vs_DIRECT
+        arm_a: deterministic_baseline
+        arm_b: direct_structured_llm
+      - comparison_id: BASELINE_vs_MAPPING
+        arm_a: deterministic_baseline
+        arm_b: mapping_aware_llm
+      - comparison_id: BASELINE_vs_REPAIR
+        arm_a: deterministic_baseline
+        arm_b: mapping_aware_plus_syntax_repair
+      - comparison_id: DIRECT_vs_MAPPING
+        arm_a: direct_structured_llm
+        arm_b: mapping_aware_llm
+      - comparison_id: DIRECT_vs_REPAIR
+        arm_a: direct_structured_llm
+        arm_b: mapping_aware_plus_syntax_repair
+      - comparison_id: MAPPING_vs_REPAIR
+        arm_a: mapping_aware_llm
+        arm_b: mapping_aware_plus_syntax_repair
+  paired_analysis:
+    exact_McNemar_scope: one_model_family_per_test
+    pooled_multi_model_McNemar: prohibited
+    deterministic_baseline_reuse_across_model_specific_tests: permitted_with_familywise_multiplicity_control
+    cluster_id_field: analysis_cluster_id
+    cluster_id_source: runs/schema/sealed_case_manifest.schema.json
+    cluster_id_freeze_rule: >-
+      The per-case analysis_cluster_id is assigned in the sealed case manifest
+      before confirmatory execution and is propagated unchanged into analysis
+      rows. It must not be reconstructed from post-run outcomes.
+    VUR_analysis_set_rule: both_arms_VALID_and_semantic_determinate_for_VUR
+    VFY_analysis_set_rule: all_paired_attempted_transformations
+    risk_difference: arm_a_minus_arm_b
+    mcnemar:
+      method: exact_binomial
+      sidedness: two_sided
+      scope: model_specific_only
+    bootstrap:
+      method: paired_cluster_percentile
+      confidence_level: 0.95
+      iterations: 10000
+      seed: 20261010
+  unresolved_before_final_preregistration:
+    - frozen_input_hashes
+    - pilot_derived_primary_vur_hypothesis_preregistration
+    - pilot_derived_sample_size_justification
+    - frozen_model_keys_for_expanding_model_specific_comparison_family
+    - final_model_and_prompt_configuration_artifact_hashes

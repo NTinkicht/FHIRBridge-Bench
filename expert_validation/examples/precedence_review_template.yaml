@@ -1,0 +1,35 @@
+schema_version: "0.2.0"
+review_id: "PRECEDENCE-REVIEW-TO-BE-ASSIGNED"
+status: incomplete_template
+created_at: null
+candidate_policy_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+blind_stage_evidence:
+  assignment_id: FHIRBRIDGE-PRECEDENCE-BLIND-001
+  reviewer_a_response_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  reviewer_b_response_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  original_responses_retained: true
+  other_reviewer_decisions_hidden_initially: true
+reviewers:
+  - reviewer_id: "REVIEWER-A-TO-BE-ASSIGNED"
+    expertise: ["TO_BE_COMPLETED"]
+    conflicts_of_interest: "TO_BE_COMPLETED"
+    prior_project_involvement: "TO_BE_COMPLETED"
+  - reviewer_id: "REVIEWER-B-TO-BE-ASSIGNED"
+    expertise: ["TO_BE_COMPLETED"]
+    conflicts_of_interest: "TO_BE_COMPLETED"
+    prior_project_involvement: "TO_BE_COMPLETED"
+independent_decisions:
+  - reviewer_id: "REVIEWER-A-TO-BE-ASSIGNED"
+    decision: INDETERMINATE
+    rationale: "TO_BE_COMPLETED"
+  - reviewer_id: "REVIEWER-B-TO-BE-ASSIGNED"
+    decision: INDETERMINATE
+    rationale: "TO_BE_COMPLETED"
+adjudication:
+  decision: INDETERMINATE
+  rationale: "TO_BE_COMPLETED"
+attestation:
+  independent_initial_decisions: true
+  other_reviewer_decisions_hidden_initially: true
+  sealed_cases_used: false
+  candidate_order_not_changed_during_adjudication: true

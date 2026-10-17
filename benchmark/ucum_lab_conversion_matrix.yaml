@@ -1,0 +1,119 @@
+matrix:
+  id: FHIRBRIDGE-UCUM-LAB-001
+  version: 0.1.0
+  status: candidate
+  purpose: >-
+    Project-specific quantity-equivalence qualification cases for laboratory
+    transformations. This matrix supplements, but never replaces, the official
+    UCUM functional tests. Values are synthetic and selected to exercise
+    contract-licensed UNIT_CONVERT behavior.
+
+cases:
+  - case_id: UQ-001
+    source:
+      value: 13.2
+      unit: g/dL
+    target:
+      value: 132.0
+      unit: g/L
+    expected_equivalent: true
+    rationale: mass concentration decimal-prefix conversion
+
+  - case_id: UQ-002
+    source:
+      value: 100.0
+      unit: mg/dL
+    target:
+      value: 1.0
+      unit: g/L
+    expected_equivalent: true
+    rationale: mass concentration prefix and volume conversion
+
+  - case_id: UQ-003
+    source:
+      value: 1000.0
+      unit: mg/L
+    target:
+      value: 1.0
+      unit: g/L
+    expected_equivalent: true
+    rationale: mass prefix conversion
+
+  - case_id: UQ-004
+    source:
+      value: 10.0
+      unit: ug/mL
+    target:
+      value: 10.0
+      unit: mg/L
+    expected_equivalent: true
+    rationale: equivalent mass concentration representation
+
+  - case_id: UQ-005
+    source:
+      value: 5.0
+      unit: mmol/L
+    target:
+      value: 0.005
+      unit: mol/L
+    expected_equivalent: true
+    rationale: amount-of-substance prefix conversion
+
+  - case_id: UQ-006
+    source:
+      value: 500.0
+      unit: mL
+    target:
+      value: 0.5
+      unit: L
+    expected_equivalent: true
+    rationale: specimen quantity volume conversion
+
+  - case_id: UQ-007
+    source:
+      value: 13.2
+      unit: g/dL
+    target:
+      value: 13.2
+      unit: g/L
+    expected_equivalent: false
+    rationale: unit change without corresponding value conversion
+
+  - case_id: UQ-008
+    source:
+      value: 100.0
+      unit: mg/dL
+    target:
+      value: 5.55
+      unit: mmol/L
+    expected_equivalent: false
+    rationale: >-
+      mass concentration and molar concentration require analyte-specific
+      molecular context and must not be treated as generic UCUM equivalence
+
+  - case_id: UQ-009
+    source:
+      value: 5.0
+      unit: mmol/L
+    target:
+      value: 5.0
+      unit: mmol/L
+    expected_equivalent: true
+    rationale: exact quantity identity
+
+  - case_id: UQ-010
+    source:
+      value: 5.0
+      unit: mmol/L
+    target:
+      value: 6.0
+      unit: mmol/L
+    expected_equivalent: false
+    rationale: same unit with changed clinical value
+
+freeze_requirements:
+  - exact_ucum_essence_sha256_recorded
+  - provider_version_recorded
+  - official_ucum_functional_tests_passed
+  - all_cases_in_this_matrix_passed
+  - numeric_tolerance_policy_frozen
