@@ -192,11 +192,20 @@ def test_duplicate_rule_id_or_duplicate_semantic_rule_cannot_inflate_denominator
 
 
 @pytest.mark.parametrize("condition", [None, "", "TO_BE_DECIDED"])
-def test_conditional_predicate_cannot_be_empty_or_placeholder(condition) -> None:
+def test_conditional_predicate_never_becomes_ready_if_missing(condition) -> None:
     a = _extract("SYN-A")
     a["entries"][1]["condition"] = condition
-    with pytest.raises(ValueError, match="conditional predicate|schema error"):
-        create_v03_response_lock(_raw(a))
+    blockers = assess_rule_level_v03(a)
+    assert any("conditional predicate missing" in issue for issue in blockers)
+    if condition in (None, ""):
+        with pytest.raises(ValueError, match="schema error"):
+            create_v03_response_lock(_raw(a))
+    else:
+        # Preserve a syntactically valid but unresolved original response.
+        # Its immutable lock explicitly records the missing scientific fact.
+        lock = create_v03_response_lock(_raw(a))
+        assert lock["metadata_ready"] is False
+        assert lock["qualified_G1"] is False
 
 
 def test_unresolved_entry_can_be_captured_but_never_certified() -> None:
