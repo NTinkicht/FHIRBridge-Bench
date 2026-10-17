@@ -59,15 +59,15 @@ def _synthetic_complete_rule(rule: dict) -> dict:
     rule["positive_control"] = {
         "control_id": "TEST-POS",
         "expected_locus": rule["locus"],
-        "observed_locus": rule["locus"],
-        "result": "PASS_EXPECTED_LOCUS",
+        "observed_locus": None,
+        "result": "ACCEPTED_WITHOUT_RULE_VIOLATION",
         "evidence_sha256": "c" * 64,
     }
     rule["negative_control"] = {
         "control_id": "TEST-NEG",
         "expected_locus": rule["locus"],
         "observed_locus": rule["locus"],
-        "result": "PASS_EXPECTED_LOCUS",
+        "result": "REJECTED_AT_EXPECTED_LOCUS",
         "evidence_sha256": "d" * 64,
     }
     return rule
@@ -181,9 +181,9 @@ def test_same_person_as_reader_and_adjudicator_is_rejected() -> None:
 @pytest.mark.parametrize(
     ("variant", "expected"),
     [
-        ("wrong_locus", "negative control not evidenced at expected locus"),
-        ("unrun", "negative control not evidenced at expected locus"),
-        ("missing_digest", "negative control not evidenced at expected locus"),
+        ("wrong_locus", "negative control not evidenced as rejected at expected locus"),
+        ("unrun", "negative control not evidenced as rejected at expected locus"),
+        ("missing_digest", "negative control not evidenced as rejected at expected locus"),
         ("same_id", "positive and negative controls are not distinct"),
     ],
 )
