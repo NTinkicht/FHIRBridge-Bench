@@ -212,3 +212,38 @@ def test_report_cannot_mint_authorization(attribute: str) -> None:
         setattr(report, attribute, True)
     with pytest.raises(TypeError):
         replace(report, **{attribute: True})
+
+
+@pytest.mark.parametrize("side", ["prefix", "suffix"])
+def test_hidden_bytes_outside_zip_envelope_are_rejected(side: str) -> None:
+    packet, manifest, trusted = _fixture()
+    leak = b"PRIVATE-DATA-NOT-A-ZIP-MEMBER"
+    packet = leak + packet if side == "prefix" else packet + leak
+    manifest["packet_sha256"] = sha256(packet).hexdigest()
+    with pytest.raises(ValueError, match="ZIP envelope or serialization"):
+        _audit(packet, manifest, trusted)
+
+
+@pytest.mark.parametrize("nested", [False, True])
+def test_duplicate_manifest_json_keys_are_rejected_at_all_depths(nested: bool) -> None:
+    packet, manifest, trusted = _fixture()
+    raw = json.dumps(manifest)
+    if nested:
+        raw = raw.replace(
+            '"sha256": ',
+            '"sha256": "' + "a" * 64 + '", "sha256": ',
+            1,
+        )
+    else:
+        raw = raw.replace(
+            '"packet_id": ',
+            '"packet_id": "MALICIOUS", "packet_id": ',
+            1,
+        )
+    with pytest.raises(ValueError, match="duplicate manifest JSON key"):
+        audit_blind_packet_bytes(
+            packet_bytes=packet,
+            manifest_bytes=raw.encode("utf-8"),
+            expected_payloads=trusted,
+            expected_packet_path=_PACKET_PATH,
+        )
