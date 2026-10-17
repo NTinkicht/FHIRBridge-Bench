@@ -1,9 +1,9 @@
 """Private Mistral Reader A intake: no authentic reviewer data in tests."""
 
-from dataclasses import FrozenInstanceError
 import json
 import os
 import sys
+from dataclasses import FrozenInstanceError
 
 import pytest
 import yaml
