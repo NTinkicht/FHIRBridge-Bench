@@ -109,6 +109,9 @@ jobs:
       - name: Build blind Edition 5 required-element extraction packet
         run: python qualification/hl7v2/required_element_review/build_blind_packet.py
 
+      - name: Verify blind Edition 5 extraction ZIP integrity before archiving
+        run: python -m qualification.hl7v2.required_element_review.audit_blind_packet
+
       - name: Archive blind Edition 5 extraction packet
         uses: actions/upload-artifact@v4
         with:
@@ -116,6 +119,7 @@ jobs:
           path: |
             qualification/hl7v2/required_element_review/generated/lri-edition5-required-element-blind-extraction.zip
             qualification/hl7v2/required_element_review/generated/lri-edition5-required-element-blind-extraction-manifest.json
+            qualification/hl7v2/required_element_review/generated/lri-edition5-blind-extraction-integrity.json
           if-no-files-found: error
           retention-days: 90
 
