@@ -233,7 +233,9 @@ def test_constraint_kind_cannot_be_scientifically_empty(
     a["entries"][0]["rule_kind"] = kind
     a["entries"][0][field] = value
     assert any(expected in problem for problem in assess_rule_level_v03(a))
-    with pytest.raises(ValueError, match="schema error|constraint missing|predicate missing|binding missing"):
+    with pytest.raises(
+        ValueError, match="schema error|constraint missing|predicate missing|binding missing"
+    ):
         create_v03_response_lock(_raw(a))
 
 
