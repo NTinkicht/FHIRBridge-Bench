@@ -16,3 +16,14 @@ A valid schema merely confirms a record's format. Synthetic reviewer pseudonyms,
 Rule evaluation reports `G1_qualified=false` and `confirmatory_permission=false` **unconditionally**. Even an artificially complete sample rule can never promote itself. This tool makes no changes to the existing LRI renderer, verifier outcome taxonomy, frozen analysis protocol or confirmatory permission. G1 can only be designed and separately qualified after **independent** source extraction, double-omission audit, errata adjudication, controls at correct loci, clinical/technical review and final PI methodology approval.
 
 Do not add substantive source-extracted R/C rules or real reviewer records to this template before their approved provenance and custodial route are established. In particular, MSH-21's conflicting printed pre-coordinated OIDs remain DISPUTED; neither candidate is chosen by this scaffold.
+
+
+## Distinct validator outcomes for positive and negative controls
+
+The rule-evidence register uses deliberately **different** result vocabulary:
+
+- **Positive:** `ACCEPTED_WITHOUT_RULE_VIOLATION` and `observed_locus: null`. The expected locus identifies the rule under examination, not an actual failure in a valid message.
+- **Negative:** `REJECTED_AT_EXPECTED_LOCUS` and `observed_locus` equal to the independently adjudicated rule locus. A general rejection elsewhere is insufficient.
+- **Not evaluated/failed:** `UNRUN` / `FAIL` stay blocking outcomes. The legacy `PASS_EXPECTED_LOCUS` label is no longer permitted because it ambiguously described both valid and deliberately invalid messages.
+
+Both results must have **distinct control IDs and independent evidence digests**. Even correct-looking labels are *claims* in a developer-only register, **not proof** a qualified validator was actually executed. The qualification report's `G1_qualified` and `confirmatory_permission` remain fixed to `false`. A separately audited validator log and complete independent source census are required before scientific qualification.
