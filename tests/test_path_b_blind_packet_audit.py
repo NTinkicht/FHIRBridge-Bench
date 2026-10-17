@@ -37,12 +37,15 @@ def _zip(entries: list[tuple[str, bytes]], *, symlink: bool = False) -> bytes:
     out = BytesIO()
     with ZipFile(out, "w", compression=ZIP_DEFLATED) as archive:
         for name, content in entries:
-            info = ZipInfo(name)
-            info.compress_type = ZIP_DEFLATED
             if symlink and name == "README.txt":
+                info = ZipInfo(name)
+                info.compress_type = ZIP_DEFLATED
                 info.create_system = 3
                 info.external_attr = (S_IFLNK | 0o777) << 16
-            archive.writestr(info, content)
+                archive.writestr(info, content)
+            else:
+                # Match the actual neutral builder's string-name writestr.
+                archive.writestr(name, content)
     return out.getvalue()
 
 
