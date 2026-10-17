@@ -64,6 +64,15 @@ is never overwritten.
 - `census_candidate_rule_count`: **only** the number of proposed
   third-source records, *not* an independently certified R/C denominator.
 
+The private report now binds itself to **exact bytes**, recording
+`original_response_sha256` (both verified first-round submissions) and
+`source_census_sha256` (the exact third-source JSON bytes). A report with
+the same classifications but changed source pages or modified census
+serialization must therefore have a different digest. This is tamper-evidence
+only, not signature verification. Noncanonical leading/trailing whitespace
+in any candidate or original reviewer locus causes a fail-closed error
+rather than an invented double omission.
+
 The tool deliberately **cannot** assign the scientific denominator or change
 qualification. Every output fixes:
 `independently_established_requirements_denominator=null`,
