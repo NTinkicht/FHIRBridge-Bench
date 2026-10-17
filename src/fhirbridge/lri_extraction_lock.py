@@ -18,6 +18,37 @@ from fhirbridge.lri_required_element_review import (
 )
 from fhirbridge.lri_source_identity import pinned_publication_hashes
 
+class _UniqueKeysExtractionLoader(yaml.SafeLoader):
+    """Reject reviewer YAML with ambiguous or inherited mapping keys."""
+
+    def construct_mapping(self, node: yaml.MappingNode, deep: bool = False) -> dict:
+        if not isinstance(node, yaml.MappingNode):
+            raise yaml.constructor.ConstructorError(
+                None, None, "expected a mapping in reviewer YAML", node.start_mark
+            )
+        seen: set[object] = set()
+        for key_node, _ in node.value:
+            # YAML's << merge syntax can silently override previously
+            # visible reviewer declarations and bypass duplicate-key checks.
+            if key_node.tag == "tag:yaml.org,2002:merge":
+                raise yaml.constructor.ConstructorError(
+                    None, None, "YAML merge keys are not allowed", key_node.start_mark
+                )
+            key = self.construct_object(key_node, deep=deep)
+            try:
+                if key in seen:
+                    raise yaml.constructor.ConstructorError(
+                        None, None, f"duplicate reviewer YAML key: {key!r}",
+                        key_node.start_mark,
+                    )
+                seen.add(key)
+            except TypeError as exc:
+                raise yaml.constructor.ConstructorError(
+                    None, None, "unhashable reviewer YAML key", key_node.start_mark
+                ) from exc
+        return super().construct_mapping(node, deep=deep)
+
+
 _LOCK_VERSION = "0.1.0"
 _REQUIRED_INDEPENDENCE = (
     "other_extractor_output_seen_before_completion",
@@ -28,7 +59,7 @@ _REQUIRED_INDEPENDENCE = (
 
 def _response(raw: bytes) -> dict[str, Any]:
     try:
-        document = yaml.safe_load(raw.decode("utf-8"))
+        document = yaml.load(raw.decode("utf-8"), Loader=_UniqueKeysExtractionLoader)
     except (UnicodeError, yaml.YAMLError) as exc:
         raise ValueError("extraction response is not valid UTF-8 YAML") from exc
     if not isinstance(document, dict) or document.get("schema_version") != "0.2.0":
