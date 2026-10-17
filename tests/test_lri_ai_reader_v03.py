@@ -123,7 +123,8 @@ def test_ai_cannot_impersonate_a_human_reviewer(role: str) -> None:
     "Mistral AI-assisted; model_version=2026-0001",
     "Mistral AI-assisted; model_id=mistral-model-001; model_version=latest",
     "Mistral AI-assisted; model_id=unknown; model_version=2026-0001",
-    "Mistral AI-assisted; model_id=mistral-model-001; model_version=2026-0001; model_version=2026-0002",
+    ("Mistral AI-assisted; model_id=mistral-model-001; "
+     "model_version=2026-0001; model_version=2026-0002"),
 ])
 def test_missing_floating_or_ambiguous_model_provenance_fails(metadata: str) -> None:
     doc = _source()
@@ -149,7 +150,7 @@ def test_truthfully_exposed_original_quarantines_and_keeps_exact_hash(flag: str)
     assert quarantine["disclosed_or_missing_independence_flags"] == [flag]
     assert result.metadata_schema_ready is False
     assert result.G1_qualified is False
-    with pytest.raises(ValueError, match="v0.3 original bytes or lock metadata changed|invalid v0.3 lock version"):
+    with pytest.raises(ValueError, match="invalid v0.3 lock version"):
         verify_v03_response_lock(raw, quarantine)
 
 
