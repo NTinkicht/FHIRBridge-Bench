@@ -9,7 +9,7 @@ prove scientific equivalence or source completeness.
 from __future__ import annotations
 
 import json
-from collections import Counter, defaultdict
+from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import lru_cache
