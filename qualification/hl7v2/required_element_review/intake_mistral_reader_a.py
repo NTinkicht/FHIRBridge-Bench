@@ -65,7 +65,9 @@ def main() -> int:
         "G1_qualified": False,
         "confirmatory_permission": False,
     }, sort_keys=True))
-    return 0
+    # Quarantine still writes the immutable receipt but must never report
+    # successful normal intake to downstream coordinators.
+    return 0 if result.status == "PRIVATE_AI_FIRST_ROUND_NOT_HUMAN_VALIDATED" else 2
 
 
 if __name__ == "__main__":
