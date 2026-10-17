@@ -1,6 +1,9 @@
 """Private Mistral Reader A intake: no authentic reviewer data in tests."""
 
 from dataclasses import FrozenInstanceError
+import json
+import os
+import sys
 
 import pytest
 import yaml
@@ -135,3 +138,71 @@ def test_output_scientific_gate_properties_are_immutable() -> None:
         result.G1_qualified = True
     with pytest.raises(FrozenInstanceError):
         result.confirmatory_permission = True
+
+
+
+def test_private_cli_original_lock_is_exclusive_and_never_overwritten(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    from qualification.hl7v2.required_element_review.intake_mistral_reader_a import main
+
+    source = tmp_path / "original.yaml"
+    lock = tmp_path / "original.lock.json"
+    original_bytes = _response()
+    source.write_bytes(original_bytes)
+    argv = [
+        "intake_mistral_reader_a.py", str(source), str(lock),
+        "--source-use-authorized",
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+    assert main() == 0
+    receipt = json.loads(lock.read_text(encoding="utf-8"))
+    assert receipt["status"] == "RESPONSE_HASHED_NOT_HUMAN_ATTESTED"
+    assert verify_response_lock(original_bytes, receipt)["extractor"]["role"] == (
+        "AI_preliminary_extractor"
+    )
+    if os.name == "posix":
+        assert lock.stat().st_mode & 0o777 == 0o600
+    output = capsys.readouterr().out
+    assert "PRIVATE_AI_FIRST_ROUND_NOT_HUMAN_VALIDATED" in output
+    assert "confirmatory_permission" in output
+    assert "Synthetic fixture" not in output
+    assert main() == 1
+    assert json.loads(lock.read_text(encoding="utf-8")) == receipt
+    assert "FAIL_CLOSED" in capsys.readouterr().out
+
+
+def test_cli_rejects_public_repository_paths_before_reading_private_evidence(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    from qualification.hl7v2.required_element_review.intake_mistral_reader_a import (
+        _REPOSITORY_ROOT,
+        main,
+    )
+
+    target = tmp_path / "private.lock.json"
+    monkeypatch.setattr(sys, "argv", [
+        "intake_mistral_reader_a.py",
+        str(_REPOSITORY_ROOT / "README.md"),
+        str(target),
+        "--source-use-authorized",
+    ])
+    assert main() == 1
+    assert not target.exists()
+    assert "outside the public repository" in capsys.readouterr().out
+
+
+def test_cli_requires_coordinator_authorization_flag(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    from qualification.hl7v2.required_element_review.intake_mistral_reader_a import main
+
+    source = tmp_path / "original.yaml"
+    source.write_bytes(_response())
+    lock = tmp_path / "original.lock.json"
+    monkeypatch.setattr(
+        sys, "argv", ["intake_mistral_reader_a.py", str(source), str(lock)]
+    )
+    assert main() == 1
+    assert not lock.exists()
+    assert "source-use authorization" in capsys.readouterr().out
