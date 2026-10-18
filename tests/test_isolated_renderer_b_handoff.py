@@ -117,6 +117,68 @@ class IsolatedHandoffTests(unittest.TestCase):
         self.assertTrue(any("prohibited" in x for x in result["blockers"]))
         self.assertTrue(any("hash" in x for x in result["blockers"]))
 
+    def _relock_after_mutation(self, case_id="RB-001"):
+        # Deliberately forge *matching* internal hashes to test semantic checks.
+        file = self.challenge / "inputs" / f"{case_id}.json"
+        graph = json.loads(file.read_text(encoding="utf-8"))
+        manifest_path = self.challenge / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        for case in manifest["cases"]:
+            if case["case_id"] == case_id:
+                case["graph_sha256"] = canonical_sha(graph)
+        manifest["manifest_sha256"] = canonical_sha({
+            k: v for k, v in manifest.items() if k != "manifest_sha256"
+        })
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        self.expected["clean_room_inputs"]["challenge_manifest_sha256"] = manifest["manifest_sha256"]
+        self.declaration["clean_room_inputs"]["challenge_manifest_sha256"] = manifest["manifest_sha256"]
+
+    def test_compound_sensitive_namespaces_fail_even_when_all_hashes_are_relocked(self):
+        for field in (
+            "semanticVerifierClassification",
+            "seededFaultLabel",
+            "sourceRendererAOutput",
+        ):
+            with self.subTest(field=field):
+                case = self.challenge / "inputs" / "RB-001.json"
+                original = json.loads(case.read_text(encoding="utf-8"))
+                changed = deepcopy(original)
+                changed["facts"].append({field: "sensitive-synthetic-sentinel"})
+                case.write_text(json.dumps(changed), encoding="utf-8")
+                self._relock_after_mutation()
+                result = self.assess_current()
+                self.assertFalse(result["ready_for_exploratory_agent_comparison"])
+                self.assertTrue(
+                    any("prohibited reference/output field" in x for x in result["blockers"]),
+                    result["blockers"],
+                )
+                case.write_text(json.dumps(original), encoding="utf-8")
+                self._relock_after_mutation()
+
+    def test_forged_manifest_and_custodian_challenge_id_fails(self):
+        path = self.challenge / "manifest.json"
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        manifest["challenge_id"] = "UNRELATED-SYNTHETIC-CHALLENGE"
+        manifest["manifest_sha256"] = canonical_sha({
+            k: v for k, v in manifest.items() if k != "manifest_sha256"
+        })
+        path.write_text(json.dumps(manifest), encoding="utf-8")
+        for record in (self.expected["clean_room_inputs"], self.declaration["clean_room_inputs"]):
+            record["challenge_id"] = "UNRELATED-SYNTHETIC-CHALLENGE"
+            record["challenge_manifest_sha256"] = manifest["manifest_sha256"]
+        result = self.assess_current()
+        self.assertFalse(result["ready_for_exploratory_agent_comparison"])
+        self.assertTrue(any("manifest ID" in x for x in result["blockers"]))
+
+    def test_legitimate_reference_range_field_is_not_banned(self):
+        case = self.challenge / "inputs" / "RB-001.json"
+        graph = json.loads(case.read_text(encoding="utf-8"))
+        graph["facts"].append({"reference_range": {"low": "1", "high": "5"}})
+        case.write_text(json.dumps(graph), encoding="utf-8")
+        self._relock_after_mutation()
+        result = self.assess_current()
+        self.assertTrue(result["ready_for_exploratory_agent_comparison"], result["blockers"])
+
     def test_codex_authorship_false_blocks(self):
         self.declaration["independence"]["llm_generated_mapping_code_used"] = False
         self.assertFalse(self.assess_current()["ready_for_exploratory_agent_comparison"])
