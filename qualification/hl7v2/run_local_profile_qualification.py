@@ -8,6 +8,7 @@ import json
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from fhirbridge.hl7v2_profile_bundle import assert_single_oru_r01_profile
@@ -168,32 +169,45 @@ def _blocking_total(report: dict) -> int:
 
 
 def _run_validator(profile_dir: Path, message_path: Path) -> dict:
-    args = (
-        f"{profile_dir.resolve()} {message_path.resolve()} --report-only"
-    )
-    command = [
-        "mvn",
-        "-q",
-        "-f",
-        str(_HARNESS_POM),
-        "exec:java",
-        f"-Dexec.mainClass={_MAIN_CLASS}",
-        f"-Dexec.args={args}",
-    ]
+    # Snapshot the exact bytes that will be presented to Java. Comparing a
+    # mutable original path before and after subprocess execution is not
+    # sufficient: it can change and be restored between those two reads.
     before = message_path.read_bytes()
-    completed = subprocess.run(
-        command,
-        check=False,
-        capture_output=True,
-        text=False,
-    )
-    # Keep stdout/stderr separate: log lines on stderr are not NIST results.
-    # Hash the actual captured bytes, never a newline-normalized text copy.
+    with tempfile.TemporaryDirectory(prefix="fhirbridge-v2-") as directory:
+        snapshot = Path(directory) / "message.er7"
+        snapshot.write_bytes(before)
+        snapshot.chmod(0o400)
+        if snapshot.read_bytes() != before:
+            raise ValueError("validator snapshot bytes differ from input")
+        args = f"{profile_dir.resolve()} {snapshot.resolve()} --report-only"
+        command = [
+            "mvn",
+            "-q",
+            "-f",
+            str(_HARNESS_POM),
+            "exec:java",
+            f"-Dexec.mainClass={_MAIN_CLASS}",
+            f"-Dexec.args={args}",
+        ]
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=False,
+        )
+        # The receipt represents the actual snapshot sent to the subprocess.
+        # Refuse an altered snapshot even if a distinct original path was
+        # modified concurrently; the private temp directory is isolated.
+        if snapshot.read_bytes() != before:
+            raise ValueError("validation input snapshot changed during execution")
     if completed.returncode != 0:
         raise RuntimeError(
             "NIST validator harness failed to execute:\n"
             + completed.stderr[-4000:].decode("utf-8", errors="replace")
         )
+    # Changing the original input while it is being validated is also a
+    # fail-closed custody event; the snapshot prevents it contaminating
+    # the validator input regardless of later restoration.
     if message_path.read_bytes() != before:
         raise ValueError("validation input artifact changed during execution")
     try:
@@ -205,9 +219,9 @@ def _run_validator(profile_dir: Path, message_path: Path) -> dict:
         "validator_stdout_sha256": hashlib.sha256(completed.stdout).hexdigest(),
         "validator_stderr_sha256": hashlib.sha256(completed.stderr).hexdigest(),
         "validator_exit_code": completed.returncode,
+        "input_mode": "private_byte_snapshot",
     }
     return report
-
 
 def _render_fixtures(output_dir: Path) -> tuple[Path, list[tuple[str, Path]]]:
     output_dir.mkdir(parents=True, exist_ok=True)
