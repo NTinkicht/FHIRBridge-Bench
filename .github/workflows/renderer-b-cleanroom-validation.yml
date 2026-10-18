@@ -24,6 +24,7 @@ jobs:
           python - <<'PY'
           from hashlib import sha256
           from pathlib import Path
+          import json
           import yaml
           from jsonschema import Draft202012Validator
 
@@ -42,6 +43,27 @@ jobs:
           assert not errors, "Draft contract fails its checked-in schema: " + "; ".join(
               str(error.message) for error in errors[:5]
           )
+
+          declaration_schema = json.loads(
+              Path("renderer_validation/schema/renderer_implementation_declaration.schema.json").read_text(encoding="utf-8")
+          )
+          Draft202012Validator.check_schema(declaration_schema)
+          declaration = yaml.safe_load(
+              Path("renderer_validation/examples/renderer_b_declaration_template.yaml").read_text(encoding="utf-8")
+          )
+          declaration_errors = list(Draft202012Validator(declaration_schema).iter_errors(declaration))
+          assert not declaration_errors, "Agent declaration template is schema-invalid: " + "; ".join(
+              str(error.message) for error in declaration_errors[:5]
+          )
+          assert declaration["independence"]["llm_generated_mapping_code_used"] is True, "Codex authorship must be disclosed"
+          assert declaration["clean_room_inputs"]["challenge_version"] == "0.3.0"
+
+          handoff_schema = json.loads(
+              Path("renderer_validation/schema/renderer_b_expected_inputs.schema.json").read_text(encoding="utf-8")
+          )
+          Draft202012Validator.check_schema(handoff_schema)
+          packet = Path("docs/renderer_b_assignment_packet.md").read_text(encoding="utf-8")
+          assert "llm_generated_mapping_code_used: true" in packet, "Codex agent packet missing AI authorship requirement"
 
           prohibited = (
               "src/fhirbridge/renderers/fhir_r4_a.py",
