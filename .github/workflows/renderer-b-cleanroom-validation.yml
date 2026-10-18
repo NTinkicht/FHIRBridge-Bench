@@ -78,3 +78,5 @@ jobs:
           assert not present, f"Clean-room exposure risk: {present}"
           print("PASS: pinned draft contract matches, schema validates and prohibited implementation paths are absent")
           PY
+      - name: Test executable Codex handoff identity with synthetic instances
+        run: python -m unittest discover -s tests -p "test_isolated_renderer_b_handoff.py" -v
