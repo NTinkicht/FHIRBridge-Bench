@@ -155,6 +155,23 @@ class IsolatedHandoffTests(unittest.TestCase):
                 case.write_text(json.dumps(original), encoding="utf-8")
                 self._relock_after_mutation()
 
+    def test_benign_substrings_remain_permitted_after_full_rehash(self):
+        for field in ("default", "default_unit", "unexpected_status"):
+            with self.subTest(field=field):
+                case = self.challenge / "inputs" / "RB-001.json"
+                original = json.loads(case.read_text(encoding="utf-8"))
+                changed = deepcopy(original)
+                changed["facts"].append({field: "SYNTHETIC BENIGN VALUE"})
+                case.write_text(json.dumps(changed), encoding="utf-8")
+                self._relock_after_mutation()
+                result = self.assess_current()
+                self.assertTrue(
+                    result["ready_for_exploratory_agent_comparison"],
+                    result["blockers"],
+                )
+                case.write_text(json.dumps(original), encoding="utf-8")
+                self._relock_after_mutation()
+
     def test_forged_manifest_and_custodian_challenge_id_fails(self):
         path = self.challenge / "manifest.json"
         manifest = json.loads(path.read_text(encoding="utf-8"))
