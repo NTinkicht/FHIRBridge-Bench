@@ -7,6 +7,7 @@ source/output, verifier decisions, fault labels, and target serializations.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
@@ -22,6 +23,17 @@ _SEED_BASE = 15000
 # never leak source renderer output, reference answers, verifier verdicts,
 # fault labels, or sealed-set data into a Codex challenge, even when someone
 # extends the canonical generator in the future.
+# Namespace/prefix checks supplement exact keys. In particular future
+# canonical generators may call the same sensitive concept verifier_results,
+# verifier_verdict, verifierOutput, goldLabels or fault_answer; exact-key
+# matching alone is inadequate. Do not ban generic "reference_" because
+# canonical clinical graphs legitimately contain reference_range.
+_FORBIDDEN_KEY_PREFIXES = (
+    "renderer_a", "verifier", "gold", "expected_", "fault_",
+    "sealed_", "answer_key", "reference_renderer_", "reference_fhir",
+    "reference_hl7", "reference_output",
+)
+
 _FORBIDDEN_PAYLOAD_KEYS = frozenset({
     "renderer_a", "renderer_a_output", "renderer_a_serialization",
     "renderer_a_reference", "renderer_a_implementation",
@@ -73,8 +85,16 @@ def validate_renderer_b_challenge_inputs(
             for key, child in value.items():
                 if not isinstance(key, str):
                     raise ValueError("Renderer B graph has a non-string key")
-                normalized = key.casefold().replace("-", "_")
-                if normalized in _FORBIDDEN_PAYLOAD_KEYS:
+                # Match snake_case, kebab-case and CamelCase labels.
+                # Physical clinical fields such as reference_range and
+                # target_fact_id must remain legal canonical inputs.
+                normalized = re.sub(
+                    r"(?<=[a-z0-9])(?=[A-Z])", "_", key
+                ).casefold().replace("-", "_").replace(" ", "_")
+                if (
+                    normalized in _FORBIDDEN_PAYLOAD_KEYS
+                    or normalized.startswith(_FORBIDDEN_KEY_PREFIXES)
+                ):
                     raise ValueError(
                         "Renderer B challenge contains prohibited reference "
                         f"or answer field at {path}.{key}"
