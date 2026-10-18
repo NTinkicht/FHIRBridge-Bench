@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
@@ -179,18 +180,33 @@ def _run_validator(profile_dir: Path, message_path: Path) -> dict:
         f"-Dexec.mainClass={_MAIN_CLASS}",
         f"-Dexec.args={args}",
     ]
+    before = message_path.read_bytes()
     completed = subprocess.run(
         command,
         check=False,
         capture_output=True,
-        text=True,
+        text=False,
     )
-    combined = completed.stdout + "\n" + completed.stderr
+    # Keep stdout/stderr separate: log lines on stderr are not NIST results.
+    # Hash the actual captured bytes, never a newline-normalized text copy.
     if completed.returncode != 0:
         raise RuntimeError(
-            "NIST validator harness failed to execute:\n" + combined[-8000:]
+            "NIST validator harness failed to execute:\n"
+            + completed.stderr[-4000:].decode("utf-8", errors="replace")
         )
-    return _extract_json(combined)
+    if message_path.read_bytes() != before:
+        raise ValueError("validation input artifact changed during execution")
+    try:
+        report = _extract_json(completed.stdout.decode("utf-8", errors="strict"))
+    except UnicodeDecodeError as exc:
+        raise ValueError("NIST validator stdout is not UTF-8") from exc
+    report["measurement_receipt"] = {
+        "artifact_sha256": hashlib.sha256(before).hexdigest(),
+        "validator_stdout_sha256": hashlib.sha256(completed.stdout).hexdigest(),
+        "validator_stderr_sha256": hashlib.sha256(completed.stderr).hexdigest(),
+        "validator_exit_code": completed.returncode,
+    }
+    return report
 
 
 def _render_fixtures(output_dir: Path) -> tuple[Path, list[tuple[str, Path]]]:
