@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -47,18 +48,62 @@ def _extract_json(stdout: str) -> dict:
     if full_report is None:
         raise ValueError("NIST validator entry-level JSON report was not found in process output")
 
-    result = dict(summary)
-    result["entries"] = full_report.get("entries", {})
-    result["reported_counts"] = {
-        key: full_report.get(key)
-        for key in (
-            "error-count",
-            "warning-count",
-            "alert-count",
-            "informational-count",
-        )
-        if key in full_report
+    # A compact zero-error status is not independent evidence. The detailed
+    # NIST report must agree with its compact totals, including report-only
+    # runs (whose process exit status may be 0 for rejected negatives).
+    count_keys = {
+        "error_total": "error-count",
+        "warning_total": "warning-count",
+        "alert_total": "alert-count",
+        "informational_total": "informational-count",
     }
+    entries = full_report.get("entries")
+    if (
+        type(entries) is not dict
+        or any(
+            type(entries.get(bucket)) is not list
+            for bucket in ("structure", "value-set", "content")
+        )
+    ):
+        raise ValueError("NIST detailed report entries are incomplete")
+    counts = {}
+    for compact_name, detailed_name in count_keys.items():
+        total = summary.get(compact_name)
+        parts = full_report.get(detailed_name)
+        if (
+            type(total) is not int
+            or total < 0
+            or type(parts) is not dict
+            or any(
+                type(parts.get(bucket)) is not int or parts[bucket] < 0
+                for bucket in ("structure", "value-set", "content")
+            )
+            or sum(
+                parts[bucket]
+                for bucket in ("structure", "value-set", "content")
+            ) != total
+        ):
+            raise ValueError(
+                f"NIST compact and detailed counts disagree: {compact_name}"
+            )
+        counts[detailed_name] = parts
+    for compact_name, severity in (
+        ("error_total", "error"),
+        ("warning_total", "warning"),
+        ("alert_total", "alert"),
+    ):
+        if summary[compact_name] == 0 and any(
+            type(entry) is dict
+            and str(entry.get("classification", "")).lower() == severity
+            for bucket in ("structure", "value-set", "content")
+            for entry in entries[bucket]
+        ):
+            raise ValueError(
+                f"NIST zero {compact_name} contradicts an entry-level finding"
+            )
+    result = dict(summary)
+    result["entries"] = entries
+    result["reported_counts"] = counts
     return result
 
 
@@ -86,13 +131,28 @@ def _expected_error_observed(
 ) -> bool:
     if not expected_tokens:
         return False
-    lowered_tokens = tuple(token.lower() for token in expected_tokens)
+    # Only a structured NIST path identifies the expected field. A free-text
+    # description may mention another locus, and substring matching would
+    # mistake MSH-120 for MSH-12.
+    if (
+        len(expected_tokens) not in (1, 2)
+        or not re.fullmatch(r"[A-Z][A-Z0-9]{2}", expected_tokens[0])
+    ):
+        return False
+    prefix = (
+        r"(?<![A-Za-z0-9])" + re.escape(expected_tokens[0])
+        + r"(?:\[\d+\])?"
+    )
+    if len(expected_tokens) == 1:
+        pattern = prefix + r"(?=[.\-]|$)"
+    else:
+        field = expected_tokens[1]
+        if not field.isdecimal() or int(field) <= 0:
+            return False
+        pattern = prefix + r"[.\-]" + re.escape(str(int(field))) + r"(?!\d)"
     for entry in _error_entries(report):
-        haystack = " ".join(
-            str(entry.get(key, ""))
-            for key in ("path", "description", "category")
-        ).lower()
-        if all(token in haystack for token in lowered_tokens):
+        path = entry.get("path")
+        if type(path) is str and re.search(pattern, path, re.IGNORECASE):
             return True
     return False
 
