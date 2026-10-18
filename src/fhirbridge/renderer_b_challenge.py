@@ -91,9 +91,19 @@ def validate_renderer_b_challenge_inputs(
                 normalized = re.sub(
                     r"(?<=[a-z0-9])(?=[A-Z])", "_", key
                 ).casefold().replace("-", "_").replace(" ", "_")
+                # Reject answer-related concepts embedded *anywhere* in a
+                # compound key, not just prefixes. For example,
+                # semanticVerifierClassification and seededFaultLabel are
+                # sensitive even though they start with neutral words.
+                # Do not ban generic reference_ (reference_range is legitimate).
+                sensitive_concepts = (
+                    "renderer", "verifier", "fault", "gold",
+                    "expected", "sealed", "answer", "oracle",
+                )
                 if (
                     normalized in _FORBIDDEN_PAYLOAD_KEYS
                     or normalized.startswith(_FORBIDDEN_KEY_PREFIXES)
+                    or any(concept in normalized for concept in sensitive_concepts)
                 ):
                     raise ValueError(
                         "Renderer B challenge contains prohibited reference "
