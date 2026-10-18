@@ -36,7 +36,8 @@ independence:
   renderer_a_source_inspected_before_initial_commit: false
   renderer_a_outputs_inspected_before_initial_commit: false
   renderer_a_mapping_code_reused: false
-  llm_generated_mapping_code_used: false
+  # Codex exploratory implementation must disclose AI-generated mapping code.
+  llm_generated_mapping_code_used: true
   shared_semantic_mapping_utility_used: false
   accidental_exposure: null
   same_language_as_renderer_a_rationale: null
