@@ -1,6 +1,9 @@
 import importlib.util
 import json
+from copy import deepcopy
 from pathlib import Path
+
+import pytest
 
 _MODULE_PATH = Path("qualification/hl7v2/run_local_profile_qualification.py")
 _SPEC = importlib.util.spec_from_file_location("hl7v2_local_qualification", _MODULE_PATH)
@@ -67,6 +70,65 @@ def test_negative_control_requires_error_at_expected_locus() -> None:
 
     assert _MODULE._expected_error_observed(report, ("MSH", "12"))
     assert not _MODULE._expected_error_observed(report, ("PID",))
+
+
+def _validator_stdout(detail: dict, compact: dict) -> str:
+    return json.dumps(detail) + "\n" + json.dumps(compact) + "\n"
+
+
+@pytest.mark.parametrize("severity", [
+    "error_total", "warning_total", "alert_total", "informational_total"
+])
+def test_mismatched_compact_and_detailed_counts_fail_closed(severity: str) -> None:
+    compact = _summary()
+    compact[severity] += 1
+    with pytest.raises(ValueError, match="compact and detailed counts disagree"):
+        _MODULE._extract_json(_validator_stdout(_full_report(), compact))
+
+
+def test_zero_error_compact_and_counts_cannot_hide_detailed_error() -> None:
+    full = deepcopy(_full_report())
+    full["error-count"]["structure"] = 0
+    compact = _summary(error_total=0)
+    with pytest.raises(ValueError, match="contradicts an entry-level"):
+        _MODULE._extract_json(_validator_stdout(full, compact))
+
+
+@pytest.mark.parametrize("fake", [False, "0", -1, None])
+def test_invalid_validator_total_fails_closed(fake: object) -> None:
+    compact = _summary()
+    compact["error_total"] = fake
+    with pytest.raises(ValueError, match="compact and detailed counts disagree"):
+        _MODULE._extract_json(_validator_stdout(_full_report(), compact))
+
+
+def test_incomplete_detail_entries_cannot_be_interpreted_as_a_pass() -> None:
+    full = _full_report()
+    del full["entries"]["content"]
+    with pytest.raises(ValueError, match="detailed report entries are incomplete"):
+        _MODULE._extract_json(_validator_stdout(full, _summary()))
+
+
+def test_negative_control_ignores_unrelated_free_text_and_field_prefix() -> None:
+    full = _full_report()
+    entry = full["entries"]["structure"][0]
+    entry["path"] = "MSH[1].120[1]"
+    entry["description"] = "MSH-12 is mentioned here, but 120 failed"
+    entry["category"] = "MSH 12"
+    report = {**_summary(), "entries": full["entries"]}
+    assert not _MODULE._expected_error_observed(report, ("MSH", "12"))
+    assert _MODULE._expected_error_observed(report, ("MSH", "120"))
+
+
+def test_segment_level_negative_requires_a_structural_segment_path() -> None:
+    full = _full_report()
+    entry = full["entries"]["structure"][0]
+    entry["path"] = "MSH[1].12[1]"
+    entry["description"] = "PID missing in unrelated prose"
+    report = {**_summary(), "entries": full["entries"]}
+    assert not _MODULE._expected_error_observed(report, ("PID",))
+    entry["path"] = "ORU_R01[1].PID[1]"
+    assert _MODULE._expected_error_observed(report, ("PID",))
 
 
 def test_baseline_policy_fails_closed_on_warning_or_alert() -> None:
