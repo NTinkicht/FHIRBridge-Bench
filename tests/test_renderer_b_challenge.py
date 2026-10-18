@@ -1,8 +1,14 @@
+from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 
+import pytest
+
 from fhirbridge.renderer_b_challenge import (
+    _document_sha256,
     build_renderer_b_challenge,
     challenge_manifest,
+    validate_renderer_b_challenge_inputs,
     write_renderer_b_challenge,
 )
 
@@ -94,3 +100,94 @@ def test_renderer_b_v03_challenge_authors_order_context_in_all_cases() -> None:
             and relation["target_fact_id"] == order_id
             for relation in reports[0]["relations"]
         ), case.scenario_id
+
+
+def _changed_case_graph(*, extra_key: str, value):
+    cases = list(build_renderer_b_challenge())
+    graph = deepcopy(cases[0].graph)
+    # Attach at the deepest nested record to catch inadvertent source/gold
+    # leakage from a future canonical generator, not just top-level metadata.
+    graph["facts"][0][extra_key] = value
+    cases[0] = replace(
+        cases[0], graph=graph, graph_sha256=_document_sha256(graph)
+    )
+    return tuple(cases)
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "renderer_a_output",
+        "Renderer-A-Output",
+        "target_gold_serialization",
+        "expected_fhir",
+        "expected_hl7v2",
+        "verifier_decisions",
+        "semantic_verifier_result",
+        "fault_label",
+        "sealed_test_data",
+        "answer_key",
+    ],
+)
+def test_reference_outputs_cannot_enter_renderer_b_challenge(key: str) -> None:
+    modified = _changed_case_graph(
+        extra_key=key,
+        value={"nested": ["SYNTHETIC REFERENCE ANSWER; NOT A REAL OUTPUT"]},
+    )
+    with pytest.raises(ValueError, match="prohibited reference or answer field"):
+        challenge_manifest(modified)
+
+
+def test_nested_reference_contamination_is_rejected() -> None:
+    modified = _changed_case_graph(
+        extra_key="extension", value={"inner": [{"gold_output": "FAKE"}]}
+    )
+    with pytest.raises(ValueError, match="prohibited reference or answer field"):
+        validate_renderer_b_challenge_inputs(modified)
+
+
+def test_non_synthetic_and_non_development_graphs_fail_closed() -> None:
+    for change in (
+        {"synthetic_only": False},
+        {"partition": "confirmatory"},
+    ):
+        cases = list(build_renderer_b_challenge())
+        graph = deepcopy(cases[0].graph)
+        graph["scenario_metadata"].update(change)
+        cases[0] = replace(
+            cases[0], graph=graph, graph_sha256=_document_sha256(graph)
+        )
+        with pytest.raises(ValueError, match="synthetic development data only"):
+            challenge_manifest(tuple(cases))
+
+
+def test_changed_graph_after_hashing_fails_closed() -> None:
+    cases = list(build_renderer_b_challenge())
+    cases[0].graph["facts"][0]["answer_key"] = "FAKE"
+    with pytest.raises(ValueError, match="hash no longer matches"):
+        validate_renderer_b_challenge_inputs(tuple(cases))
+
+
+def test_duplicate_or_missing_challenge_case_is_rejected() -> None:
+    cases = build_renderer_b_challenge()
+    with pytest.raises(ValueError, match="exactly 12"):
+        challenge_manifest(cases[:-1])
+    with pytest.raises(ValueError, match="duplicate case IDs"):
+        challenge_manifest(cases[:-1] + (replace(cases[-1], case_id=cases[0].case_id),))
+
+
+def test_writer_rejects_contamination_before_creating_output_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from fhirbridge import renderer_b_challenge
+
+    contaminated = _changed_case_graph(
+        extra_key="fault_labels", value=["SYNTHETIC FAKE"]
+    )
+    monkeypatch.setattr(
+        renderer_b_challenge, "build_renderer_b_challenge", lambda: contaminated
+    )
+    output = tmp_path / "new_clean_room_handoff"
+    with pytest.raises(ValueError, match="prohibited reference or answer field"):
+        write_renderer_b_challenge(output)
+    assert not output.exists()
