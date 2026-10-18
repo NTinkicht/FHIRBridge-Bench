@@ -107,6 +107,8 @@ def validate_renderer_b_challenge_inputs(
     for case in cases:
         if not isinstance(case.graph, dict):
             raise ValueError("Renderer B challenge graph must be a mapping")
+        if "assertions" in case.graph:
+            raise ValueError("Renderer B handoff must not include test assertions")
         metadata = case.graph.get("scenario_metadata")
         if not isinstance(metadata, dict) or (
             metadata.get("partition") != "development"
@@ -140,6 +142,11 @@ def build_renderer_b_challenge() -> tuple[RendererBChallengeCase, ...]:
             partition="development",
             include_order_context=True,
         )
+        # The internal canonical generator embeds test assertions including
+        # expected values/units. Those are developer-oracle hints, not graph
+        # facts: never pass them to the isolated Codex implementation. Remove
+        # them *before* hashing and exporting the sanitized challenge.
+        graph.pop("assertions", None)
         metadata = graph["scenario_metadata"]
         cases.append(
             RendererBChallengeCase(
