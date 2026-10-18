@@ -1,0 +1,44 @@
+name: Renderer B clean-room contract preflight
+
+on:
+  pull_request:
+    branches:
+      - renderer-b-cleanroom
+  push:
+    branches:
+      - renderer-b-cleanroom
+
+permissions:
+  contents: read
+
+jobs:
+  isolate-and-pin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check contract byte pin and forbidden source paths
+        shell: bash
+        run: |
+          python - <<'PY'
+          from hashlib import sha256
+          from pathlib import Path
+
+          contract = Path("contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml")
+          expected = "7058513c8541e175d2368a6698f285a594f13cde58cd0f4b6455c7cac95b4ac5"
+          assert contract.is_file(), "Draft contract missing"
+          actual = sha256(contract.read_bytes()).hexdigest()
+          assert actual == expected, f"Contract byte mismatch: {actual}"
+
+          prohibited = (
+              "src/fhirbridge/renderers/fhir_r4_a.py",
+              "src/fhirbridge/renderers/hl7v251_oru_a.py",
+              "src/fhirbridge/renderer_b_challenge.py",
+              "src/fhirbridge/semantic_verifier.py",
+              "src/fhirbridge/semantic_lifter.py",
+              "qualification/faults",
+              "qualification/hl7v2/results",
+          )
+          present = [p for p in prohibited if Path(p).exists()]
+          assert not present, f"Clean-room exposure risk: {present}"
+          print("PASS: pinned draft contract matches and prohibited implementation paths are absent")
+          PY
