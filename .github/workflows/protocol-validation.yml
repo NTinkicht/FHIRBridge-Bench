@@ -180,7 +180,7 @@ jobs:
       - name: Build Renderer B expected clean-room inputs
         run: |
           python renderer_validation/build_renderer_b_expected_inputs.py \
-            --starting-commit a2cb618785394ff50225c589e449951f63b71d1b
+            --starting-commit 661f274d3ec0761d83170ca1bf88fe3a4c7a89f8
 
       - name: Archive clean-room Renderer B challenge package
         uses: actions/upload-artifact@v4
