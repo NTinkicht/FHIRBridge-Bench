@@ -119,6 +119,11 @@ def audit_v03_independent_source_census(
     by_area = _validate_census(
         census, extractor_ids=[lock_a["extractor_id"], lock_b["extractor_id"]]
     )
+    reviewed_pages = {
+        row["coverage_area"]: frozenset(row["source_pages"])
+        for row in census["scope_areas"]
+        if row["status"] == "SOURCE_PAGES_CHECKED"
+    }
     candidates = census["candidate_requirements"]
     if type(candidates) is not list:
         raise ValueError("v0.3 source census candidates must be an array")
@@ -144,6 +149,7 @@ def audit_v03_independent_source_census(
             type(area) is not str
             or by_area.get(area) != "SOURCE_PAGES_CHECKED"
             or not _pages(pages)
+            or not set(pages).issubset(reviewed_pages.get(area, ()))
         ):
             raise ValueError("census rule not grounded in a checked source area/pages")
         if type(rule) is not dict or any(rule_validator.iter_errors(rule)):
