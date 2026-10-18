@@ -262,7 +262,7 @@
           "const": "FHIRBRIDGE-RENDERER-B-DEV-001"
         },
         "challenge_version": {
-          "const": "0.2.0"
+          "const": "0.3.0"
         },
         "challenge_manifest_sha256": {
           "type": "string",
