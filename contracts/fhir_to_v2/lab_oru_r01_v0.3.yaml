@@ -30,7 +30,10 @@ target:
   realm: US
   selected_profile_candidate: LRI_NG_FRU_Profile_V3
   profile_selection_record: benchmark/lri_profile_selection.yaml
-  exact_machine_profile_status: pending_acquisition_and_qualification
+  exact_machine_profile_status: optional_path_a_original_profile_unavailable
+  selected_validation_route: bounded_PDF_derived_Path_B_pending_independent_qualification
+  bounded_G1_qualification_complete: false
+  confirmatory_inference_authorized: false
 
 scope:
   included:
@@ -544,17 +547,22 @@ rules:
 grounding_guards:
   - guard_id: ORDER_IDENTIFIER_SOURCE_GROUNDING_001
     source_fact_type: order
+    additional_source_fact_types: [diagnostic_report]
+    additional_source_relation_type: has_report
     source_field: identifiers.value
     target_fact_type: order
     target_field: identifiers.value
     match_type: exact_scalar_membership
     primary_endpoint_eligible: true
     rationale: >-
-      Any order identifier value asserted in a grounded target order fact must
-      exist in an authored canonical order fact. This invariant does not decide
-      whether ServiceRequest.identifier, DiagnosticReport.identifier, ORC-3, or
-      OBR-3 is the unique correct representation; it only prevents structural
-      repair from inventing a business identifier.
+      Any placer/filler identifier asserted in a grounded target order fact
+      must occur in an authored canonical order OR diagnostic_report identifier.
+      This avoids calling an authored accession fabricated when it appears in
+      a filler slot. It does not license the particular placer/filler assignment;
+      those mappings remain INDETERMINATE pending blind expert contract review.
+      Patient and specimen identifiers and unrelated reports are deliberately
+      not admissible here; the accession must belong to the matched source
+      order's has_report relationship.
     evidence:
       - benchmark/lri_order_context_evidence.yaml
       - benchmark/lri_profile_selection.yaml
