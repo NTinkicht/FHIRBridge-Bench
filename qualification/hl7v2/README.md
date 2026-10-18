@@ -105,7 +105,21 @@ than accepting any nonzero error as sufficient evidence.
 
 The local qualification harness now preserves the entry-level NIST validation
 report as well as compact counts for Error, Warning, Alert, and Informational
-classifications.
+classifications. It additionally fails closed if compact severity totals
+contradict the detailed severity counts (or if a zero-error summary contains
+an Error entry), or if an expected-locus negative control is supported only by
+free-text descriptions instead of a structured segment/field path. For each
+validator execution, its local report binds the input message byte SHA-256,
+raw captured stdout/stderr SHA-256 values, and subprocess exit status. Stderr
+is never interpreted as authoritative validator JSON. An input file mutation
+during execution invalidates the receipt.
+
+These receipts establish byte-level traceability for this **optional local
+profile** tooling, not the authenticity or completeness of any private profile,
+not a review of Edition 5 normative requirements, and not Path B G1
+qualification. The current report stores the *digests*, not raw validator
+streams; custodians must retain original streams privately if independent
+byte-level replay is required.
 
 Pre-freeze qualification is deliberately fail-closed:
 
