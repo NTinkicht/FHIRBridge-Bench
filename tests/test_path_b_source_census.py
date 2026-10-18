@@ -59,7 +59,10 @@ def _census() -> dict:
             {
                 "coverage_area": area,
                 "status": "SOURCE_PAGES_CHECKED" if area in ("MSH", "ORC", "OBR") else "UNREVIEWED",
-                "source_pages": [1] if area in ("MSH", "ORC", "OBR") else [],
+                # Illustrative page numbers only; not authentic HL7 evidence.
+                "source_pages": {
+                    "MSH": [1, 152, 153], "ORC": [1, 185], "OBR": [1, 186],
+                }.get(area, []),
             }
             for area in _CENSUS_AREAS
         ],
@@ -243,6 +246,20 @@ def test_unreviewed_scope_area_cannot_claim_source_pages_or_rules() -> None:
 def test_invalid_candidates_fail_closed(key: str, value: object) -> None:
     census = _census()
     census["candidate_requirements"][0][key] = value
+    with pytest.raises(ValueError, match="candidate source requirement"):
+        _audit(census)
+
+
+def test_rule_cannot_cite_pages_not_checked_for_its_own_area() -> None:
+    census = _census()
+    census["candidate_requirements"][0]["source_pages"] = [999]
+    with pytest.raises(ValueError, match="candidate source requirement"):
+        _audit(census)
+
+
+def test_page_checked_for_another_area_does_not_count() -> None:
+    census = _census()
+    census["candidate_requirements"][1]["source_pages"] = [152]
     with pytest.raises(ValueError, match="candidate source requirement"):
         _audit(census)
 
