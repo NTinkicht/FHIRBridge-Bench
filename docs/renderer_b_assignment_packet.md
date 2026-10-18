@@ -8,6 +8,31 @@ Implement **Renderer B** for the first FHIRBridge-Bench laboratory slice as an i
 
 Renderer B exists to provide **differential evidence about task specification and implementation ambiguity**. It is not ground truth. Agreement between Renderer A and Renderer B does not validate the canonical facts or projectability contract by itself.
 
+## AI-authored agent B status (2026-10-18; pre-freeze)
+
+The PI has chosen **Codex** to develop an *exploratory* Renderer B prototype.
+Codex is an LLM coding agent, so mapping code it generates must be declared
+truthfully with `independence.llm_generated_mapping_code_used: true`.
+The current scientific clean-room protocol explicitly prohibits LLM-generated
+mapping code. **This agent-authored prototype cannot pass the existing
+`ready_for_differential_comparison` scientific intake gate** by obtaining
+green CI, matching challenge hashes, or providing a declaration.
+
+The coordinator's declaration checker now exposes a separate,
+nonauthoritative `ready_for_exploratory_agent_comparison` diagnostic if the
+only blocker is precisely the disclosed AI authorship. All other isolation,
+custody, source-identity, and exposure checks still apply. Any comparative
+results from this route must be labeled *exploratory development diagnostics*;
+they do not clear scientific independence, contract review, G1 conformance,
+or protocol freeze. The CLI intentionally exits nonzero when the scientific
+comparison gate remains blocked.
+
+A future route that seeks to use an AI-authored Renderer B as scientifically
+accepted independent evidence requires a **prospective methodology amendment
+and independent technical assessment**, not a silent change of the current
+rules. Never mark the LLM-generated field `false` for a Codex-authored mapping
+or reuse Renderer A's implementation/outputs to improve B before first lock.
+
 ## Independence requirement
 
 The implementer of Renderer B must not inspect, copy, refactor, or mechanically translate Renderer A source code before completing the initial implementation and test set.
@@ -43,6 +68,41 @@ Before implementation begins, generate the shared development input package with
 ```bash
 python renderer_validation/build_renderer_b_challenge.py
 ```
+
+The project custodian must also generate and retain a schema-valid expected-input
+record with `renderer_validation/build_renderer_b_expected_inputs.py`. That
+record pins the exact `renderer-b-cleanroom` starting commit, challenge
+manifest SHA-256, and contract SHA-256. The implementer copies the
+`clean_room_inputs` block verbatim into the final declaration; it is input
+identity, not an independence claim.
+
+
+### Enforced challenge-content preflight
+
+The challenge generator validates the **actual canonical graph contents**
+before it writes any handoff files. It fails closed on non-development or
+non-synthetic cases, mismatched graph hashes, duplicate case/graph identities,
+or nested source/reference-output fields (Renderer A output, gold target
+serializations, verifier decisions, fault labels, sealed cases and answer keys).
+The manifest flags alone are **not** accepted as evidence that these
+sensitive outputs are absent.
+
+The sanitized challenge package is now **v0.3.0** (a breaking change to
+v0.2.0) because internal canonical test `assertions` with expected
+values and units have been stripped from the exported graph **before hashing**.
+The custodian must regenerate the entire 12-case package and handoff record;
+older v0.2.0 manifests and contract hashes must not be treated as equivalent
+to the new input identity. Any existing Codex session exposed to v0.2.0
+assertions cannot retroactively be called blind.
+
+The resulting sanitized challenge may be passed to an isolated Codex
+development session **only after** its exact handoff hashes and permitted-file
+boundary are recorded. Do not give Codex broader access to `protocol-v1`,
+unrestricted GitHub search, Renderer A PR diffs or any source/verifier/gold
+content not explicitly allowlisted. A passing exposure check reduces
+accidental leakage; it does **not** prove agent isolation, implementation
+independence or normative accuracy. Codex mapping code must still be reported
+as AI-authored exploratory work.
 
 The package contains one deterministic canonical development graph for each
 `LAB-001` through `LAB-012`, plus a manifest with graph hashes. The v0.3
@@ -164,6 +224,19 @@ Before differential comparison, the implementer must record:
 The declaration must validate against:
 
 - `renderer_validation/schema/renderer_implementation_declaration.schema.json`
+
+Differential comparison additionally requires the custodian's original handoff
+record, validated against
+`renderer_validation/schema/renderer_b_expected_inputs.schema.json`. Run:
+
+```bash
+python renderer_validation/validate_renderer_b_declaration.py \
+  renderer-b-declaration.yaml \
+  --expected-inputs renderer-b-expected-inputs.yaml
+```
+
+A mismatch in starting commit, challenge hash, or contract hash blocks the
+comparison.
 
 A non-assertive completion template is provided at:
 
