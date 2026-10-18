@@ -87,6 +87,14 @@ serializations, verifier decisions, fault labels, sealed cases and answer keys).
 The manifest flags alone are **not** accepted as evidence that these
 sensitive outputs are absent.
 
+The sanitized challenge package is now **v0.3.0** (a breaking change to
+v0.2.0) because internal canonical test `assertions` with expected
+values and units have been stripped from the exported graph **before hashing**.
+The custodian must regenerate the entire 12-case package and handoff record;
+older v0.2.0 manifests and contract hashes must not be treated as equivalent
+to the new input identity. Any existing Codex session exposed to v0.2.0
+assertions cannot retroactively be called blind.
+
 The resulting sanitized challenge may be passed to an isolated Codex
 development session **only after** its exact handoff hashes and permitted-file
 boundary are recorded. Do not give Codex broader access to `protocol-v1`,
