@@ -203,6 +203,15 @@ def test_legitimate_clinical_reference_and_relation_keys_remain_allowed() -> Non
     validate_renderer_b_challenge_inputs(second)
 
 
+@pytest.mark.parametrize("key", ["default", "default_unit", "unexpected_status"])
+def test_benign_words_containing_sensitive_substrings_are_allowed(key: str) -> None:
+    modified = _changed_case_graph(
+        extra_key=key,
+        value="SYNTHETIC NON-SENSITIVE ATTRIBUTE",
+    )
+    validate_renderer_b_challenge_inputs(modified)
+
+
 def test_nested_reference_contamination_is_rejected() -> None:
     modified = _changed_case_graph(
         extra_key="extension", value={"inner": [{"gold_output": "FAKE"}]}
