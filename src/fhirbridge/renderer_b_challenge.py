@@ -88,22 +88,22 @@ def validate_renderer_b_challenge_inputs(
                 # Match snake_case, kebab-case and CamelCase labels.
                 # Physical clinical fields such as reference_range and
                 # target_fact_id must remain legal canonical inputs.
+                snake = re.sub(r"(?<=[A-Z])(?=[A-Z][a-z])", "_", key)
                 normalized = re.sub(
-                    r"(?<=[a-z0-9])(?=[A-Z])", "_", key
+                    r"(?<=[a-z0-9])(?=[A-Z])", "_", snake
                 ).casefold().replace("-", "_").replace(" ", "_")
-                # Reject answer-related concepts embedded *anywhere* in a
-                # compound key, not just prefixes. For example,
-                # semanticVerifierClassification and seededFaultLabel are
-                # sensitive even though they start with neutral words.
-                # Do not ban generic reference_ (reference_range is legitimate).
-                sensitive_concepts = (
+                # Match sensitive *tokens* anywhere in compound names. Bare
+                # substring matching would falsely reject default or
+                # unexpected_status; clinical reference_range is also valid.
+                tokens = set(normalized.split("_"))
+                sensitive_concepts = {
                     "renderer", "verifier", "fault", "gold",
                     "expected", "sealed", "answer", "oracle",
-                )
+                }
                 if (
                     normalized in _FORBIDDEN_PAYLOAD_KEYS
                     or normalized.startswith(_FORBIDDEN_KEY_PREFIXES)
-                    or any(concept in normalized for concept in sensitive_concepts)
+                    or bool(tokens & sensitive_concepts)
                 ):
                     raise ValueError(
                         "Renderer B challenge contains prohibited reference "
