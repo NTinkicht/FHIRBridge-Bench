@@ -25,7 +25,7 @@ def test_renderer_b_handoff_record_is_deterministic_for_fixed_inputs() -> None:
     assert inputs["branch"] == "renderer-b-cleanroom"
     assert inputs["starting_commit"] == "1" * 40
     assert inputs["challenge_id"] == "FHIRBRIDGE-RENDERER-B-DEV-001"
-    assert inputs["challenge_version"] == "0.2.0"
+    assert inputs["challenge_version"] == "0.3.0"
     assert re.fullmatch(r"[0-9a-f]{64}", inputs["challenge_manifest_sha256"])
     assert re.fullmatch(r"[0-9a-f]{64}", inputs["contract_sha256"])
 
