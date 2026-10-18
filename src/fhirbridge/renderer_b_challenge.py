@@ -15,7 +15,7 @@ from typing import Any
 
 from .canonical import generate_lab_scenario
 
-_RENDERER_B_CHALLENGE_VERSION = "0.2.0"
+_RENDERER_B_CHALLENGE_VERSION = "0.3.0"
 _TEMPLATES = tuple(f"LAB-{index:03d}" for index in range(1, 13))
 _SEED_BASE = 15000
 
