@@ -1,7 +1,9 @@
 import importlib.util
 import json
 from copy import deepcopy
+from hashlib import sha256
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -129,6 +131,54 @@ def test_segment_level_negative_requires_a_structural_segment_path() -> None:
     assert not _MODULE._expected_error_observed(report, ("PID",))
     entry["path"] = "ORU_R01[1].PID[1]"
     assert _MODULE._expected_error_observed(report, ("PID",))
+
+
+def test_validator_receipt_binds_raw_stdout_stderr_and_message_bytes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    message = tmp_path / "synthetic-message.er7"
+    message.write_bytes(b"MSH|^~\\&|TEST\r")
+    raw_out = _validator_stdout(_full_report(), _summary()).encode("utf-8")
+    raw_err = b"harmless synthetic diagnostic\r\n"
+    completed = SimpleNamespace(returncode=0, stdout=raw_out, stderr=raw_err)
+    monkeypatch.setattr(_MODULE.subprocess, "run", lambda *a, **k: completed)
+
+    report = _MODULE._run_validator(tmp_path, message)
+    receipt = report["measurement_receipt"]
+    assert receipt["artifact_sha256"] == sha256(message.read_bytes()).hexdigest()
+    assert receipt["validator_stdout_sha256"] == sha256(raw_out).hexdigest()
+    assert receipt["validator_stderr_sha256"] == sha256(raw_err).hexdigest()
+    assert receipt["validator_exit_code"] == 0
+
+
+def test_stderr_is_never_an_authoritative_validator_report(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    message = tmp_path / "synthetic-message.er7"
+    message.write_bytes(b"MSH|^~\\&|TEST\r")
+    forged = _validator_stdout(_full_report(), _summary()).encode("utf-8")
+    completed = SimpleNamespace(
+        returncode=0, stdout=b"unparseable synthetic log", stderr=forged
+    )
+    monkeypatch.setattr(_MODULE.subprocess, "run", lambda *a, **k: completed)
+    with pytest.raises(ValueError, match="JSON summary was not found"):
+        _MODULE._run_validator(tmp_path, message)
+
+
+def test_message_changed_during_validator_execution_fails_closed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    message = tmp_path / "synthetic-message.er7"
+    message.write_bytes(b"MSH|^~\\&|ORIGINAL\r")
+    raw_out = _validator_stdout(_full_report(), _summary()).encode("utf-8")
+
+    def mutate_on_run(*_args: object, **_kwargs: object) -> SimpleNamespace:
+        message.write_bytes(b"MSH|^~\\&|MODIFIED\r")
+        return SimpleNamespace(returncode=0, stdout=raw_out, stderr=b"")
+
+    monkeypatch.setattr(_MODULE.subprocess, "run", mutate_on_run)
+    with pytest.raises(ValueError, match="changed during execution"):
+        _MODULE._run_validator(tmp_path, message)
 
 
 def test_baseline_policy_fails_closed_on_warning_or_alert() -> None:
