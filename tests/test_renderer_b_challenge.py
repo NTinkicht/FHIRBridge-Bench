@@ -80,6 +80,39 @@ def test_renderer_b_challenge_writer_emits_only_inputs_and_manifest(
     assert manifest["cases"][0]["input_path"] == "inputs/RB-001.json"
 
 
+def test_codex_challenge_strips_internal_expected_value_assertions() -> None:
+    from fhirbridge.canonical import generate_lab_scenario
+
+    original = generate_lab_scenario(
+        "LAB-001", 15000, partition="development", include_order_context=True
+    )
+    assert "assertions" in original
+    assert any(
+        "expected_value" in row.get("parameters", {})
+        for row in original["assertions"]
+    )
+    for case in build_renderer_b_challenge():
+        assert "assertions" not in case.graph
+        assert case.graph_sha256 == _document_sha256(case.graph)
+
+
+def test_unstripped_assertions_are_rejected_even_without_named_expectations() -> None:
+    modified = _changed_case_graph(
+        extra_key="dev_extension",
+        value={"test_context": "synthetic"},
+    )
+    cases = list(modified)
+    contaminated = deepcopy(cases[0].graph)
+    contaminated["assertions"] = [{"type": "OTHER_INTERNAL_TEST_ASSERTION"}]
+    cases[0] = replace(
+        cases[0],
+        graph=contaminated,
+        graph_sha256=_document_sha256(contaminated),
+    )
+    with pytest.raises(ValueError, match="must not include test assertions"):
+        challenge_manifest(tuple(cases))
+
+
 def test_renderer_b_v03_challenge_authors_order_context_in_all_cases() -> None:
     cases = build_renderer_b_challenge()
 
