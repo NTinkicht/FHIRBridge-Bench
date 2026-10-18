@@ -127,6 +127,16 @@ def _changed_case_graph(*, extra_key: str, value):
         "fault_label",
         "sealed_test_data",
         "answer_key",
+        "verifier_results",
+        "verifier_verdict",
+        "verifierOutput",
+        "VerifierResults",
+        "goldLabels",
+        "gold_scores",
+        "rendererAOutput",
+        "expectedArtifact",
+        "fault_answer",
+        "sealedCase",
     ],
 )
 def test_reference_outputs_cannot_enter_renderer_b_challenge(key: str) -> None:
@@ -136,6 +146,20 @@ def test_reference_outputs_cannot_enter_renderer_b_challenge(key: str) -> None:
     )
     with pytest.raises(ValueError, match="prohibited reference or answer field"):
         challenge_manifest(modified)
+
+
+def test_legitimate_clinical_reference_and_relation_keys_remain_allowed() -> None:
+    # Avoid banning valid clinical facts while guarding answer-like namespaces.
+    modified = _changed_case_graph(
+        extra_key="reference_range",
+        value={"low": 2, "high": 9},
+    )
+    validate_renderer_b_challenge_inputs(modified)
+    second = _changed_case_graph(
+        extra_key="target_fact_id",
+        value="SYNTHETIC-LINK",
+    )
+    validate_renderer_b_challenge_inputs(second)
 
 
 def test_nested_reference_contamination_is_rejected() -> None:
