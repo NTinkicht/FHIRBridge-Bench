@@ -1,0 +1,70 @@
+severity_policy:
+  id: FHIRBRIDGE-SEVERITY-POLICY-001
+  version: 0.1.0
+  status: candidate_requires_expert_calibration
+  scientific_role: prefreeze_measurement_policy
+  source_documents:
+    - docs/expert_validation_protocol.md
+    - contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml
+    - fault_injection/fault_taxonomy_v0.1.yaml
+  principle: >-
+    Severity is a separate axis from semantic error class. Error type does not
+    determine severity by itself.
+
+levels:
+  S0:
+    label: benign_cosmetic
+    definition: >-
+      No change to clinical meaning or interoperability intent.
+  S1:
+    label: interoperability_relevant
+    definition: >-
+      Can affect parsing, routing, or interpretation but is not expected to
+      change a clinical fact.
+  S2:
+    label: clinically_meaningful
+    definition: >-
+      Changes or removes information that could alter interpretation or
+      downstream decision-making.
+  S3:
+    label: potentially_safety_critical
+    definition: >-
+      Wrong-patient or wrong-result attachment, materially incorrect result
+      value/unit/status, or a comparable high-impact error.
+
+primary_endpoint_major_candidate:
+  levels: [S2, S3]
+  status: not_frozen
+  rationale: >-
+    S2 and S3 are the only current severity levels whose definitions explicitly
+    describe clinically meaningful or potentially safety-critical semantic
+    impact. This candidate must be confirmed during expert calibration before
+    sealed evaluation.
+  S0_primary_error: false
+  S1_primary_error: false
+
+contract_default_severity_policy:
+  role: prior_default_not_expert_gold
+  note: >-
+    Rule-level severity_default values in the projectability contract are
+    provisional defaults for instrumentation. Blinded expert reviewers retain
+    authority to assign case-level severity under the frozen rubric.
+
+expert_calibration:
+  status: pending
+  record_ref: null
+  record_sha256: null
+
+calibration_requirements:
+  - two_primary_expert_reviewers_review_S2_S3_boundary_examples
+  - adjudicator_reviews_disputed_anchor_examples
+  - primary_endpoint_major_definition_frozen_before_sealed_opening
+  - reviewer_instructions_include_frozen_anchor_examples
+  - pilot_reports_pre_adjudication_severity_agreement
+  - no_sealed_cases_used_to_modify_severity_anchors
+
+freeze_conditions:
+  status_must_equal: frozen
+  expert_calibration_record_required: true
+  major_threshold_required: true
+  post_sealed_change_requires_fresh_sealed_set_or_exploratory_downgrade: true

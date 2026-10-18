@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/renderer_disagreement.schema.json",
+  "title": "FHIRBridge Renderer Differential Disagreement Record",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "record_id",
+    "scenario_id",
+    "artifact_type",
+    "renderer_a",
+    "renderer_b",
+    "applicable_contract_rules",
+    "classification",
+    "adjudication"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "0.1.0"},
+    "record_id": {"type": "string", "minLength": 1},
+    "scenario_id": {"type": "string", "minLength": 1},
+    "canonical_fact_ids": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "artifact_type": {
+      "type": "string",
+      "enum": ["FHIR_R4", "HL7_V251_ORU_R01"]
+    },
+    "renderer_a": {"$ref": "#/$defs/rendererObservation"},
+    "renderer_b": {"$ref": "#/$defs/rendererObservation"},
+    "applicable_contract_rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "SEMANTICALLY_EQUIVALENT_SERIALIZATION",
+        "DIFFERENT_BUT_CONTRACT_PERMITTED",
+        "CONTRACT_AMBIGUITY",
+        "RENDERER_A_DEFECT",
+        "RENDERER_B_DEFECT",
+        "BOTH_DEFECTIVE",
+        "INDETERMINATE"
+      ]
+    },
+    "standards_evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source", "finding"],
+        "properties": {
+          "source": {"type": "string", "minLength": 1},
+          "finding": {"type": "string", "minLength": 1},
+          "reference": {"type": ["string", "null"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "external_comparator": {
+      "type": ["object", "null"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "version": {"type": ["string", "null"]},
+        "observation": {"type": "string", "minLength": 1},
+        "used_as_ground_truth": {"type": "boolean", "const": false}
+      },
+      "required": ["name", "observation", "used_as_ground_truth"],
+      "additionalProperties": false
+    },
+    "adjudication": {
+      "type": "object",
+      "required": ["status", "resolution", "contract_changed", "regression_fixture_added"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["PENDING", "RESOLVED", "MARKED_INDETERMINATE"]
+        },
+        "resolution": {"type": ["string", "null"]},
+        "adjudicator": {"type": ["string", "null"]},
+        "contract_changed": {"type": "boolean"},
+        "contract_amendment_ref": {"type": ["string", "null"]},
+        "regression_fixture_added": {"type": "boolean"},
+        "regression_fixture_ref": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "rendererObservation": {
+      "type": "object",
+      "required": ["renderer_id", "renderer_version", "artifact_hash", "locus", "value_summary"],
+      "properties": {
+        "renderer_id": {"type": "string", "minLength": 1},
+        "renderer_version": {"type": "string", "minLength": 1},
+        "artifact_hash": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+        "locus": {"type": "string", "minLength": 1},
+        "value_summary": {"type": "string"},
+        "structural_validation_passed": {"type": ["boolean", "null"]}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

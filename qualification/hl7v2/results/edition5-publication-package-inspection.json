@@ -1,0 +1,76 @@
+{
+  "archive": {
+    "entry_count": 2,
+    "filename": "V251_IG_LRI_E5_2024MAY_Errata2024DEC.zip",
+    "sha256": "f26188eabed5b00045b111bd2c4ef29cbfdcbdfad38a4b61fd1547a9259835b2"
+  },
+  "classification": {
+    "contains_machine_readable_profile_xml": false,
+    "is_authoritative_human_readable_publication_package": true,
+    "is_igamt_validation_bundle": false
+  },
+  "entries": [
+    {
+      "filename": "V251_IG_LRI_E5_2024MAY_Errata2024DEC.pdf",
+      "role": "implementation_guide",
+      "sha256": "375f02fd5453b06ff1c51841e703c943c3132134fca53a122f5ccfed743461b7"
+    },
+    {
+      "filename": "2024 12 06 - CSDO Errata Letter for LRI.pdf",
+      "role": "errata_letter",
+      "sha256": "32eeb375ecb78dd77acb01ed388e30c554688e55a8a4d58df05dd0e7a791700f"
+    }
+  ],
+  "edition5_structural_findings": {
+    "OBR": {
+      "cardinality": "1..1",
+      "usage": "R"
+    },
+    "OBR_2_placer_order_number": {
+      "cardinality": "0..1",
+      "usage": "RE"
+    },
+    "OBR_3_filler_order_number": {
+      "cardinality": "1..1",
+      "usage": "R"
+    },
+    "ORC": {
+      "cardinality": "1..1",
+      "usage": "R"
+    },
+    "ORC_12_ordering_provider": {
+      "cardinality": "1..1",
+      "usage": "R"
+    },
+    "ORC_2_placer_order_number": {
+      "cardinality": "0..1",
+      "usage": "RE"
+    },
+    "ORC_3_filler_order_number": {
+      "cardinality": "1..1",
+      "usage": "R"
+    },
+    "ORDER_OBSERVATION": {
+      "cardinality": "1..*",
+      "usage": "R"
+    }
+  },
+  "profile_architecture": {
+    "minimum_required_components": [
+      "LRI_Common_Component_V3",
+      "one of LRI_GU_Component_R1 or LRI_NG_Component_R1",
+      "one of LAB_FRU_Component or LAB_FRN_Component"
+    ],
+    "precoordinated_general_profiles": [
+      "LRI_GU_FRU_Profile_V3",
+      "LRI_GU_FRN_Profile_V3",
+      "LRI_NG_FRU_Profile_V3",
+      "LRI_NG_FRN_Profile_V3"
+    ]
+  },
+  "scientific_disposition": {
+    "may_resolve_order_context_design_question": true,
+    "may_satisfy_machine_profile_freeze": false,
+    "reason": "The publication ZIP contains PDFs only and no IGAMT/NIST validation XML."
+  }
+}

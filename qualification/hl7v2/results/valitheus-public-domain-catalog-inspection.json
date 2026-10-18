@@ -1,0 +1,39 @@
+{
+  "artifact_role": "public_gvt_catalog_negative_evidence",
+  "observed_at": "2026-10-10",
+  "source": {
+    "platform": "Valitheus GVT",
+    "endpoint": "/gvt/api/domains",
+    "method": "GET",
+    "scope": "public/global tool-scope catalog"
+  },
+  "target": {
+    "profile_name": "LRI_NG_FRU_Profile_V3",
+    "profile_oid": "2.16.840.1.113883.9.195.3.25",
+    "implementation_guide": "HL7 Version 2.5.1 Laboratory Results Interface Edition 5",
+    "errata": "2024DEC"
+  },
+  "search_terms": [
+    "LRI",
+    "Laboratory Results Interface",
+    "LRI_NG_FRU_Profile_V3",
+    "2.16.840.1.113883.9.195.3.25"
+  ],
+  "result": {
+    "matching_public_domain_found": false,
+    "relevant_non_target_domains_observed": [
+      {
+        "domain": "quest-profile",
+        "name": "QUEST Profile",
+        "disposition": "custom/vendor profile, not Edition 5 LRI"
+      },
+      {
+        "domain": "labcorp-profile",
+        "name": "Labcorp Profile",
+        "disposition": "custom/vendor profile, not Edition 5 LRI"
+      }
+    ]
+  },
+  "conclusion": "The public Valitheus GVT domain catalog does not expose an LRI Edition 5 tool scope or the selected LRI_NG_FRU_Profile_V3 target. Public GVT retrieval is therefore exhausted unless the profile is republished under a new scope.",
+  "next_action": "Request the machine-readable Edition 5 profile bundle directly from Valitheus/NIST/HL7 Orders and Observations, preserving provenance and original packaging."
+}

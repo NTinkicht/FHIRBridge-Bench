@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/deterministic_baseline_execution_record.schema.json",
+  "title": "FHIRBridge Confirmatory Deterministic Baseline Execution Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "execution_id",
+    "case_id",
+    "source_input_sha256",
+    "model_prompt_freeze_sha256",
+    "renderer_component_sha256",
+    "outcome_class",
+    "output_sha256",
+    "error_summary"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "execution_id": {"type": "string", "minLength": 1},
+    "case_id": {"type": "string", "minLength": 1},
+    "source_input_sha256": {"$ref": "#/$defs/sha256"},
+    "model_prompt_freeze_sha256": {"$ref": "#/$defs/sha256"},
+    "renderer_component_sha256": {"$ref": "#/$defs/sha256"},
+    "outcome_class": {
+      "enum": ["RESPONSE_RECEIVED", "MEASUREMENT_FAILURE_POSTPROCESSING"]
+    },
+    "output_sha256": {
+      "oneOf": [
+        {"$ref": "#/$defs/sha256"},
+        {"type": "null"}
+      ]
+    },
+    "error_summary": {"type": ["string", "null"]}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"outcome_class": {"const": "RESPONSE_RECEIVED"}}
+      },
+      "then": {
+        "properties": {
+          "output_sha256": {"$ref": "#/$defs/sha256"},
+          "error_summary": {"type": "null"}
+        }
+      },
+      "else": {
+        "properties": {
+          "output_sha256": {"type": "null"},
+          "error_summary": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    }
+  }
+}

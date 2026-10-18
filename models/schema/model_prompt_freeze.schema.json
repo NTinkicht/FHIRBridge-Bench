@@ -1,0 +1,373 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/model_prompt_freeze.schema.json",
+  "title": "FHIRBridge Confirmatory Model and Prompt Freeze",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "config_id",
+    "status",
+    "created_at",
+    "sealed_set_opened",
+    "global_execution_policy",
+    "deterministic_baseline",
+    "llm_models",
+    "llm_strategies"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.6.0"
+    },
+    "config_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "incomplete_template",
+        "frozen"
+      ]
+    },
+    "created_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "sealed_set_opened": {
+      "const": false
+    },
+    "global_execution_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_id",
+        "policy_version",
+        "policy_artifact",
+        "synthetic_data_only_for_hosted_models",
+        "silent_model_fallback",
+        "silent_prompt_fallback",
+        "provider_generation_calls_per_case_model",
+        "retry_policy",
+        "timeout_seconds"
+      ],
+      "properties": {
+        "synthetic_data_only_for_hosted_models": {
+          "const": true
+        },
+        "silent_model_fallback": {
+          "const": false
+        },
+        "silent_prompt_fallback": {
+          "const": false
+        },
+        "retry_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "maximum_attempts",
+            "retry_on"
+          ],
+          "properties": {
+            "maximum_attempts": {
+              "const": 1
+            },
+            "retry_on": {
+              "type": "array",
+              "maxItems": 0
+            }
+          }
+        },
+        "timeout_seconds": {
+          "const": 120
+        },
+        "policy_id": {
+          "const": "FHIRBRIDGE-MODEL-EXECUTION-001"
+        },
+        "policy_version": {
+          "const": "0.3.0"
+        },
+        "policy_artifact": {
+          "$ref": "#/$defs/artifact"
+        },
+        "provider_generation_calls_per_case_model": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "direct_structured_llm",
+            "mapping_aware_llm",
+            "mapping_aware_plus_syntax_repair"
+          ],
+          "properties": {
+            "direct_structured_llm": {
+              "const": 1
+            },
+            "mapping_aware_llm": {
+              "const": 1
+            },
+            "mapping_aware_plus_syntax_repair": {
+              "const": 0
+            }
+          }
+        }
+      }
+    },
+    "deterministic_baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "implementation_artifact",
+        "qualification_artifact"
+      ],
+      "properties": {
+        "implementation_artifact": {
+          "$ref": "#/$defs/artifact"
+        },
+        "qualification_artifact": {
+          "$ref": "#/$defs/artifact"
+        }
+      }
+    },
+    "llm_models": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/llmModel"
+      }
+    },
+    "llm_strategies": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "$ref": "#/$defs/strategy"
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path_or_ref",
+        "sha256"
+      ],
+      "properties": {
+        "path_or_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "llmModel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_key",
+        "provider",
+        "model_id",
+        "model_revision_or_snapshot",
+        "temperature",
+        "top_p",
+        "max_output_tokens",
+        "seed_policy",
+        "structured_output_mode",
+        "seed"
+      ],
+      "properties": {
+        "model_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_revision_or_snapshot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0
+        },
+        "top_p": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "max_output_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "seed_policy": {
+          "enum": [
+            "fixed_supported_seed",
+            "provider_does_not_support_seed"
+          ]
+        },
+        "seed": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "structured_output_mode": {
+          "const": "plain_text_hl7_message"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "seed_policy": {
+                "const": "fixed_supported_seed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "seed": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "seed_policy": {
+                "const": "provider_does_not_support_seed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "seed": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "strategy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "strategy_id",
+        "generation_source",
+        "implementation_artifact",
+        "prompt_artifacts",
+        "mapping_context_artifacts",
+        "syntax_repair"
+      ],
+      "properties": {
+        "strategy_id": {
+          "enum": [
+            "direct_structured_llm",
+            "mapping_aware_llm",
+            "mapping_aware_plus_syntax_repair"
+          ]
+        },
+        "implementation_artifact": {
+          "$ref": "#/$defs/artifact"
+        },
+        "prompt_artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/artifact"
+          }
+        },
+        "mapping_context_artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/artifact"
+          }
+        },
+        "syntax_repair": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "implementation_artifact"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "implementation_artifact": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/artifact"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "generation_source": {
+          "enum": [
+            "provider_call",
+            "reuse_mapping_aware_raw_output"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "strategy_id": {
+                "enum": [
+                  "direct_structured_llm",
+                  "mapping_aware_llm"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "generation_source": {
+                "const": "provider_call"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "strategy_id": {
+                "const": "mapping_aware_plus_syntax_repair"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "generation_source": {
+                "const": "reuse_mapping_aware_raw_output"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

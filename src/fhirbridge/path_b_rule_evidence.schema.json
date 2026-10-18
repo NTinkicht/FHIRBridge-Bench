@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/path_b_rule_evidence.schema.json",
+  "title": "Path B developer-only rule evidence register",
+  "description": "Record format only; schema validity never establishes independent HL7 Edition 5 G1 conformance.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status", "normative_sources", "rules"],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "status": {"const": "PREFREEZE_DEVELOPER_ONLY"},
+    "normative_sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["guide_sha256", "errata_sha256", "profile_name", "components"],
+      "properties": {
+        "guide_sha256": {"$ref": "#/$defs/sha"},
+        "errata_sha256": {"$ref": "#/$defs/sha"},
+        "profile_name": {"const": "LRI_NG_FRU_Profile_V3"},
+        "components": {
+          "type": "array",
+          "minItems": 3, "maxItems": 3,
+          "uniqueItems": true,
+          "items": {"enum": ["LRI_Common_Component_V3", "LRI_NG_Component_R1", "LAB_FRU_Component"]}
+        }
+      }
+    },
+    "rules": {
+      "type": "array", "minItems": 1,
+      "items": {"$ref": "#/$defs/rule"}
+    }
+  },
+  "$defs": {
+    "sha": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "anchor": {
+      "type": "object", "additionalProperties": false,
+      "required": ["guide_pages", "errata_review", "errata_references"],
+      "properties": {
+        "guide_pages": {"type": "array", "uniqueItems": true, "items": {"type": "integer", "minimum": 1}},
+        "errata_review": {"enum": ["UNASSESSED", "NO_APPLICABLE_ERRATA", "APPLICABLE_ERRATA", "DISPUTED"]},
+        "errata_references": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "original": {
+      "type": "object", "additionalProperties": false,
+      "required": ["extractor_pseudonym", "response_lock_sha256"],
+      "properties": {
+        "extractor_pseudonym": {"type": "string", "minLength": 1},
+        "response_lock_sha256": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "adjudicator": {
+      "type": "object", "additionalProperties": false,
+      "required": ["pseudonym", "private_evidence_ref", "double_omission_audit_ref"],
+      "properties": {
+        "pseudonym": {"type": "string", "minLength": 1},
+        "private_evidence_ref": {"type": "string", "minLength": 1},
+        "double_omission_audit_ref": {"type": "string", "minLength": 1}
+      }
+    },
+    "control": {
+      "type": "object", "additionalProperties": false,
+      "required": ["control_id", "expected_locus", "observed_locus", "result", "evidence_sha256"],
+      "properties": {
+        "control_id": {"type": "string", "minLength": 1},
+        "expected_locus": {"type": "string", "minLength": 1},
+        "observed_locus": {"type": ["string", "null"]},
+        "result": {"enum": ["ACCEPTED_WITHOUT_RULE_VIOLATION", "REJECTED_AT_EXPECTED_LOCUS", "FAIL", "UNRUN"]},
+        "evidence_sha256": {"anyOf": [{"$ref": "#/$defs/sha"}, {"type": "null"}]}
+      }
+    },
+    "rule": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "rule_id", "locus", "usage", "applicability", "condition",
+        "disposition", "source_anchor", "reader_a", "reader_b",
+        "adjudicator", "positive_control", "negative_control"
+      ],
+      "properties": {
+        "rule_id": {"type": "string", "minLength": 1, "pattern": "^PB-[A-Z0-9-]+$"},
+        "locus": {"type": "string", "minLength": 1},
+        "usage": {"enum": ["R", "RE", "C", "O", "X", "UNKNOWN"]},
+        "applicability": {"enum": ["UNASSESSED", "UNCONDITIONAL", "CONDITIONAL", "NOT_APPLICABLE", "UNKNOWN"]},
+        "condition": {"type": ["string", "null"]},
+        "disposition": {"enum": ["UNASSESSED", "UNKNOWN", "DISPUTED", "EXCLUDED_WITH_REASON", "ADJUDICATED"]},
+        "exclusion_reason": {"type": ["string", "null"]},
+        "source_anchor": {"$ref": "#/$defs/anchor"},
+        "reader_a": {"anyOf": [{"$ref": "#/$defs/original"}, {"type": "null"}]},
+        "reader_b": {"anyOf": [{"$ref": "#/$defs/original"}, {"type": "null"}]},
+        "adjudicator": {"anyOf": [{"$ref": "#/$defs/adjudicator"}, {"type": "null"}]},
+        "positive_control": {"anyOf": [{"$ref": "#/$defs/control"}, {"type": "null"}]},
+        "negative_control": {"anyOf": [{"$ref": "#/$defs/control"}, {"type": "null"}]}
+      }
+    }
+  }
+}

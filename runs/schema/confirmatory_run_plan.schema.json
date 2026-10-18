@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/confirmatory_run_plan.schema.json",
+  "title": "FHIRBridge Confirmatory Run Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_plan_id",
+    "status",
+    "created_at",
+    "repository_commit",
+    "sealed_set_opened",
+    "inference_started",
+    "authorization",
+    "frozen_artifacts",
+    "execution_record_contract",
+    "sealed_set",
+    "model_keys",
+    "expected_execution_counts"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.3.0"
+    },
+    "run_plan_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "incomplete_template",
+        "prepared_authorized"
+      ]
+    },
+    "created_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "repository_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{7,40}$"
+    },
+    "sealed_set_opened": {
+      "const": false
+    },
+    "inference_started": {
+      "const": false
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorized",
+        "record_sha256",
+        "record_schema_version",
+        "record_schema_sha256"
+      ],
+      "properties": {
+        "authorized": {
+          "const": true
+        },
+        "record_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "record_schema_version": {
+          "const": "0.2.0"
+        },
+        "record_schema_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "frozen_artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "freeze_manifest_sha256",
+        "protocol_freeze_gates_sha256",
+        "tooling_manifest_sha256",
+        "model_prompt_configuration_sha256",
+        "analysis_preregistration_sha256",
+        "sample_size_preregistration_sha256",
+        "pilot_acceptance_preregistration_sha256",
+        "execution_record_schema_sha256",
+        "deterministic_baseline_renderer_sha256",
+        "deterministic_baseline_execution_schema_sha256"
+      ],
+      "properties": {
+        "freeze_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "protocol_freeze_gates_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "tooling_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "model_prompt_configuration_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "analysis_preregistration_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "sample_size_preregistration_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "pilot_acceptance_preregistration_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "execution_record_schema_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "deterministic_baseline_renderer_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "deterministic_baseline_execution_schema_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "sealed_set": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bundle_id",
+        "bundle_sha256",
+        "case_manifest_sha256",
+        "case_count"
+      ],
+      "properties": {
+        "bundle_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bundle_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "case_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "case_count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "model_keys": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "expected_execution_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider_generation_calls",
+        "derived_repair_outputs",
+        "deterministic_baseline_outputs",
+        "total_arm_outputs"
+      ],
+      "properties": {
+        "provider_generation_calls": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "derived_repair_outputs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "deterministic_baseline_outputs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "total_arm_outputs": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "execution_record_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "required_bindings",
+        "mapping_repair_lineage_required",
+        "schema_validation_required"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "0.3.0"
+        },
+        "required_bindings": {
+          "const": [
+            "model_prompt_freeze_sha256",
+            "source_input_sha256",
+            "rendered_prompt_sha256",
+            "mapping_context_sha256"
+          ]
+        },
+        "mapping_repair_lineage_required": {
+          "const": true
+        },
+        "schema_validation_required": {
+          "const": true
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    }
+  }
+}

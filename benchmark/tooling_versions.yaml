@@ -1,0 +1,198 @@
+manifest:
+  schema_version: 0.1.0
+  status: candidate
+  purpose: >-
+    Candidate dependency pins for FHIRBridge-Bench Protocol v1.0. These values
+    are not frozen until the protocol freeze gate is satisfied and artifact
+    hashes / exact local implementations are recorded.
+
+terminology:
+  loinc:
+    content_version: "2.83"
+    release_date: "2026-08-19"
+    confirmatory_mode: local_snapshot
+    live_fhir_service_role: audit_only
+    live_fhir_service_maturity: beta
+    official_download_filename: Loinc_2.83.zip
+    official_download_requires_login: true
+    official_md5: 057ddf203164705d5a4c3604257060a4
+    snapshot_requirements: benchmark/loinc_2_83_snapshot_requirements.yaml
+    local_snapshot_sha256: 5de1463f0fe65d6c97867153b43151a07ce3f8c8a86de681f98e110008032aba
+    local_provider_implementation: fhirbridge.loinc_snapshot
+    local_provider_version: "0.1.0"
+    local_provider_qualification_passed: true
+    release_zip_sha256: 077a0718e87d8309ffe3a673f75b836a8e783dc36a646413ef97c71c12eab27e
+    qualification_report: qualification/loinc/results/loinc-2.83-qualification.json
+    license_review: required_before_public_release
+
+  hl7_terminology:
+    package: hl7.terminology
+    version: "7.4.0"
+    r4_package: hl7.terminology.r4
+    status_date: "2026-09-22"
+    package_sha256: 1dc558c204f5ee1f2b96ab9a8cd83d0811475b08a4e06a7c2bcea55d1ab116ed
+    qualification_workflow_run_id: 37953147893
+    qualification_job_id: 113896835935
+    qualification_passed: true
+
+units:
+  ucum:
+    content_version: "2.2"
+    essence_revision_date: "2024-06-17"
+    essence_sha256: dfccea1b5dc284245ebae97edd1dc03c45864da4e87df55bc9851797b4fd0b61
+    essence_git_blob_sha: ec61d23ce68da34bf10726daef7b33d70bbc1b4f
+    essence_source: https://github.com/ucum-org/ucum/blob/main/ucum-essence.xml
+    implementation: org.fhir:ucum
+    implementation_version: "1.0.10"
+    implementation_commit: db9d22ade3f0f4a667b45817b85a9ac4534e4224
+    implementation_role: candidate_local_provider
+    implementation_license: BSD-3-Clause
+    functional_tests_source: https://github.com/FHIR/Ucum-java/blob/master/src/test/resources/UcumFunctionalTests.xml
+    functional_tests_git_blob_sha: 76a7fb03cb1009639786955a53c1a6426383cb8d
+    functional_tests_sha256: 3b3feb9d8ecfe8958da69b1afcd25572e3f8d80a36bfcbcda4834a10a0eeef0d
+    functional_tests_history_date: "2014-08-18"
+    official_functional_tests_passed: true
+    official_functional_tests_count: 573
+    project_lab_conversion_matrix_passed: true
+    project_lab_conversion_matrix_id: FHIRBRIDGE-UCUM-LAB-001
+    qualification_workflow_run_id: 37780787093
+    qualification_commit: 4c5daf1287fa0a6fe532f80138799e1ba2b35dea
+
+structural_validation:
+  fhir:
+    validator_wrapper: org.hl7.fhir.validator-wrapper
+    validator_wrapper_version: "1.0.82"
+    validator_wrapper_commit: fe316e7
+    core_version: "6.10.0"
+    validator_artifact_sha256: 6819cfee60dddc5b93baf6252cb51078facf5021ad56ccabf0a4404309111e80
+    validator_artifact_source: https://github.com/hapifhir/org.hl7.fhir.validator-wrapper/releases/download/1.0.82/validator-wrapper.jar
+    validator_cli_version: "6.10.0"
+    validator_cli_artifact_sha256: fc663ae55dd31bbfde19788dddfb49cacbeebc3c64498fa7b7779df90000434b
+    validator_cli_artifact_source: https://github.com/hapifhir/org.hl7.fhir.core/releases/download/6.10.0/validator_cli.jar
+    validator_cli_role: primary_local_profile_validation
+    runtime: Java_17
+    packages:
+      fhir_r4: "hl7.fhir.r4.core#4.0.1"
+      us_core: "hl7.fhir.us.core#9.0.0"
+      hl7_terminology_r4: "hl7.terminology.r4#7.1.0"
+    package_dependency_source: US_Core_9.0.0_published_manifest
+    terminology_version_rationale: >-
+      Direct terminology qualification pins the standalone hl7.terminology
+      package at 7.4.0. FHIR profile validation separately uses
+      hl7.terminology.r4#7.1.0 because that exact R4 package version is the
+      dependency resolved by the published US Core 9.0.0 package set. These
+      serve different qualification roles and are intentionally not forced to
+      the same package version.
+    profile_validation_qualification_passed: true
+    profile_validation_qualification_scope: structural_and_profile_constraints_with_tx_disabled
+    qualification_fixture_count: 4
+    qualification_zero_error_fixture_count: 4
+    qualification_warning_counts:
+      LAB-001-9401: 9
+      LAB-004-9402: 10
+      LAB-006-9403: 11
+      LAB-011-9404: 14
+    qualification_workflow_run_id: 37782284261
+    qualification_commit: 6ec47ccce3282e382df64bb1e7a8e4e3cdd776ab
+    qualification_artifact_id: 11553410099
+    qualification_artifact_sha256: e874a9cf28599a79e260ac20d8ef2b4bd778b966c7e44559f3134e288d6e8ca0
+    qualification_warning_policy: warnings_retained_nonblocking
+    package_cache_manifest_sha256: aea8f39ef73056de5f0eec423080c5a9edc55acf1b034e1aa67d4ae2f307827c
+    package_cache_manifest_source_run_id: 37941158582
+    package_cache_directory_count: 22
+    network_during_confirmatory_scoring: disabled_where_practical
+
+  hl7v2:
+    target: HL7_v2.5.1_LRI_Ed5_ORU_R01
+    errata: 2024DEC
+    validator: gov.cdc:lib-hl7v2-nist-validator
+    validator_version: "1.5.0"
+    validator_license: Apache-2.0
+    validator_repository_commit: eeac90c5f88dca3018992005232acdf3da644d88
+    validator_runtime_classpath_manifest: qualification/hl7v2/results/validator-runtime-classpath.json
+    validator_runtime_classpath_sha256: 0c17573890c13b744fca7ce9f2ea4cb344469b894799a420c35c2d20112218d2
+    validator_runtime_artifact_count: 35
+    validator_runtime_evidence:
+      evidence_type: pinned_GitHub_Actions_runtime_classpath_archive
+      independent_runs:
+        - run_id: 38134436284
+          job_id: 114456182807
+          classpath_sha256: 0c17573890c13b744fca7ce9f2ea4cb344469b894799a420c35c2d20112218d2
+        - run_id: 38135012854
+          job_id: 114457026499
+          classpath_sha256: 0c17573890c13b744fca7ce9f2ea4cb344469b894799a420c35c2d20112218d2
+        - run_id: 38135107499
+          job_id: 114457305014
+          classpath_sha256: 0c17573890c13b744fca7ce9f2ea4cb344469b894799a420c35c2d20112218d2
+      interpretation: repeated_identical_Java_runtime_not_Edition5_profile_qualification
+    validator_runtime_hash_method: stable_label_sha256_size_manifest_v1
+    nist_engine_version: "1.7.3"
+    runtime: Java_17
+    profile_source: IGAMT-2_exported_XML_resource_bundle
+    profile_artifact: unresolved
+    profile_artifact_sha256: unresolved
+    support_level: candidate_profile_level_offline
+    harness_compilation_passed: true
+    legacy_differential_execution_passed: true
+    legacy_differential_profile_generation: LRI_R2_2016
+    legacy_differential_repository_commit: 3ee9df7d3345944f4a70cccf9be504e499a24c1b
+    legacy_differential_expected_status: STRUCTURE_ERRORS
+    legacy_differential_error_total: 14
+    legacy_differential_workflow_run_id: 37950773310
+    legacy_differential_artifact_id: 11626385991
+    legacy_differential_fixture_sha256: f218e03f539b03d1d21e03a33d1c511927d259d25018a7e3400f061a6c8dcdf3
+    profile_validation_qualification_passed: false
+    hosted_gvt_role: audit_only
+    network_during_confirmatory_scoring: disabled
+    source_repository: https://github.com/CDCgov/lib-hl7v2-nist-validator
+
+semantic_policy:
+  code_equivalence:
+    exact_code_system_pair: allowed
+    frozen_approved_mapping: allowed
+    reviewed_contract_equivalence: allowed
+    display_string_only: forbidden
+    lexical_similarity_only: forbidden
+    embedding_similarity_only: forbidden
+    hierarchy_proximity_only: forbidden
+    unversioned_live_translate_only: forbidden
+
+  unit_equivalence:
+    exact_unit_with_value_tolerance: allowed
+    ucum_conversion: qualified_local_provider
+    joint_value_unit_equivalence_required: true
+
+network_policy:
+  confirmatory_primary_oracle: local_pinned_dependencies
+  live_terminology_services: audit_only
+  hosted_hl7v2_validation_services: audit_only
+  silent_network_fallback: forbidden
+
+freeze_gate:
+  unresolved_token: unresolved
+  required_before_status_frozen:
+    - terminology.loinc.local_snapshot_sha256
+    - terminology.loinc.local_provider_implementation
+    - terminology.loinc.local_provider_version
+    - terminology.hl7_terminology.package_sha256
+    - units.ucum.essence_sha256
+    - units.ucum.implementation
+    - units.ucum.implementation_version
+    - structural_validation.fhir.validator_artifact_sha256
+    - structural_validation.fhir.validator_cli_artifact_sha256
+    - structural_validation.fhir.runtime
+    - structural_validation.fhir.packages.fhir_r4
+    - structural_validation.fhir.packages.us_core
+    - structural_validation.fhir.package_cache_manifest_sha256
+    - structural_validation.hl7v2.validator
+    - structural_validation.hl7v2.validator_version
+    - structural_validation.hl7v2.validator_runtime_classpath_sha256
+    - structural_validation.hl7v2.profile_artifact
+    - structural_validation.hl7v2.profile_artifact_sha256
+    - structural_validation.hl7v2.support_level
+  required_boolean_true_before_status_frozen:
+    - terminology.loinc.local_provider_qualification_passed
+    - units.ucum.official_functional_tests_passed
+    - units.ucum.project_lab_conversion_matrix_passed
+    - structural_validation.fhir.profile_validation_qualification_passed
+    - structural_validation.hl7v2.profile_validation_qualification_passed

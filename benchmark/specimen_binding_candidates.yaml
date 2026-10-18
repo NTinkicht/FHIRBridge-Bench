@@ -1,0 +1,93 @@
+specimen_binding_candidates:
+  id: FHIRBRIDGE-SPECIMEN-BINDING-001
+  version: 0.1.0
+  status: draft_external_review_and_profile_binding_required
+  scientific_role: prefreeze_terminology_candidate_inventory
+  warning: >-
+    This record does not establish the exact LRI Edition 5 binding. It records
+    generic HL7 v2 terminology candidates and keeps confirmatory use blocked
+    until the exact Edition 5 profile and the applicable Laboratory Value Set
+    Companion Guide release are reconciled.
+
+authoritative_generic_terminology:
+  specimen_type:
+    field_candidate: SPM-4
+    code_system_url: http://terminology.hl7.org/CodeSystem/v2-0487
+    value_set_url: http://terminology.hl7.org/ValueSet/v2-0487
+    tho_release: "7.4.0"
+    code_system_version: "3.0.0"
+    definition: >-
+      HL7-defined specimen-type concepts used in HL7 Version 2.x SPM segments.
+    relevant_active_codes:
+      SER:
+        display: Serum
+        source_semantic_candidate: serum
+      PLAS:
+        display: Plasma
+        source_semantic_candidate: plasma
+  collection_method:
+    field_candidate: SPM-7
+    code_system_url: http://terminology.hl7.org/CodeSystem/v2-0488
+    value_set_url: http://terminology.hl7.org/ValueSet/v2-0488
+    tho_release: "7.4.0"
+    code_system_version: "3.0.0"
+    definition: >-
+      HL7-defined specimen collection-method concepts used in HL7 Version 2.x
+      SPM segments.
+    relevant_active_codes:
+      VENIP:
+        display: Venipuncture
+        source_semantic_candidate: venipuncture
+
+laboratory_value_set_companion_guide:
+  product: HL7_V2_Laboratory_Value_Set_Companion_Guide_Release_2_US_Realm
+  purpose: >-
+    Harmonizes vocabulary requirements across HL7 US Realm laboratory
+    implementation guides and defines value sets for coded fields/components.
+  exact_release_artifact_status: not_yet_frozen
+  relation_to_lri_edition5_binding: must_be_verified_before_confirmatory_use
+
+canonical_source_policy:
+  specimen_type:
+    current_primary_semantic: serum
+    prior_ambiguous_label: serum_or_plasma
+    disposition: removed_from_primary_source_authoring
+    reason: >-
+      A canonical source fact must assert one specimen semantic rather than an
+      OR-combination merely because a laboratory test is valid on either serum
+      or plasma.
+  collection_method:
+    current_primary_semantic: venipuncture
+  no_standard_specific_code_required_in_canonical_graph: true
+
+current_renderer_a_development_behavior:
+  SPM_4:
+    coding_system: FBR-SPEC
+    disposition: development_placeholder_only
+    confirmatory_use: prohibited
+  SPM_7:
+    coding_system: FBR-METHOD
+    disposition: development_placeholder_only
+    confirmatory_use: prohibited
+  note: >-
+    Placeholder coding keeps the development round-trip source-grounded without
+    pretending the exact Edition 5 value-set binding has been qualified.
+
+candidate_projection_after_binding_review:
+  serum_to_SPM_4:
+    candidate_code: SER
+    candidate_display: Serum
+    status: terminology_exists_but_exact_LRI_binding_pending
+  venipuncture_to_SPM_7:
+    candidate_code: VENIP
+    candidate_display: Venipuncture
+    status: terminology_exists_but_exact_LRI_binding_pending
+
+freeze_requirements:
+  - acquire_or_identify_exact_applicable_Laboratory_Value_Set_Companion_Guide_release
+  - reconcile_SPM_4_binding_with_exact_Edition5_machine_profile
+  - reconcile_SPM_7_binding_with_exact_Edition5_machine_profile
+  - independently_review_serum_to_SER_projection
+  - independently_review_venipuncture_to_VENIP_projection
+  - replace_or_remove_development_FBR_SPEC_and_FBR_METHOD_before_confirmatory_runs
+  - freeze_terminology_versions_and_binding_strengths

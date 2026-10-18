@@ -1,0 +1,55 @@
+{
+  "artifact_role": "historical_nist_lri_differential_evidence_only",
+  "freeze_disposition": "does_not_satisfy_edition5_machine_profile_gate",
+  "source": {
+    "package_filename": "mu-lab-1.7.2.zip",
+    "package_sha256": "5c7fa3fb788de96f5846ce65171cbf49b3a1254047484646b010d929baf87c78",
+    "release_notes_version": "1.7.2",
+    "release_notes_date": "2015-03-20",
+    "war_filename": "mu-lab.war",
+    "war_sha256": "79aae5fa097880c8d16227b447774aa7a1e1314d1eed51961ec01968893da94b",
+    "embedded_resource_bundle": "WEB-INF/lib/lri-resource-bundle-1.7.1.jar",
+    "embedded_resource_bundle_sha256": "ff2b443d1045e09cfdc595e4b91e56bd9cd9a630bde33eb717c267bb8758aa51"
+  },
+  "embedded_profiles": [
+    {
+      "path": "Global/profiles/LRI_ORU_R01_GU_RN.xml",
+      "sha256": "2573bf744fd6fe9008fea66f6dc380bb54afc7d03d6f416f00f5d8fc9cb577fd",
+      "metadata_version": "LRI GU-RN MU 2014 1.0",
+      "implementation_guide": "HL7 Version 2.5.1 Implementation Guide: Laboratory Results Interface for US Realm, Release 1",
+      "message_profile_oid": "2.16.840.1.113883.9.18",
+      "matches_user_download_byte_for_byte": true
+    },
+    {
+      "path": "Global/profiles/LRI_ORU_R01_GU_RU.xml",
+      "sha256": "172587d7df53470d45577689f90424ac649794e05f8e5898a6de2b2d987d47b4",
+      "metadata_version": "LRI GU-RU MU 2014 1.0",
+      "implementation_guide": "HL7 Version 2.5.1 Implementation Guide: Laboratory Results Interface for US Realm, Release 1",
+      "message_profile_oid": "2.16.840.1.113883.9.17",
+      "matches_user_download_byte_for_byte": true
+    },
+    {
+      "path": "Global/profiles/LRI_ORU_R01_NG_RN.xml",
+      "sha256": "d3010d09109cc364e18e4def041c9dc81b1f4bdd8cadfd5cea8a9b56ce830eca",
+      "metadata_version": "LRI NG-RN MU 2014 1.0",
+      "implementation_guide": "HL7 Version 2.5.1 Implementation Guide: Laboratory Results Interface for US Realm, Release 1",
+      "message_profile_oid": "2.16.840.1.113883.9.20"
+    },
+    {
+      "path": "Global/profiles/LRI_ORU_R01_NG_RU.xml",
+      "sha256": "5eb35fbf5113d9efece158cad97218325d1c8b201420f7d484311445d00f10e7",
+      "metadata_version": "LRI NG-RU MU 2014 1.0",
+      "implementation_guide": "HL7 Version 2.5.1 Implementation Guide: Laboratory Results Interface for US Realm, Release 1",
+      "message_profile_oid": "2.16.840.1.113883.9.19"
+    }
+  ],
+  "edition5_target_search": {
+    "target_profile_name": "LRI_NG_FRU_Profile_V3",
+    "target_profile_oid": "2.16.840.1.113883.9.195.3.25",
+    "target_profile_name_found_in_embedded_resource_bundle": false,
+    "target_profile_oid_found_in_embedded_resource_bundle": false,
+    "edition5_marker_found_in_embedded_resource_bundle": false,
+    "2024dec_marker_found_in_embedded_resource_bundle": false
+  },
+  "conclusion": "The NIST mu-lab 1.7.2 package is a reproducible historical Release 1 / MU 2014 comparator. It is not the LRI Edition 5 + 2024DEC machine-readable profile bundle required for confirmatory qualification."
+}

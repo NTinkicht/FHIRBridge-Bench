@@ -1,0 +1,159 @@
+profile_pin:
+  schema_version: 0.1.0
+  status: candidate
+  purpose: >-
+    Dormant optional Path A exact-machine-profile sensitivity record.
+    This file deliberately remains unresolved; privately archived custodian
+    correspondence confirms Edition 5 was not codified in IGAMT. The selected
+    Path B bounded, independently reconstructed Edition 5 + errata G1 rule
+    oracle is a separate scientific instrument and must NOT be qualified or
+    blocked by this original machine-bundle-only metadata template.
+
+target:
+  standard: HL7_v2
+  hl7_version: "2.5.1"
+  message_type: ORU
+  event_type: R01
+  message_structure: ORU_R01
+  implementation_guide: Laboratory_Results_Interface
+  implementation_guide_edition: "5"
+  errata: 2024DEC
+  selected_precoordinated_profile: LRI_NG_FRU_Profile_V3
+  candidate_precoordinated_profile_oid_from_pdf: 2.16.840.1.113883.9.195.3.25
+  precoordinated_msh21_oid_status: conflicted_in_publication_pending_machine_bundle
+  msh21_prefreeze_component_oids:
+    - 2.16.840.1.113883.9.195.3.22
+    - 2.16.840.1.113883.9.13
+    - 2.16.840.1.113883.9.83
+  profile_selection_record: benchmark/lri_profile_selection.yaml
+
+authoritative_evidence:
+  hl7_product_brief:
+    url: https://www.hl7.org/implement/standards/product_brief.cfm?product_id=279
+    edition_5_status_date: "2024-05-16"
+    current_state: Active
+    realm: US
+  hl7_errata_publication:
+    url: https://standups.hl7.org/2024/12/06/errata-publication-of-hl7-version-2-5-1-implementation-guide-laboratory-results-interface-lri-edition-5-us-realm/
+    publication_date: "2024-12-06"
+    errata_label: 2024DEC
+  local_publication_package:
+    filename: V251_IG_LRI_E5_2024MAY_Errata2024DEC.zip
+    sha256: f26188eabed5b00045b111bd2c4ef29cbfdcbdfad38a4b61fd1547a9259835b2
+    implementation_guide_pdf_sha256: 375f02fd5453b06ff1c51841e703c943c3132134fca53a122f5ccfed743461b7
+    errata_letter_pdf_sha256: 32eeb375ecb78dd77acb01ed388e30c554688e55a8a4d58df05dd0e7a791700f
+    contains_machine_readable_profile_xml: false
+    evidence_record: benchmark/lri_order_context_evidence.yaml
+  evidence_role: >-
+    Confirms the human-readable target edition, errata, and published base
+    ORC/OBR requirements. It does not prove that any acquired IGAMT XML bundle
+    corresponds to that publication; machine-profile provenance and independent
+    review remain mandatory.
+
+acquisition:
+  source_kind: IGAMT_2_exported_XML_resource_bundle
+  source_url_or_record: unresolved
+  igamt_export_identifier: unresolved
+  acquired_at: unresolved
+  acquired_by_role_id: unresolved
+  redistribution_status: unresolved
+
+bundle:
+  local_directory: unresolved
+  archive_sha256: unresolved
+  aggregate_sha256: unresolved
+  profile_xml_sha256: unresolved
+  component_manifest_path: unresolved
+  completeness_policy:
+    preserve_entire_original_export: true
+    inventory_all_entries: true
+    profile_xml_required: true
+    fail_on_unresolved_internal_references: true
+    constraints_required_if_referenced: true
+    value_sets_required_if_referenced: true
+    value_set_bindings_required_if_referenced: true
+    co_constraints_required_if_referenced: true
+    slicings_required_if_referenced: true
+    do_not_drop_unknown_companion_artifacts: true
+
+identity_verification:
+  profile_xml_hl7_version: unresolved
+  profile_xml_message_type: unresolved
+  profile_xml_event_type: unresolved
+  profile_xml_message_structure: unresolved
+  selected_message_identifier: unresolved
+  profile_identity_guard_passed: false
+  target_reference_signal_guard_passed: false
+  edition_5_evidence_checked: false
+  errata_2024dec_evidence_checked: false
+  independent_profile_provenance_reviewed: false
+
+qualification:
+  validator: gov.cdc:lib-hl7v2-nist-validator
+  validator_version: "1.5.0"
+  validator_repository_commit: eeac90c5f88dca3018992005232acdf3da644d88
+  nist_engine_version: "1.7.3"
+  runtime: Java_17
+  harness_compilation_passed: true
+  legacy_differential_execution_passed: true
+  legacy_differential_workflow_run_id: 37950773310
+  legacy_differential_profile_generation: LRI_R2_2016
+  legacy_differential_status: STRUCTURE_ERRORS
+  legacy_differential_error_total: 14
+  local_reference_messages_passed: false
+  structural_negative_controls_passed: false
+  hosted_differential_role: audit_only
+  hosted_differential_completed: false
+  warning_error_policy_frozen: false
+  warning_error_policy_plan:
+    unknown_validator_warning: fail_closed_until_classified
+    parser_error: fail
+    profile_error: fail
+    unresolved_value_set_binding: fail
+    missing_referenced_companion_artifact: fail
+    allowlist_must_be_frozen_before_confirmatory_run: true
+    hosted_validator_disagreement: record_and_adjudicate_before_freeze
+  required_negative_controls_after_bundle_acquisition:
+    - wrong_MSH_21_profile_identifier
+    - missing_ORC
+    - missing_ORC_3
+    - missing_ORC_12
+    - ORC_3_not_equal_OBR_3
+    - ORC_12_not_equal_OBR_16
+  qualification_report_sha256: unresolved
+
+freeze_gate:
+  unresolved_token: unresolved
+  required_exact_values:
+    target.hl7_version: "2.5.1"
+    target.message_type: ORU
+    target.event_type: R01
+    target.message_structure: ORU_R01
+    target.implementation_guide_edition: "5"
+    target.errata: 2024DEC
+  required_resolved_paths:
+    - acquisition.source_url_or_record
+    - acquisition.igamt_export_identifier
+    - acquisition.acquired_at
+    - acquisition.acquired_by_role_id
+    - acquisition.redistribution_status
+    - bundle.local_directory
+    - bundle.archive_sha256
+    - bundle.aggregate_sha256
+    - bundle.profile_xml_sha256
+    - bundle.component_manifest_path
+    - identity_verification.profile_xml_hl7_version
+    - identity_verification.profile_xml_message_type
+    - identity_verification.profile_xml_event_type
+    - identity_verification.profile_xml_message_structure
+    - identity_verification.selected_message_identifier
+    - qualification.qualification_report_sha256
+  required_true_paths:
+    - identity_verification.profile_identity_guard_passed
+    - identity_verification.target_reference_signal_guard_passed
+    - identity_verification.edition_5_evidence_checked
+    - identity_verification.errata_2024dec_evidence_checked
+    - identity_verification.independent_profile_provenance_reviewed
+    - qualification.local_reference_messages_passed
+    - qualification.structural_negative_controls_passed
+    - qualification.warning_error_policy_frozen

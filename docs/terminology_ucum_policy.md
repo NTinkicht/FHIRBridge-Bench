@@ -1,0 +1,225 @@
+# Terminology, UCUM, and Structural-Validation Policy
+
+Status: **Draft candidate pins — must be frozen before confirmatory inference**
+
+## Purpose
+
+FHIRBridge-Bench treats terminology, unit conversion, and structural validation as versioned dependencies of the measurement instrument. A semantic-fidelity decision must be reproducible from locally available, pinned content wherever possible. Live network services may support audit or differential checking, but they are not accepted as the sole confirmatory oracle.
+
+This policy applies to the primary FHIR R4 / US Core laboratory → HL7 v2.5.1 LRI ORU^R01 slice.
+
+## Core principles
+
+1. **Exact code-system identity is preferred.** A source and target coding are directly equivalent only when the code and code system match, unless the frozen projectability contract explicitly licenses a mapping.
+2. **Hierarchy proximity is not equivalence.** A broader, narrower, parent, child, or semantically related terminology concept is not automatically counted as equivalent.
+3. **Mappings must be explicit and versioned.** `CODE_TRANSLATE` is permitted only through a frozen approved mapping artifact, named ConceptMap, or equivalent reviewed rule recorded in the contract.
+4. **Unit conversion is joint value–unit reasoning.** A unit change is faithful only when the value is transformed consistently and the conversion is supported by the pinned UCUM implementation/content.
+5. **Live APIs are supporting evidence, not ground truth.** Confirmatory scoring must remain reproducible if an external terminology server is temporarily unavailable or changes behavior.
+6. **Structural validity and semantic fidelity remain separate.** Passing the FHIR validator or an HL7 v2 profile validator does not establish semantic preservation.
+
+## Candidate terminology/content pins
+
+The following versions are candidate dependencies as of the Protocol v1 drafting phase. They become immutable only when the protocol freeze commit is tagged.
+
+### LOINC
+
+- Candidate content version: **LOINC 2.83**.
+- LOINC 2.83 was released on 19 August 2026.
+- The official LOINC FHIR Terminology Service can expose LOINC content through FHIR R4, but the service is explicitly documented as **BETA** and may change or be unavailable.
+- Therefore the public LOINC terminology service is an **audit/differential service only** for confirmatory FHIRBridge-Bench analysis.
+- Confirmatory code validation should use a locally versioned LOINC 2.83 content snapshot or another reproducible local distribution permitted by the LOINC license.
+- LOINC content usage and redistribution must respect the current LOINC license and attribution requirements.
+
+Official evidence:
+- https://loinc.org/news/loinc-version-2-83-release-highlights/
+- https://loinc.org/kb/api/fhir/
+- https://loinc.org/license/
+
+### UCUM
+
+- Frozen candidate content version: **UCUM 2.2**.
+- Essence revision date: **2024-06-17**.
+- Frozen essence SHA-256: `dfccea1b5dc284245ebae97edd1dc03c45864da4e87df55bc9851797b4fd0b61`.
+- Local implementation: **`org.fhir:ucum:1.0.10`**, pinned to commit `db9d22ade3f0f4a667b45817b85a9ac4534e4224`.
+- Qualification status: **passed for the current laboratory scope**. The pinned implementation passed 573/573 official functional tests and all cases in `FHIRBRIDGE-UCUM-LAB-001`.
+
+Official evidence:
+- https://github.com/ucum-org/ucum/blob/main/ucum-essence.xml
+- https://ucum.org/
+
+### HL7 Terminology (THO)
+
+- Semantic terminology package: **HL7 Terminology R4 7.4.0**.
+- The published package identifies itself as `hl7.terminology.r4` version 7.4.0.
+- Frozen package SHA-256: `1dc558c204f5ee1f2b96ab9a8cd83d0811475b08a4e06a7c2bcea55d1ab116ed`.
+- Package identity and publication metadata were independently exercised in CI; the structural US Core validator retains its own published `hl7.terminology.r4#7.1.0` dependency rather than silently substituting this later semantic package.
+
+Official evidence:
+- https://terminology.hl7.org/
+- https://terminology.hl7.org/7.4.0/en/downloads.html
+
+## FHIR structural validator candidate pin
+
+For the confirmatory structural-validity path, the current candidate is:
+
+- `org.hl7.fhir.validator-wrapper` **1.0.82**
+- underlying `org.hl7.fhir.core` **6.10.0**
+
+The 1.0.82 release explicitly reports the update to core 6.10.0. The validator is run locally against frozen package dependencies rather than depending on mutable network lookups during confirmatory scoring.
+
+The current package/runtime pins are `hl7.fhir.r4.core#4.0.1`, `hl7.fhir.us.core#9.0.0`, the US Core 9.0.0 published dependency `hl7.terminology.r4#7.1.0`, and Java 17. Validator artifacts and the resolved package-cache manifest are cryptographically pinned in `benchmark/tooling_versions.yaml`. The semantic terminology layer may separately use THO R4 7.4.0, but structural validation preserves the dependency set of the published US Core package unless a documented compatibility analysis justifies an override.
+
+Official evidence:
+- https://github.com/hapifhir/org.hl7.fhir.validator-wrapper/releases
+- https://github.com/hapifhir/org.hl7.fhir.core
+
+## HL7 v2 structural/profile validation
+
+The selected **candidate** confirmatory path is local NIST-profile validation through **`gov.cdc:lib-hl7v2-nist-validator:1.5.0`**, which documents bundled NIST validation libraries 1.7.3 and support for IGAMT-exported XML profile resource bundles. Java 17 is the candidate runtime.
+
+The exact LRI Edition 5 + 2024DEC-errata ORU^R01 profile bundle is still unresolved. Before Protocol v1.0 freeze the project must:
+
+- obtain/export the exact IGAMT XML resource bundle;
+- hash the bundle deterministically and archive its component hashes;
+- run reference artifacts and structural-negative controls through the local validator;
+- document ERROR/WARNING-to-binary-validity handling;
+- record known LRI/profile blind spots;
+- retain a development-only hosted GVT/Valitheus differential audit where practical.
+
+The hosted service is audit-only because remote runtime/profile changes cannot be frozen as reliably as local artifacts. Until the local profile bundle and qualification evidence are complete, development parseability checks must **not** be described as full LRI conformance validation.
+
+## Code-equivalence policy
+
+For a coded clinical fact, the confirmatory verifier may return semantic equivalence only under one of these conditions:
+
+1. exact code + exact code system;
+2. exact canonicalized code-system identity plus exact code;
+3. a frozen approved mapping explicitly referenced by the applicable projectability rule;
+4. an expert-reviewed contract rule defining a permissible representation change.
+
+The following are insufficient by themselves:
+
+- identical display strings;
+- lexical similarity;
+- embedding similarity;
+- ontology graph distance;
+- shared ancestor/descendant relationship;
+- an LLM statement that two codes are equivalent;
+- a live `$translate` response that is not tied to a frozen approved mapping/version.
+
+If a mapping cannot be reproduced from the frozen dependency set, the case is `INDETERMINATE` for confirmatory automatic scoring rather than guessed.
+
+## UCUM quantity-equivalence policy
+
+For quantities, equivalence is evaluated jointly over value and unit.
+
+A source quantity `(v_s, u_s)` and target quantity `(v_t, u_t)` may be considered equivalent when:
+
+- the units are identical and the numeric values satisfy the rule-specific tolerance; or
+- the contract licenses `UNIT_CONVERT`, the pinned UCUM implementation establishes dimensional compatibility, and converting one quantity into the other's unit yields the target value within the frozen tolerance policy.
+
+A unit label change without a consistent numeric conversion is a semantic corruption.
+
+The selected local UCUM implementation has passed its executable qualification gate for the current laboratory scope:
+
+- 573/573 official/maintainer-provided functional tests;
+- the project-specific laboratory conversion matrix containing equivalent and non-equivalent pairs;
+- regression coverage for benchmark laboratory units;
+- negative tests for incompatible or context-dependent conversions.
+
+`UNIT_CONVERT` remains usable only when the projectability contract licenses the operation. Provider qualification does not broaden contract scope.
+
+Every unit-equivalence decision must retain machine-readable evidence containing at least the source value/unit, target value/unit, UCUM content version, implementation/version, operation, and tolerance rule.
+
+## Local LOINC 2.83 content qualification
+
+The confirmatory terminology layer uses a **local, user-acquired official LOINC 2.83 release** rather than a mutable live lookup as its primary content snapshot.
+
+- Official release: LOINC 2.83, published 2026-08-19.
+- Expected archive name: `Loinc_2.83.zip`.
+- Vendor-published MD5: `057ddf203164705d5a4c3604257060a4`.
+- The archive requires a free LOINC account and remains subject to the LOINC license.
+- The repository therefore stores only release metadata, hashes, and qualification results; it does not redistribute the ZIP/CSV.
+- `qualification/loinc/qualify_release.py` verifies the vendor checksum, computes SHA-256 for the archive and embedded `Loinc.csv`, and checks the frozen benchmark subset.
+- The initial required subset is `24323-8`, `2345-7`, `2951-2`, and `2823-3`; all must be present, ACTIVE, and match the frozen long common names before `local_provider_qualification_passed` can become true.
+- The live LOINC FHIR Terminology Service remains audit-only and requires authenticated network access.
+
+## Frozen mapping provider
+
+The codebase includes a deterministic `FrozenMappingTerminologyEquivalence` provider for exact identity plus explicitly frozen source→target mappings. Non-identical code pairs are accepted only if the exact system/code tuple is present in the supplied versioned mapping set. Reverse mappings are not inferred, and display text, lexical similarity, hierarchy proximity, or embeddings are never used as substitutes.
+
+This provider is an implementation mechanism, not a terminology-content oracle. LOINC membership/version checks and any approved mapping artifact still require a frozen local content snapshot and qualification before confirmatory use.
+
+## Terminology-provider separation
+
+The semantic verifier consumes a terminology-provider interface; standards lifters and renderers must not make hidden terminology-equivalence decisions.
+
+Provider outputs used during confirmatory scoring must record:
+
+- provider implementation name/version;
+- terminology content/package version;
+- local artifact hash where applicable;
+- mapping identifier/version for translations;
+- operation performed;
+- result and evidence.
+
+The provider must not fall back silently from a failed local lookup to a live mutable API.
+
+## Network policy
+
+### Confirmatory scoring
+
+- Local/offline-first.
+- No dependency on an unversioned public terminology response.
+- Network access disabled where practical after all frozen dependencies are cached.
+- Any unavoidable remote dependency must be version-addressable, logged, and declared in the protocol before confirmatory inference.
+
+### Development / audit
+
+Live services may be queried to:
+
+- detect discrepancies;
+- compare local behavior with official services;
+- investigate terminology updates;
+- support standards-evidence review.
+
+Such responses are never retroactively used to alter the confirmatory contract after model outputs are seen.
+
+## Version and hash provenance
+
+Every confirmatory run must record the frozen tooling manifest hash plus, where applicable:
+
+- LOINC content version and local snapshot hash;
+- UCUM version/revision and local essence hash;
+- HL7 THO package/version/hash;
+- FHIR validator wrapper/core versions and artifact hashes;
+- FHIR package versions and hashes;
+- HL7 v2 validator/profile versions and hashes;
+- terminology/UCUM implementation versions;
+- project contract and verifier versions.
+
+## Licensing and release hygiene
+
+The repository may publish metadata, code, checksums, and reproducibility instructions without assuming that every terminology distribution may be redistributed unchanged.
+
+Before public release:
+
+- verify the redistribution terms of each external terminology/content artifact;
+- include required LOINC attribution/license notices;
+- use package-manager retrieval or user-supplied local content where redistribution is restricted or unclear;
+- keep restricted/non-redistributable content out of Git history.
+
+## Freeze gate
+
+`benchmark/tooling_versions.yaml` remains `candidate` until all of the following are satisfied:
+
+- LOINC content version and acquisition method frozen;
+- local terminology provider implementation frozen;
+- UCUM content and implementation frozen and qualified;
+- THO package/version frozen where applicable;
+- FHIR validator artifact/package set frozen with checksums;
+- HL7 v2 structural/profile validator or validation path frozen and limitations documented;
+- all required licenses/attribution documented;
+- development regression tests pass with the exact frozen dependency set.
+
+No dependency version may be silently upgraded after confirmatory inference begins. Any change requires a protocol amendment and separate sensitivity analysis where scientifically relevant.

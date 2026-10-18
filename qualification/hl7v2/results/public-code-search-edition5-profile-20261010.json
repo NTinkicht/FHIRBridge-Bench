@@ -1,0 +1,39 @@
+{
+  "evidence_id": "FHIRBRIDGE-LRI-E5-PUBLIC-CODE-SEARCH-20261010",
+  "searched_at": "2026-10-10",
+  "scientific_role": "artifact_acquisition_negative_evidence",
+  "queries": [
+    "LRI_NG_FRU_Profile_V3",
+    "2.16.840.1.113883.9.195.3.25",
+    "LRI_Common_Component_V3",
+    "LRI_NG_FRU",
+    "LRI_NG_FRU_Profile",
+    "9.195.3.25"
+  ],
+  "edition5_exact_hits": 0,
+  "legacy_hits": [
+    {
+      "repository": "usnistgov/hit-core-hl7v2",
+      "path": "hit-core-hl7v2-service/src/test/resources/profiles/1_1_2_Profile.xml",
+      "observed_profile_id": "ORU_R01:LRI_NG_FRU",
+      "disposition": "historical_only_not_Edition5_ground_truth"
+    },
+    {
+      "repository": "usnistgov/hit-core-hl7v2",
+      "path": "hit-core-hl7v2-service/src/test/resources/constraints/1_1_2_Constraints.xml",
+      "observed_precoordinated_oid": "2.16.840.1.113883.9.195.3.3",
+      "observed_component_oids": [
+        "2.16.840.1.113883.9.16",
+        "2.16.840.1.113883.9.13",
+        "2.16.840.1.113883.9.83"
+      ],
+      "disposition": "historical_only_not_Edition5_ground_truth"
+    }
+  ],
+  "interpretation": [
+    "No public GitHub code hit was found for the exact Edition 5 profile name LRI_NG_FRU_Profile_V3.",
+    "No public GitHub code hit was found for the exact Edition 5 candidate OID 2.16.840.1.113883.9.195.3.25.",
+    "The public NG/FRU XML hit uses a different historical pre-coordinated OID and must not satisfy the Edition 5 acquisition gate."
+  ],
+  "confirmatory_profile_gate_effect": "none"
+}

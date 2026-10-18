@@ -1,0 +1,83 @@
+schema_version: "0.6.0"
+config_id: "MODEL-FREEZE-TO-BE-ASSIGNED"
+status: incomplete_template
+created_at: null
+sealed_set_opened: false
+global_execution_policy:
+  policy_id: FHIRBRIDGE-MODEL-EXECUTION-001
+  policy_version: "0.3.0"
+  policy_artifact:
+    path_or_ref: "models/execution_policy.yaml"
+    sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  synthetic_data_only_for_hosted_models: true
+  provider_generation_calls_per_case_model:
+    direct_structured_llm: 1
+    mapping_aware_llm: 1
+    mapping_aware_plus_syntax_repair: 0
+  silent_model_fallback: false
+  silent_prompt_fallback: false
+  retry_policy:
+    maximum_attempts: 1
+    retry_on: []
+  timeout_seconds: 120
+deterministic_baseline:
+  implementation_artifact:
+    path_or_ref: "TO_BE_FROZEN"
+    sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  qualification_artifact:
+    path_or_ref: "models/baseline_qualification.yaml"
+    sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+llm_models:
+  - model_key: "MODEL-TO-BE-FROZEN"
+    provider: "TO_BE_FROZEN"
+    model_id: "TO_BE_FROZEN"
+    model_revision_or_snapshot: "TO_BE_FROZEN"
+    temperature: 0.0
+    top_p: 1.0
+    max_output_tokens: 1
+    seed_policy: provider_does_not_support_seed
+    seed: null
+    structured_output_mode: "plain_text_hl7_message"
+llm_strategies:
+  - strategy_id: direct_structured_llm
+    generation_source: provider_call
+    implementation_artifact:
+      path_or_ref: "TO_BE_FROZEN"
+      sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+    prompt_artifacts:
+      - path_or_ref: "TO_BE_FROZEN"
+        sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+    mapping_context_artifacts: []
+    syntax_repair:
+      enabled: false
+      implementation_artifact: null
+  - strategy_id: mapping_aware_llm
+    generation_source: provider_call
+    implementation_artifact:
+      path_or_ref: "TO_BE_FROZEN"
+      sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+    prompt_artifacts:
+      - path_or_ref: "TO_BE_FROZEN"
+        sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+    mapping_context_artifacts:
+      - path_or_ref: "TO_BE_FROZEN"
+        sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+    syntax_repair:
+      enabled: false
+      implementation_artifact: null
+  - strategy_id: mapping_aware_plus_syntax_repair
+    generation_source: reuse_mapping_aware_raw_output
+    implementation_artifact:
+      path_or_ref: "TO_BE_FROZEN"
+      sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+    prompt_artifacts:
+      - path_or_ref: "TO_BE_FROZEN"
+        sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+    mapping_context_artifacts:
+      - path_or_ref: "TO_BE_FROZEN"
+        sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+    syntax_repair:
+      enabled: true
+      implementation_artifact:
+        path_or_ref: "TO_BE_FROZEN"
+        sha256: "0000000000000000000000000000000000000000000000000000000000000000"

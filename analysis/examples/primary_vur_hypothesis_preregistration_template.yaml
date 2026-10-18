@@ -1,0 +1,31 @@
+schema_version: "0.1.0"
+record_id: "PRIMARY-VUR-TO-BE-ASSIGNED"
+status: incomplete_template
+created_at: null
+sealed_set_opened: false
+pilot_evidence:
+  pilot_case_manifest_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  pilot_analysis_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+estimand:
+  name: VUR
+  direction: FHIR_to_HL7v2
+  denominator_rule: VALID_and_semantic_determinate
+hypothesis:
+  null_relation: VUR_less_than_or_equal_threshold
+  alternative_relation: VUR_greater_than_threshold
+  nontrivial_vur_threshold: 0.01
+  threshold_rationale: "TO_BE_PILOT_DERIVED_AND_FROZEN"
+target_population:
+  inclusion_rule: "TO_BE_FROZEN"
+  model_strategy_aggregation_policy: "TO_BE_FROZEN"
+  cluster_id_field: analysis_cluster_id
+inference:
+  method: "TO_BE_FROZEN"
+  alpha: 0.05
+  sidedness: one_sided
+  cluster_handling: "TO_BE_FROZEN"
+  confidence_interval_method: "TO_BE_FROZEN"
+  decision_rule: "TO_BE_FROZEN"
+indeterminate_policy:
+  semantic_indeterminate_policy: exclude_from_binary_VUR_with_reported_denominator_loss_and_sensitivity_bounds
+  structural_policy_ref: benchmark/structural_validity_policy.yaml

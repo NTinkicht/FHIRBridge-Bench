@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/expert_annotation.schema.json",
+  "title": "FHIRBridge-Bench Expert Transformation Annotation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "stage",
+    "reviewer",
+    "artifacts",
+    "contract",
+    "transformation_verdict",
+    "fact_annotations",
+    "blinding_attestation"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "case_id": {"type": "string", "minLength": 1},
+    "stage": {"enum": ["DEVELOPMENT", "SEALED"]},
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reviewer_id", "review_date"],
+      "properties": {
+        "reviewer_id": {"type": "string", "minLength": 1},
+        "review_date": {"type": "string", "format": "date"}
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_id", "source_sha256", "target_id", "target_sha256"],
+      "properties": {
+        "source_id": {"type": "string", "minLength": 1},
+        "source_sha256": {"$ref": "#/$defs/sha256"},
+        "target_id": {"type": "string", "minLength": 1},
+        "target_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1}
+      }
+    },
+    "transformation_verdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["major_semantic_error", "confidence"],
+      "properties": {
+        "major_semantic_error": {"enum": ["YES", "NO", "INDETERMINATE"]},
+        "confidence": {"enum": ["HIGH", "MODERATE", "LOW"]},
+        "comment": {"type": "string"}
+      }
+    },
+    "fact_annotations": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/factAnnotation"}
+    },
+    "blinding_attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_identity_hidden",
+        "strategy_hidden",
+        "verifier_output_hidden",
+        "claimed_provenance_hidden",
+        "other_reviewer_labels_hidden"
+      ],
+      "properties": {
+        "model_identity_hidden": {"const": true},
+        "strategy_hidden": {"const": true},
+        "verifier_output_hidden": {"const": true},
+        "claimed_provenance_hidden": {"const": true},
+        "other_reviewer_labels_hidden": {"const": true}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "errorClass": {
+      "enum": [
+        "NONE",
+        "FABRICATION",
+        "CORRUPTION",
+        "OMISSION",
+        "MISATTRIBUTION",
+        "INDETERMINATE"
+      ]
+    },
+    "severity": {
+      "enum": ["S0", "S1", "S2", "S3", "INDETERMINATE"]
+    },
+    "factAnnotation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "annotation_id",
+        "fact_id",
+        "source_evidence",
+        "target_evidence",
+        "error_class",
+        "severity",
+        "confidence"
+      ],
+      "properties": {
+        "annotation_id": {"type": "string", "minLength": 1},
+        "fact_id": {"type": ["string", "null"]},
+        "source_evidence": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "target_evidence": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "contract_rule_ids": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true,
+          "default": []
+        },
+        "error_class": {"$ref": "#/$defs/errorClass"},
+        "corruption_subtype": {
+          "enum": [
+            "VALUE",
+            "TERMINOLOGY",
+            "UNIT",
+            "IDENTIFIER",
+            "TEMPORAL",
+            "RELATIONSHIP_REFERENCE",
+            "STATUS",
+            "OTHER",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "severity": {"$ref": "#/$defs/severity"},
+        "confidence": {"enum": ["HIGH", "MODERATE", "LOW"]},
+        "comment": {"type": "string"}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"error_class": {"const": "CORRUPTION"}},
+            "required": ["error_class"]
+          },
+          "then": {"required": ["corruption_subtype"]}
+        }
+      ]
+    }
+  }
+}

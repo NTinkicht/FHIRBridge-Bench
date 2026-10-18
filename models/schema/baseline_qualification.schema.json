@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/baseline_qualification.schema.json",
+  "title": "FHIRBridge Deterministic Baseline Qualification Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "qualification_id",
+    "status",
+    "created_at",
+    "repository_commit",
+    "contract",
+    "target_profile",
+    "renderer_component",
+    "primary_family_evidence",
+    "aggregate",
+    "attestation"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "qualification_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["incomplete_template", "qualified"]},
+    "created_at": {"type": ["string", "null"], "format": "date-time"},
+    "repository_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{7,40}$"
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "sha256", "freeze_status"],
+      "properties": {
+        "id": {"const": "F2V-LAB-ORU-R01-001"},
+        "version": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "freeze_status": {"const": "frozen"}
+      }
+    },
+    "target_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "edition",
+        "errata",
+        "profile_bundle_sha256",
+        "qualification_report_sha256"
+      ],
+      "properties": {
+        "name": {"const": "LRI_NG_FRU_Profile_V3"},
+        "edition": {"const": "5"},
+        "errata": {"const": "2024DEC"},
+        "profile_bundle_sha256": {"$ref": "#/$defs/sha256"},
+        "qualification_report_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "renderer_component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["component_name", "artifact_id", "sha256"],
+      "properties": {
+        "component_name": {"const": "deterministic_baseline_renderer"},
+        "artifact_id": {"const": "deterministic-fhir-to-hl7v2-baseline-renderer"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "primary_family_evidence": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "items": {"$ref": "#/$defs/familyEvidence"}
+    },
+    "aggregate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primary_family_count",
+        "all_primary_families_structurally_valid",
+        "all_primary_families_semantically_faithful",
+        "order_context_supported",
+        "exact_profile_validation_used"
+      ],
+      "properties": {
+        "primary_family_count": {"const": 11},
+        "all_primary_families_structurally_valid": {"const": true},
+        "all_primary_families_semantically_faithful": {"const": true},
+        "order_context_supported": {"const": true},
+        "exact_profile_validation_used": {"const": true}
+      }
+    },
+    "attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "no_invented_business_facts",
+        "development_placeholder_codes_absent",
+        "same_frozen_instrument_used_for_all_families",
+        "confirmatory_model_outputs_not_used"
+      ],
+      "properties": {
+        "no_invented_business_facts": {"const": true},
+        "development_placeholder_codes_absent": {"const": true},
+        "same_frozen_instrument_used_for_all_families": {"const": true},
+        "confirmatory_model_outputs_not_used": {"const": true}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    },
+    "familyEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "template_id",
+        "order_context_present",
+        "structural_validity",
+        "semantic_verdict",
+        "validation_record_sha256"
+      ],
+      "properties": {
+        "template_id": {
+          "type": "string",
+          "pattern": "^LAB-(00[1-9]|01[01])$"
+        },
+        "order_context_present": {"const": true},
+        "structural_validity": {"const": "VALID"},
+        "semantic_verdict": {"const": "FAITHFUL"},
+        "validation_record_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

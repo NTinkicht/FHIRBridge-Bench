@@ -1,0 +1,69 @@
+decision_id: DEC-LAB-001-OBS-VALUE
+verifier_version: 0.4.0-dev
+contract:
+  contract_id: F2V-LAB-ORU-R01-001
+  contract_version: 0.2.0
+  rule_ids:
+    - OBSERVATION_VALUE_001
+source_fact_ids:
+  - obs-glucose-0001
+target_fact_ids:
+  - lifted-obx-1
+target_paths:
+  - OBX-5
+allowed_operation: COPY
+classification: VERIFIED_EQUIVALENT
+error_subtype: null
+severity: S0
+primary_endpoint_eligible: true
+source_payload:
+  code:
+    system: http://loinc.org
+    code: 2345-7
+  value: 92
+  unit:
+    system: http://unitsofmeasure.org
+    code: mg/dL
+target_payload:
+  code:
+    system: http://loinc.org
+    code: 2345-7
+  value: 92
+  unit:
+    system: http://unitsofmeasure.org
+    code: mg/dL
+evidence:
+  rationale_code: EXACT_TYPED_VALUE_MATCH
+  terminology_checks:
+    - source_system: http://loinc.org
+      source_code: 2345-7
+      target_system: http://loinc.org
+      target_code: 2345-7
+      result: exact
+  ucum_checks:
+    - source_value: 92
+      source_unit: mg/dL
+      target_value: 92
+      target_unit: mg/dL
+      result: equivalent
+  relationship_checks:
+    - check: patient_attribution
+      result: pass
+    - check: report_membership
+      result: pass
+  temporal_checks: []
+  parser_warnings: []
+  structural_validation_ref: STRUCT-LAB-001-ORU
+  decision_details:
+    comparison_scope: observation.value
+    grounding_status: independently_grounded
+model_claimed_provenance:
+  present: false
+  claim_id: null
+  source_paths: []
+  target_paths: []
+  claimed_operation: null
+  verification_status: not_evaluated
+explanation: >-
+  The lifted OBX value is grounded to the source glucose observation and is
+  semantically identical under the active projectability rule.

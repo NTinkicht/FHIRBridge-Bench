@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fhirbridge-bench"
+version = "0.1.0.dev0"
+description = "Research tooling for source-grounded semantic verification of HL7 v2-FHIR transformations"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "FHIRBridge-Bench contributors" }
+]
+dependencies = [
+  "jsonschema>=4.23,<5",
+  "PyYAML>=6.0,<7"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-cov>=6,<7",
+  "ruff>=0.9,<1"
+]
+
+[project.scripts]
+fhirbridge-validate = "fhirbridge.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fhirbridge"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/fhirbridge/required_element_extraction.schema.json" = "fhirbridge/required_element_extraction.schema.json"
+"src/fhirbridge/lri_rule_level_extraction_v03.schema.json" = "fhirbridge/lri_rule_level_extraction_v03.schema.json"
+"renderer_validation/schema/renderer_implementation_declaration.schema.json" = "fhirbridge/renderer_implementation_declaration.schema.json"
+"renderer_validation/schema/renderer_b_expected_inputs.schema.json" = "fhirbridge/renderer_b_expected_inputs.schema.json"
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

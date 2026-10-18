@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/severity_blind_response.schema.json",
+  "title": "FHIRBridge Blind Severity Calibration Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "assignment_id",
+    "reviewer",
+    "anchor_ratings",
+    "attestation"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "assignment_id": {"const": "FHIRBRIDGE-SEVERITY-BLIND-001"},
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_id",
+        "review_date",
+        "expertise",
+        "conflicts_of_interest",
+        "prior_project_involvement"
+      ],
+      "properties": {
+        "reviewer_id": {"type": "string", "minLength": 1},
+        "review_date": {"type": "string", "format": "date"},
+        "expertise": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "conflicts_of_interest": {"type": "string"},
+        "prior_project_involvement": {"type": "string"}
+      }
+    },
+    "anchor_ratings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/anchorRating"}
+    },
+    "attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "independent_initial_ratings",
+        "boundary_roles_hidden",
+        "other_reviewer_ratings_hidden",
+        "sealed_cases_not_used",
+        "renderer_outputs_not_used_as_correctness_evidence"
+      ],
+      "properties": {
+        "independent_initial_ratings": {"const": true},
+        "boundary_roles_hidden": {"const": true},
+        "other_reviewer_ratings_hidden": {"const": true},
+        "sealed_cases_not_used": {"const": true},
+        "renderer_outputs_not_used_as_correctness_evidence": {"const": true}
+      }
+    }
+  },
+  "$defs": {
+    "rating": {
+      "enum": ["S0", "S1", "S2", "S3", "INDETERMINATE"]
+    },
+    "anchorRating": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["anchor_id", "severity", "rationale", "confidence"],
+      "properties": {
+        "anchor_id": {"type": "string", "minLength": 1},
+        "severity": {"$ref": "#/$defs/rating"},
+        "rationale": {"type": "string", "minLength": 1},
+        "confidence": {"enum": ["HIGH", "MODERATE", "LOW"]}
+      }
+    }
+  }
+}

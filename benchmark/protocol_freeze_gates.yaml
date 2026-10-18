@@ -1,0 +1,354 @@
+protocol_freeze:
+  id: FHIRBRIDGE-PROTOCOL-FREEZE-001
+  version: 0.1.0
+  status: blocked
+  development_path_decision:
+    selected: bounded_independent_reconstruction
+    investigator_approval_date: "2026-10-11"
+    scope: development_only_no_protocol_freeze
+    original_machine_profile_role: optional_prespecified_sensitivity
+    gated_qualification_alternative_implemented: false
+    confirmatory_permission: false
+    related_coverage: benchmark/path_b_bounded_coverage.yaml
+    related_estimands: analysis/path_b_estimand_candidate.yaml
+  note: >-
+    This ledger complements, rather than replaces, the tooling freeze gate.
+    A small tooling blocker count must never be interpreted as overall
+    confirmatory-study readiness.
+
+gates:
+  - gate_id: order_context_end_to_end
+    category: measurement_instrument
+    status: blocked
+    blockers:
+      - contract_v0_3_order_rules_not_frozen
+      - hl7v2_ORC_MSH21_OBR3_OBR16_not_yet_in_reference_path
+      - order_lifter_grounding_profile_qualification_pending
+    evidence:
+      fhir_order_context_prefreeze_qualification: qualification/fhir/results/order-context-prefreeze-qualification.json
+      primary_scenario_order_context: benchmark/scenarios/lab_core_v0.1.yaml
+      primary_generator: src/fhirbridge/canonical/lab.py::generate_primary_lab_scenario
+      fhir_order_context_status: implemented_and_external_validator_passed_all_11_primary_families
+      hl7v2_order_lifter_status: implemented_and_grounding_guard_unit_qualified
+      hl7v2_order_context_status: blocked_pending_safe_ORC_control_and_profile_qualification
+    completion_rule: >-
+      Source-grounded order context must survive canonical -> FHIR -> HL7 v2
+      rendering/lifting without invented facts, and the independently reviewed
+      scoring boundary must be frozen.
+
+  - gate_id: required_element_inventory
+    category: target_profile_coverage
+    status: blocked
+    blockers:
+      - full_Common_NG_FRU_required_element_inventory_not_complete
+      - second_independent_extraction_not_complete
+    evidence:
+      current_inventory: benchmark/lri_required_element_inventory.yaml
+      independent_extraction_protocol: docs/lri_required_element_extraction_protocol.md
+      extraction_schema: qualification/hl7v2/required_element_review/schema/required_element_extraction.schema.json
+      comparison_implementation: src/fhirbridge/lri_required_element_review.py
+      coordinator_source_byte_checker: qualification/hl7v2/required_element_review/verify_source_documents.py
+      first_round_response_locks: src/fhirbridge/lri_extraction_lock.py
+      unadjudicated_human_review_handoff: src/fhirbridge/lri_adjudication_handoff.py
+      reviewer_recruitment_and_custody_plan: docs/path_b_external_reviewer_assignment_plan.md
+      independent_source_completeness_certified: false
+      independent_reviewers_appointed: false
+      G1_qualified: false
+      status: prefreeze_infrastructure_ready_external_extraction_and_adjudication_pending
+    completion_rule: >-
+      Every required/conditional target element for the selected profile slice
+      must be classified as SOURCE_FACT, PROFILE_CONSTANT, ENVELOPE, DERIVED,
+      or UNPROJECTABLE by two independent extractions with disagreements
+      retained and resolved or marked indeterminate.
+
+  - gate_id: external_contract_review
+    category: construct_validity
+    status: blocked
+    blockers:
+      - two_blind_stage1_reviews_not_returned
+      - inter_rater_agreement_not_computed
+      - disagreements_not_adjudicated_or_marked_indeterminate
+    completion_rule: >-
+      Two independent blind classifications must be retained before proposal
+      disclosure. Agreement is computed on the original blind responses.
+
+  - gate_id: renderer_b_clean_room
+    category: implementation_reproducibility
+    status: blocked
+    blockers:
+      - independent_renderer_b_implementation_not_returned
+      - clean_room_declaration_not_validated
+      - differential_comparison_not_complete
+    completion_rule: >-
+      Renderer B must be independently implemented from the synchronized
+      contract revision and pass the clean-room declaration gate.
+
+  - gate_id: status_and_code_maps
+    category: semantic_mapping
+    status: blocked
+    blockers:
+      - report_status_map_external_review_and_Edition5_binding_check_pending
+      - observation_status_map_external_review_and_Edition5_binding_check_pending
+      - specimen_binding_external_review_and_exact_profile_reconciliation_pending
+    evidence:
+      status_mapping_candidates: benchmark/status_mapping_candidates.yaml
+      specimen_binding_candidates: benchmark/specimen_binding_candidates.yaml
+      external_review_response_schema: contracts/review/semantic_mapping_review_response.schema.json
+      external_review_packet_builder: contracts/review/build_semantic_mapping_packet.py
+      external_review_packet_status: automated_independent_review_handoff_ready
+      renderer_a_status_policy: separate_OBR25_and_OBX11_unique_inverse_only
+      lifter_status_policy: separate_v2_to_canonical_maps_no_shared_fallback
+      primary_statuses_covered: [preliminary, final, corrected]
+      specimen_source_semantics: unambiguous_serum_plus_venipuncture
+      specimen_current_v2_coding: development_placeholders_prohibited_for_confirmatory_use
+      freeze_status: external_review_and_exact_Edition5_binding_check_pending
+    completion_rule: >-
+      Renderer-internal convenience maps may not define confirmatory semantic
+      truth. Status/code mappings and target bindings must be frozen from
+      standards evidence plus independent review.
+
+  - gate_id: measurement_error_policy
+    category: semantic_measurement_instrument
+    status: blocked
+    blockers:
+      - severity_policy_not_expert_calibrated_and_frozen
+      - primary_endpoint_major_threshold_not_frozen
+      - error_precedence_policy_not_frozen
+    evidence:
+      severity_candidate: benchmark/severity_policy_candidate.yaml
+      precedence_candidate: benchmark/error_precedence_policy_candidate.yaml
+      readiness_check: src/fhirbridge/measurement_policy_readiness.py
+      severity_blind_anchor_set: expert_validation/severity_anchor_set.yaml
+      severity_blind_response_schema: expert_validation/schema/severity_blind_response.schema.json
+      severity_blind_packet_builder: expert_validation/build_severity_blind_packet.py
+      severity_blind_pair_scorer: expert_validation/score_severity_blind_pair.py
+      severity_calibration_schema: expert_validation/schema/severity_calibration.schema.json
+      severity_calibration_template: expert_validation/examples/severity_calibration_template.yaml
+      severity_calibration_readiness: src/fhirbridge/severity_calibration.py
+      severity_policy_finalizer: expert_validation/finalize_severity_policy.py
+      expected_frozen_severity_policy: benchmark/severity_policy_frozen.yaml
+      precedence_blind_response_schema: expert_validation/schema/precedence_blind_response.schema.json
+      precedence_blind_packet_builder: expert_validation/build_precedence_blind_packet.py
+      precedence_blind_pair_scorer: expert_validation/score_precedence_blind_pair.py
+      precedence_review_schema: expert_validation/schema/precedence_review.schema.json
+      precedence_review_template: expert_validation/examples/precedence_review_template.yaml
+      precedence_review_readiness: src/fhirbridge/precedence_review.py
+      precedence_policy_finalizer: expert_validation/finalize_precedence_policy.py
+      expected_frozen_precedence_policy: benchmark/error_precedence_policy_frozen.yaml
+      source_rubric: docs/expert_validation_protocol.md
+      current_major_candidate: [S2, S3]
+      current_policy_consistency: internally_consistent_not_freeze_ready
+      severity_external_handoff_status: blind_stage1_packet_and_pair_pipeline_ready
+      precedence_external_handoff_status: independent_stage1_packet_and_pair_pipeline_ready
+    completion_rule: >-
+      Severity anchors, the primary-endpoint definition of major semantic error,
+      and the canonical-fact error-precedence policy must be expert calibrated,
+      internally consistent, and frozen before sealed evaluation.
+
+  - gate_id: primary_metric_definition
+    category: statistical_analysis
+    status: blocked
+    blockers:
+      - hl7v2_structural_warning_alert_policy_pending_exact_profile
+      - primary_vur_hypothesis_preregistration_not_locked
+      - confirmatory_analysis_preregistration_not_locked
+    evidence:
+      unconditional_companion_estimand: docs/statistical_analysis_plan.md
+      implementation: src/fhirbridge/endpoint_metrics.py
+      structural_validity_policy: benchmark/structural_validity_policy.yaml
+      structural_validity_implementation: src/fhirbridge/structural_validity_policy.py
+      fhir_warning_policy: benchmark/fhir_validator_warning_policy.yaml
+      fhir_warning_policy_status: frozen_for_pinned_offline_CLI_log_path
+      fhir_warning_policy_evidence_run_id: 38072689400
+      statistical_reference_implementation: src/fhirbridge/analysis_statistics.py
+      primary_vur_hypothesis_schema: analysis/schema/primary_vur_hypothesis_preregistration.schema.json
+      primary_vur_hypothesis_template: analysis/examples/primary_vur_hypothesis_preregistration_template.yaml
+      primary_vur_hypothesis_readiness: src/fhirbridge/primary_vur_hypothesis.py
+      primary_vur_hypothesis_builder: analysis/build_primary_vur_hypothesis.py
+      analysis_preregistration_schema: analysis/schema/analysis_preregistration.schema.json
+      analysis_preregistration_template: analysis/examples/analysis_preregistration_template.yaml
+      analysis_preregistration_readiness: src/fhirbridge/analysis_preregistration.py
+      analysis_preregistration_builder: analysis/build_analysis_preregistration.py
+      cross_file_design_consistency: src/fhirbridge/analysis_design_consistency.py
+      status: >-
+        VFY and exact statistical procedures are preregistered and implemented;
+        the FHIR CLI warning policy is frozen, while the HL7 v2 warning/alert
+        policy, pilot-derived primary VUR threshold, and final model-specific
+        comparison preregistration remain blocked
+    completion_rule: >-
+      Report VUR conditional on structural validity and an unconditional
+      valid-and-faithful yield across all attempts, with the structural-validity
+      denominator policy preregistered.
+
+  - gate_id: per_scenario_feasibility
+    category: benchmark_design
+    status: blocked
+    blockers:
+      - target_v2_valid_and_faithful_existence_not_demonstrated_for_each_primary_family
+    evidence:
+      fhir_primary_family_count: 11
+      fhir_order_context_external_validation: passed
+      fhir_semantic_roundtrip: faithful_all_11_primary_families
+      baseline_family_evidence_schema: models/schema/baseline_family_evidence.schema.json
+      baseline_qualification_aggregator: models/build_baseline_qualification.py
+      target_v2_status: deterministic_11_family_qualification_pipeline_ready_exact_profile_evidence_pending
+    completion_rule: >-
+      Before freezing a primary scenario family, at least one independently
+      rendered output must be both structurally valid and semantically faithful
+      under the frozen instrument. Unprojectable cases belong in an exploratory
+      stratum.
+
+  - gate_id: pilot_acceptance_gate
+    category: qualification
+    status: blocked
+    blockers:
+      - pilot_acceptance_numeric_record_pending_pilot
+    evidence:
+      derivation_plan: benchmark/pilot_acceptance_plan.yaml
+      preregistration_schema: expert_validation/schema/pilot_acceptance_preregistration.schema.json
+      incomplete_template: expert_validation/examples/pilot_acceptance_preregistration_template.yaml
+      readiness_check: src/fhirbridge/pilot_acceptance.py
+      deterministic_record_builder: src/fhirbridge/pilot_record.py
+      build_cli: expert_validation/build_pilot_acceptance.py
+      pilot_provenance_hashes:
+        - pilot_case_manifest_sha256
+        - pilot_adjudication_bundle_sha256
+        - pilot_verifier_results_bundle_sha256
+      status: method_preregistered_numeric_thresholds_pending_pilot
+    completion_rule: >-
+      Instrument acceptance thresholds must be derived on the pilot partition
+      and preregistered before opening the sealed set.
+
+  - gate_id: sample_size_preregistration
+    category: statistical_design
+    status: blocked
+    blockers:
+      - pilot_derived_sample_size_record_not_locked
+    evidence:
+      method: analysis/sample_size_method.yaml
+      planning_implementation: src/fhirbridge/sample_size_planning.py
+      pilot_input_schema: analysis/schema/pilot_sample_size_inputs.schema.json
+      pilot_input_template: analysis/examples/pilot_sample_size_inputs_template.yaml
+      deterministic_record_builder: analysis/build_sample_size_preregistration.py
+      frozen_method_hashes:
+        - sample_size_method_sha256
+        - core_confirmatory_design_sha256
+        - model_prompt_configuration_sha256
+      preregistration_schema: analysis/schema/sample_size_preregistration.schema.json
+      incomplete_template: analysis/examples/sample_size_preregistration_template.yaml
+      readiness_check: src/fhirbridge/sample_size_readiness.py
+      paired_comparison_family: analysis/core_confirmatory_design.yaml
+      multiplicity_planning_policy: Bonferroni_0_05_over_6M_conservative_bound_for_Holm_family
+      independent_unit: source_scenario_or_patient_cluster
+      status: method_and_recomputation_checks_ready_numeric_record_pending_pilot
+    completion_rule: >-
+      Pilot estimates must determine and preregister the final independent
+      source-cluster count before confirmatory inference. The record must
+      reproduce deterministically from pilot VUR, retention, clustering and
+      discordant-pair estimates, and must use the maximum requirement across
+      primary VUR precision and all six model-specific contrasts for every
+      frozen LLM model.
+
+  - gate_id: model_prompt_configuration
+    category: experimental_reproducibility
+    status: blocked
+    blockers:
+      - deterministic_baseline_order_path_and_final_arm_hashes_not_frozen
+      - llm_provider_model_snapshot_not_frozen
+      - final_frozen_mapping_context_hash_not_available
+      - model_specific_provider_seed_declaration_not_frozen
+    evidence:
+      schema: models/schema/model_prompt_freeze.schema.json
+      incomplete_template: models/examples/model_prompt_freeze_template.yaml
+      readiness_check: src/fhirbridge/model_config_readiness.py
+      baseline_family_evidence_schema: models/schema/baseline_family_evidence.schema.json
+      baseline_qualification_aggregator: models/build_baseline_qualification.py
+      baseline_qualification_schema: models/schema/baseline_qualification.schema.json
+      baseline_qualification_template: models/examples/baseline_qualification_template.yaml
+      baseline_qualification_readiness: src/fhirbridge/baseline_qualification.py
+      model_declarations_schema: models/schema/model_declarations.schema.json
+      model_freeze_builder: models/build_model_prompt_freeze.py
+      provider_independent_execution_policy: models/execution_policy.yaml
+      direct_prompt_template: models/prompts/direct_structured_v0.1.txt
+      mapping_prompt_template: models/prompts/mapping_aware_v0.1.txt
+      strategy_implementation: src/fhirbridge/model_strategies.py
+      syntax_repair_implementation: src/fhirbridge/syntax_repair.py
+      mapping_context_builder: src/fhirbridge/mapping_context.py
+      execution_record_schema: models/schema/model_execution_record.schema.json
+      execution_record_builder: src/fhirbridge/model_execution.py
+      provider_independent_hash_manifest_builder: models/build_provider_independent_manifest.py
+      provider_independent_status: frozen_and_CI_hashed
+      structured_output_mode: plain_text_hl7_message
+      structured_output_policy_status: provider_independent_rule_frozen
+      seed_capability_schema_policy: >-
+        fixed_supported_seed_requires_nonnegative_integer; unsupported_seed_requires_null
+      core_arm_design: analysis/core_confirmatory_design.yaml
+      fairness_policy: every_frozen_LLM_model_crossed_with_all_three_strategy_conditions_using_one_model_specific_decoding_configuration
+      silent_model_fallback: prohibited
+      silent_prompt_fallback: prohibited
+      hosted_model_data_scope: synthetic_only
+      status: >-
+        provider-independent execution, prompts, strategy assembly, syntax
+        repair, structured-output semantics, seed-capability consistency,
+        baseline qualification requirements and deterministic final-freeze
+        assembly are defined/hashed; final model snapshots, model-specific
+        decoding/seed declarations, frozen mapping context, exact-profile
+        baseline qualification and resulting final arm hashes remain pending
+    completion_rule: >-
+      The deterministic baseline plus all frozen LLM model families and the
+      three LLM strategy conditions must be frozen with cryptographic hashes for
+      implementations, prompts, mapping context, and syntax repair. Every frozen
+      LLM model is crossed with direct, mapping-aware, and mapping-aware-plus-
+      repair strategies using the same model-specific decoding configuration
+      across those strategies.
+
+  - gate_id: sealed_expert_validation
+    category: confirmatory_governance
+    status: blocked
+    blockers:
+      - sealed_set_freeze_manifest_not_complete
+      - reviewer_roster_not_locked_and_hashed
+      - sealed_case_assignment_manifest_not_locked
+      - sealed_set_not_authorized_for_opening
+    evidence:
+      reviewer_roster_schema: expert_validation/schema/reviewer_roster.schema.json
+      reviewer_roster_template: expert_validation/examples/reviewer_roster_template.yaml
+      reviewer_roster_readiness: src/fhirbridge/expert_roles.py
+      case_assignment_schema: expert_validation/schema/case_assignment_manifest.schema.json
+      case_assignment_readiness: src/fhirbridge/expert_assignments.py
+      sealed_case_manifest_schema: runs/schema/sealed_case_manifest.schema.json
+      sealed_case_manifest_readiness: src/fhirbridge/sealed_case_manifest.py
+      confirmatory_authorization_schema: runs/schema/confirmatory_authorization_record.schema.json
+      confirmatory_authorization_builder: runs/build_confirmatory_authorization.py
+      confirmatory_run_plan_builder: runs/build_confirmatory_run_plan.py
+      confirmatory_execution_audit: src/fhirbridge/confirmatory_execution_audit.py
+      confirmatory_execution_audit_cli: runs/audit_confirmatory_execution.py
+      confirmatory_result_manifest: runs/schema/confirmatory_result_manifest.schema.json
+      confirmatory_result_manifest_builder: runs/build_confirmatory_result_manifest.py
+      freeze_manifest_schema_version: "0.8.0"
+      final_freeze_manifest_builder: expert_validation/build_freeze_manifest.py
+      reviewer_roster_manifest_binding: required_and_sha256_pinned
+      case_assignment_manifest_binding: required_and_sha256_pinned
+      primary_vur_hypothesis_binding: required_and_sha256_pinned
+      analysis_preregistration_binding: required_and_sha256_pinned
+      sample_size_preregistration_binding: required_and_sha256_pinned
+      model_prompt_configuration_binding: required_and_sha256_pinned
+      confirmatory_authorization: src/fhirbridge/confirmatory_authorization.py
+      authorization_recomputes_component_digests: true
+      authorization_binds_sealed_case_manifest_file_hash: true
+      sealed_case_manifest_is_single_case_identity_source: true
+      execution_records_bind_per_case_frozen_source_hash: true
+      result_manifest_recomputes_artifact_hashes_and_counts: true
+      confirmatory_run_plan_schema: runs/schema/confirmatory_run_plan.schema.json
+      confirmatory_run_plan_readiness: src/fhirbridge/confirmatory_run_plan.py
+      execution_sequence: freeze_then_authorize_then_hash_run_plan_then_open_sealed_set
+      status: infrastructure_ready_actual_external_roster_and_sealed_bundle_pending
+    completion_rule: >-
+      The sealed-set manifest, reviewer roster, roles, blinding controls,
+      dependencies, and acceptance gate must satisfy the pre-opening freeze
+      audit.
+
+confirmatory_run_policy:
+  allowed_when_all_protocol_gates_passed: true
+  tooling_manifest_must_also_be_frozen: true
+  no_confirmatory_model_inference_before_ready: true

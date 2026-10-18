@@ -1,0 +1,348 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fhirbridge-bench.org/schema/model_execution_record.schema.json",
+  "title": "FHIRBridge Confirmatory Model Execution Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "execution_id",
+    "case_id",
+    "model_key",
+    "model_prompt_freeze_sha256",
+    "source_input_sha256",
+    "rendered_prompt_sha256",
+    "mapping_context_sha256",
+    "strategy_id",
+    "generation_source",
+    "source_execution_id",
+    "attempt_number",
+    "request_started_at",
+    "request_finished_at",
+    "outcome_class",
+    "raw_response_sha256",
+    "final_response_sha256",
+    "syntax_repair_applied",
+    "provider_request_id",
+    "syntax_repair_operations",
+    "error_summary"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.3.0"
+    },
+    "execution_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "strategy_id": {
+      "enum": [
+        "direct_structured_llm",
+        "mapping_aware_llm",
+        "mapping_aware_plus_syntax_repair"
+      ]
+    },
+    "attempt_number": {
+      "oneOf": [
+        {
+          "const": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "request_started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "request_finished_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "outcome_class": {
+      "enum": [
+        "RESPONSE_RECEIVED",
+        "MEASUREMENT_FAILURE_TRANSPORT",
+        "MEASUREMENT_FAILURE_RATE_LIMIT",
+        "MEASUREMENT_FAILURE_PROVIDER_5XX",
+        "MEASUREMENT_FAILURE_TIMEOUT",
+        "MEASUREMENT_FAILURE_AUTH_OR_CONFIG",
+        "MEASUREMENT_FAILURE_POSTPROCESSING",
+        "MEASUREMENT_FAILURE_UPSTREAM"
+      ]
+    },
+    "raw_response_sha256": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/sha256"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "final_response_sha256": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/sha256"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "syntax_repair_applied": {
+      "type": "boolean"
+    },
+    "syntax_repair_operations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "provider_request_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "error_summary": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "generation_source": {
+      "enum": [
+        "provider_call",
+        "reuse_mapping_aware_raw_output"
+      ]
+    },
+    "source_execution_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "model_prompt_freeze_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "source_input_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "rendered_prompt_sha256": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/sha256"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mapping_context_sha256": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/sha256"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "outcome_class": {
+            "const": "RESPONSE_RECEIVED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "raw_response_sha256": {
+            "$ref": "#/$defs/sha256"
+          },
+          "final_response_sha256": {
+            "$ref": "#/$defs/sha256"
+          },
+          "error_summary": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "raw_response_sha256": {
+            "type": "null"
+          },
+          "final_response_sha256": {
+            "type": "null"
+          },
+          "syntax_repair_applied": {
+            "const": false
+          },
+          "error_summary": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "strategy_id": {
+            "enum": [
+              "direct_structured_llm",
+              "mapping_aware_llm"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "generation_source": {
+            "const": "provider_call"
+          },
+          "attempt_number": {
+            "const": 1
+          },
+          "source_execution_id": {
+            "type": "null"
+          },
+          "syntax_repair_applied": {
+            "const": false
+          },
+          "syntax_repair_operations": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "strategy_id": {
+            "const": "mapping_aware_plus_syntax_repair"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "generation_source": {
+            "const": "reuse_mapping_aware_raw_output"
+          },
+          "attempt_number": {
+            "type": "null"
+          },
+          "source_execution_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "provider_request_id": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "outcome_class": {
+            "enum": [
+              "MEASUREMENT_FAILURE_POSTPROCESSING",
+              "MEASUREMENT_FAILURE_UPSTREAM"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "strategy_id": {
+            "const": "mapping_aware_plus_syntax_repair"
+          },
+          "generation_source": {
+            "const": "reuse_mapping_aware_raw_output"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "strategy_id": {
+            "const": "direct_structured_llm"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "rendered_prompt_sha256": {
+            "$ref": "#/$defs/sha256"
+          },
+          "mapping_context_sha256": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "strategy_id": {
+            "const": "mapping_aware_llm"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "rendered_prompt_sha256": {
+            "$ref": "#/$defs/sha256"
+          },
+          "mapping_context_sha256": {
+            "$ref": "#/$defs/sha256"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "strategy_id": {
+            "const": "mapping_aware_plus_syntax_repair"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "rendered_prompt_sha256": {
+            "type": "null"
+          },
+          "mapping_context_sha256": {
+            "$ref": "#/$defs/sha256"
+          }
+        }
+      }
+    }
+  ]
+}

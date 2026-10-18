@@ -1,0 +1,176 @@
+graph_id: LAB-001-EXAMPLE-0001
+schema_version: 0.1.0
+scenario_type: laboratory_result
+patient_ref: patient-0001
+encounter_ref: null
+
+facts:
+  - fact_id: patient-0001
+    fact_type: patient_identity
+    subject_ref: patient-0001
+    encounter_ref: null
+    concept: null
+    value: null
+    unit: null
+    temporal:
+      effective_start: "1985-04-12"
+      effective_end: null
+      recorded_at: null
+      precision: day
+    identifiers:
+      - system: "urn:fhirbridge:mrn"
+        value: "MRN-000001"
+        type: MR
+    relations: []
+    attributes:
+      name:
+        family: Example
+        given: [Amina]
+      birthDate: "1985-04-12"
+    provenance:
+      scenario_id: LAB-001
+      source_artifact: null
+      source_path: null
+      authoring_mode: scenario_authored
+
+  - fact_id: report-0001
+    fact_type: diagnostic_report
+    subject_ref: patient-0001
+    encounter_ref: null
+    concept:
+      system: "http://loinc.org"
+      code: "24323-8"
+      display: "Comprehensive metabolic panel"
+      local_code: null
+    value: null
+    unit: null
+    temporal:
+      effective_start: "2026-09-20T08:15:00+04:00"
+      effective_end: null
+      recorded_at: "2026-09-20T09:00:00+04:00"
+      precision: second
+    identifiers:
+      - system: "urn:fhirbridge:accession"
+        value: "ACC-000001"
+        type: accession
+    relations:
+      - relation_type: has_result
+        target_fact_id: obs-glucose-0001
+      - relation_type: has_specimen
+        target_fact_id: specimen-0001
+    attributes:
+      status: final
+      category: laboratory
+    provenance:
+      scenario_id: LAB-001
+      source_artifact: null
+      source_path: null
+      authoring_mode: scenario_authored
+
+  - fact_id: obs-glucose-0001
+    fact_type: observation
+    subject_ref: patient-0001
+    encounter_ref: null
+    concept:
+      system: "http://loinc.org"
+      code: "2345-7"
+      display: "Glucose [Mass/volume] in Serum or Plasma"
+      local_code: null
+    value: 92
+    unit:
+      system: "http://unitsofmeasure.org"
+      code: "mg/dL"
+      display: "mg/dL"
+    temporal:
+      effective_start: "2026-09-20T08:15:00+04:00"
+      effective_end: null
+      recorded_at: null
+      precision: second
+    identifiers: []
+    relations:
+      - relation_type: belongs_to_report
+        target_fact_id: report-0001
+      - relation_type: specimen
+        target_fact_id: specimen-0001
+    attributes:
+      status: final
+      reference_range:
+        low: 70
+        high: 99
+        unit: "mg/dL"
+      interpretation:
+        code: N
+        display: Normal
+    provenance:
+      scenario_id: LAB-001
+      source_artifact: null
+      source_path: null
+      authoring_mode: scenario_authored
+
+  - fact_id: specimen-0001
+    fact_type: specimen
+    subject_ref: patient-0001
+    encounter_ref: null
+    concept: null
+    value: null
+    unit: null
+    temporal:
+      effective_start: "2026-09-20T08:10:00+04:00"
+      effective_end: null
+      recorded_at: null
+      precision: second
+    identifiers:
+      - system: "urn:fhirbridge:specimen"
+        value: "SPM-000001"
+        type: specimen
+    relations:
+      - relation_type: specimen_for_observation
+        target_fact_id: obs-glucose-0001
+    attributes:
+      type_label: serum_or_plasma
+      collection_method_label: venipuncture
+    provenance:
+      scenario_id: LAB-001
+      source_artifact: null
+      source_path: null
+      authoring_mode: scenario_authored
+
+assertions:
+  - assertion_id: A-001
+    assertion_type: same_subject
+    fact_refs: [patient-0001, report-0001, obs-glucose-0001, specimen-0001]
+    parameters: {}
+
+  - assertion_id: A-002
+    assertion_type: belongs_to_report
+    fact_refs: [obs-glucose-0001, report-0001]
+    parameters: {}
+
+  - assertion_id: A-003
+    assertion_type: specimen_for_observation
+    fact_refs: [specimen-0001, obs-glucose-0001]
+    parameters: {}
+
+  - assertion_id: A-004
+    assertion_type: value_unit_pair
+    fact_refs: [obs-glucose-0001]
+    parameters:
+      expected_value: 92
+      expected_unit: "mg/dL"
+
+  - assertion_id: A-005
+    assertion_type: status_consistency
+    fact_refs: [report-0001, obs-glucose-0001]
+    parameters:
+      report_status: final
+      observation_status: final
+
+scenario_metadata:
+  seed: 1001
+  generator_version: 0.1.0
+  clinical_template: single_numeric_normal
+  implementation_variant_id: canonical_profile
+  synthetic_only: true
+  notes: >-
+    Development example only. It demonstrates graph structure and must not be
+    treated as a confirmatory gold case until schema/contract review is complete.
