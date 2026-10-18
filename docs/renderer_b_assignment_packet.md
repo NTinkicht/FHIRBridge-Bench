@@ -232,11 +232,12 @@ record, validated against
 ```bash
 python renderer_validation/validate_renderer_b_declaration.py \
   renderer-b-declaration.yaml \
-  --expected-inputs renderer-b-expected-inputs.yaml
+  --expected-inputs renderer-b-expected-inputs.yaml \
+  --challenge-dir renderer-b-development-challenge
 ```
 
 A mismatch in starting commit, challenge hash, or contract hash blocks the
-comparison.
+comparison. The isolated clean-room CLI additionally verifies the **actual** challenge payload and local draft contract byte hash, and will never set scientific independence to true for Codex-authored code.
 
 A non-assertive completion template is provided at:
 
