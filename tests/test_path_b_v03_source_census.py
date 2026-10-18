@@ -212,8 +212,11 @@ def test_rule_citation_must_belong_to_checked_pages_in_its_scope() -> None:
 
 def test_pages_checked_under_different_scope_do_not_support_rule() -> None:
     census = _source_census()
-    # 101 is checked for OBR, never for the candidate's PID area.
+    # Both areas are marked reviewed; page 101 belongs to OBR, not PID.
+    pid = next(x for x in census["scope_areas"] if x["coverage_area"] == "PID")
+    pid.update({"status": "SOURCE_PAGES_CHECKED", "source_pages": [103]})
     census["candidate_requirements"][0]["coverage_area"] = "PID"
+    census["candidate_requirements"][0]["source_pages"] = [101]
     with pytest.raises(ValueError, match="checked source area/pages"):
         _audit(census)
 
