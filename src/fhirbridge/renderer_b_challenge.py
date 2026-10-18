@@ -147,6 +147,10 @@ def build_renderer_b_challenge() -> tuple[RendererBChallengeCase, ...]:
         # facts: never pass them to the isolated Codex implementation. Remove
         # them *before* hashing and exporting the sanitized challenge.
         graph.pop("assertions", None)
+        # Scenario-level expected rule IDs are grading hints, not facts.
+        # Codex must derive applicable projection from contract/standards,
+        # never from a precomputed answer list.
+        graph["scenario_metadata"].pop("expected_rule_ids", None)
         metadata = graph["scenario_metadata"]
         cases.append(
             RendererBChallengeCase(
