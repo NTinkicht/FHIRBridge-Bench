@@ -203,6 +203,24 @@ def test_third_source_census_fails_closed_on_invalid_claims(alter: str) -> None:
         _audit(census)
 
 
+def test_rule_citation_must_belong_to_checked_pages_in_its_scope() -> None:
+    census = _source_census()
+    census["candidate_requirements"][0]["source_pages"] = [999]
+    with pytest.raises(ValueError, match="checked source area/pages"):
+        _audit(census)
+
+
+def test_pages_checked_under_different_scope_do_not_support_rule() -> None:
+    census = _source_census()
+    # Both areas are marked reviewed; page 101 belongs to OBR, not PID.
+    pid = next(x for x in census["scope_areas"] if x["coverage_area"] == "PID")
+    pid.update({"status": "SOURCE_PAGES_CHECKED", "source_pages": [103]})
+    census["candidate_requirements"][0]["coverage_area"] = "PID"
+    census["candidate_requirements"][0]["source_pages"] = [101]
+    with pytest.raises(ValueError, match="checked source area/pages"):
+        _audit(census)
+
+
 def test_v02_original_lock_cannot_be_passed_as_a_v03_source() -> None:
     from fhirbridge.lri_extraction_lock import create_response_lock
 

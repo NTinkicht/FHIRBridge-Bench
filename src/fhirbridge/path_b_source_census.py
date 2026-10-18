@@ -154,6 +154,11 @@ def audit_candidate_source_census(
     status_by_area = _check_census(
         census, extractors=handoff["extractor_ids"]
     )
+    reviewed_pages = {
+        row["coverage_area"]: frozenset(row["source_pages"])
+        for row in census["scope_areas"]
+        if row["status"] == "SOURCE_PAGES_CHECKED"
+    }
     candidates = census["candidate_requirements"]
     if not isinstance(candidates, list):
         raise ValueError("source census candidates must be a list")
@@ -187,6 +192,7 @@ def audit_candidate_source_census(
             or (usage == "C" and (type(condition) is not str or not condition.strip()))
             or (usage == "R" and condition is not None)
             or not _pages(item["source_pages"])
+            or not set(item["source_pages"]).issubset(reviewed_pages.get(area, ()))
         ):
             raise ValueError("candidate source requirement is invalid or unsupported")
         unique_ids.add(identifier)

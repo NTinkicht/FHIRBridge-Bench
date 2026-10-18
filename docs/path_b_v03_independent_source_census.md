@@ -27,7 +27,12 @@ qualified source reviewer under authorized licensed-source custody.
 
 Each source area is retained even if not yet reviewed. Mark it
 `SOURCE_PAGES_CHECKED` only after checking its actual official pages,
-and record page numbers. The `candidate_requirements` array uses:
+and record page numbers. **Every candidate's `source_pages` must be a
+subset of the pages marked reviewed for that candidate's own `coverage_area`.**
+A cited page reviewed only for a different area, or not recorded in the
+reviewed area at all, fails closed. This checks self-consistency of the
+reviewer's private page coverage record; it does **not** verify that the
+reviewer actually read or understood those pages. The `candidate_requirements` array uses:
 
 ```json
 {
