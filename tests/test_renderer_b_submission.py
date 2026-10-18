@@ -24,7 +24,7 @@ def _declaration() -> dict:
             "branch": "renderer-b-cleanroom",
             "starting_commit": "1" * 40,
             "challenge_id": "FHIRBRIDGE-RENDERER-B-DEV-001",
-            "challenge_version": "0.2.0",
+            "challenge_version": "0.3.0",
             "challenge_manifest_sha256": "2" * 64,
             "contract_path": "contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml",
             "contract_sha256": "3" * 64,
