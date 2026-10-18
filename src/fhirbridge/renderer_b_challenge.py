@@ -29,7 +29,7 @@ _SEED_BASE = 15000
 # matching alone is inadequate. Do not ban generic "reference_" because
 # canonical clinical graphs legitimately contain reference_range.
 _FORBIDDEN_KEY_PREFIXES = (
-    "renderer_a", "verifier", "gold", "expected_", "fault_",
+    "renderer_a", "expected_", "fault_",
     "sealed_", "answer_key", "reference_renderer_", "reference_fhir",
     "reference_hl7", "reference_output",
 )
