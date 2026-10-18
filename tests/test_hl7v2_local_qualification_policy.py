@@ -181,6 +181,59 @@ def test_message_changed_during_validator_execution_fails_closed(
         _MODULE._run_validator(tmp_path, message)
 
 
+def test_restored_original_cannot_change_validator_snapshot(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    message = tmp_path / "synthetic-message.er7"
+    original = b"MSH|^~\&|ORIGINAL\r"
+    message.write_bytes(original)
+    raw_out = _validator_stdout(_full_report(), _summary()).encode("utf-8")
+    seen: dict[str, object] = {}
+
+    def inspect_then_restore(command: list[str], **_kwargs: object) -> SimpleNamespace:
+        arg = next(part for part in command if part.startswith("-Dexec.args="))
+        actual = arg.removeprefix("-Dexec.args=")
+        snapshot = Path(actual.split(" ")[1])
+        seen["snapshot_path"] = snapshot
+        seen["snapshot_contents"] = snapshot.read_bytes()
+        seen["private_permissions"] = snapshot.stat().st_mode & 0o777
+        # Simulate original changing and restoring while Java is running.
+        message.write_bytes(b"MSH|^~\&|TRANSIENT\r")
+        message.write_bytes(original)
+        assert snapshot.read_bytes() == original
+        assert snapshot.resolve() != message.resolve()
+        return SimpleNamespace(returncode=0, stdout=raw_out, stderr=b"")
+
+    monkeypatch.setattr(_MODULE.subprocess, "run", inspect_then_restore)
+    report = _MODULE._run_validator(tmp_path, message)
+    assert seen["snapshot_contents"] == original
+    assert seen["private_permissions"] == 0o400
+    assert report["measurement_receipt"]["artifact_sha256"] == sha256(
+        original
+    ).hexdigest()
+    assert report["measurement_receipt"]["input_mode"] == "private_byte_snapshot"
+    assert not Path(seen["snapshot_path"]).exists()
+
+
+def test_tampered_snapshot_detected_after_subprocess(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    message = tmp_path / "synthetic-message.er7"
+    message.write_bytes(b"MSH|^~\&|ORIGINAL\r")
+    raw_out = _validator_stdout(_full_report(), _summary()).encode("utf-8")
+
+    def tamper_snapshot(command: list[str], **_kwargs: object) -> SimpleNamespace:
+        arg = next(part for part in command if part.startswith("-Dexec.args="))
+        snapshot = Path(arg.removeprefix("-Dexec.args=").split(" ")[1])
+        snapshot.chmod(0o600)
+        snapshot.write_bytes(b"MSH|^~\&|WRONG\r")
+        return SimpleNamespace(returncode=0, stdout=raw_out, stderr=b"")
+
+    monkeypatch.setattr(_MODULE.subprocess, "run", tamper_snapshot)
+    with pytest.raises(ValueError, match="snapshot changed"):
+        _MODULE._run_validator(tmp_path, message)
+
+
 def test_baseline_policy_fails_closed_on_warning_or_alert() -> None:
     clean = _summary(error_total=0)
     clean["warning_total"] = 0
