@@ -87,12 +87,14 @@ def test_codex_challenge_strips_internal_expected_value_assertions() -> None:
         "LAB-001", 15000, partition="development", include_order_context=True
     )
     assert "assertions" in original
+    assert "expected_rule_ids" in original["scenario_metadata"]
     assert any(
         "expected_value" in row.get("parameters", {})
         for row in original["assertions"]
     )
     for case in build_renderer_b_challenge():
         assert "assertions" not in case.graph
+        assert "expected_rule_ids" not in case.graph["scenario_metadata"]
         assert case.graph_sha256 == _document_sha256(case.graph)
 
 
