@@ -1,0 +1,70 @@
+{
+  "schema_version": "0.3.0",
+  "status": "UNADJUDICATED_V03_RULE_LEVEL_CENSUS_DRAFT",
+  "census_reviewer_id": "TO_BE_ASSIGNED",
+  "source_sha256": "375f02fd5453b06ff1c51841e703c943c3132134fca53a122f5ccfed743461b7",
+  "errata_sha256": "32eeb375ecb78dd77acb01ed388e30c554688e55a8a4d58df05dd0e7a791700f",
+  "scope_areas": [
+    {
+      "coverage_area": "MSH",
+      "status": "UNREVIEWED",
+      "source_pages": []
+    },
+    {
+      "coverage_area": "PID",
+      "status": "UNREVIEWED",
+      "source_pages": []
+    },
+    {
+      "coverage_area": "ORC",
+      "status": "UNREVIEWED",
+      "source_pages": []
+    },
+    {
+      "coverage_area": "OBR",
+      "status": "UNREVIEWED",
+      "source_pages": []
+    },
+    {
+      "coverage_area": "OBX",
+      "status": "UNREVIEWED",
+      "source_pages": []
+    },
+    {
+      "coverage_area": "SPM",
+      "status": "UNREVIEWED",
+      "source_pages": []
+    },
+    {
+      "coverage_area": "NTE_IF_PRESENT",
+      "status": "UNREVIEWED",
+      "source_pages": []
+    },
+    {
+      "coverage_area": "CROSS_SEGMENT_PREDICATES",
+      "status": "UNREVIEWED",
+      "source_pages": []
+    },
+    {
+      "coverage_area": "VOCABULARY_AND_DATATYPE_BINDINGS",
+      "status": "UNREVIEWED",
+      "source_pages": []
+    },
+    {
+      "coverage_area": "COMMON_NG_FRU_COMPONENT_INTERACTIONS",
+      "status": "UNREVIEWED",
+      "source_pages": []
+    },
+    {
+      "coverage_area": "DECEMBER_2024_ERRATA_EFFECTS",
+      "status": "UNREVIEWED",
+      "source_pages": []
+    },
+    {
+      "coverage_area": "ADDITIONAL_APPLICABLE_LOCI_NOT_IN_EITHER_EXTRACTION",
+      "status": "UNREVIEWED",
+      "source_pages": []
+    }
+  ],
+  "candidate_requirements": []
+}
