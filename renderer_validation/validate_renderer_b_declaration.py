@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = "contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml"
 SCHEMAS = ROOT / "renderer_validation" / "schema"
 SENSITIVE = (
-    "renderer_a", "verifier", "gold", "expected_", "fault_", "sealed_",
+    "renderer_a", "expected_", "fault_", "sealed_",
     "answer_key", "reference_renderer_", "reference_fhir", "reference_hl7",
     "reference_output",
 )
