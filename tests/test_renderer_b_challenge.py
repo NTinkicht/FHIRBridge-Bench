@@ -172,6 +172,12 @@ def _changed_case_graph(*, extra_key: str, value):
         "expectedArtifact",
         "fault_answer",
         "sealedCase",
+        "semanticVerifierClassification",
+        "seededFaultLabel",
+        "sourceRendererAOutput",
+        "sourceGoldClassification",
+        "contextExpectedOutputs",
+        "outerAnswerKey",
     ],
 )
 def test_reference_outputs_cannot_enter_renderer_b_challenge(key: str) -> None:
