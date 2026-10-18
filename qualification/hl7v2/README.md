@@ -111,8 +111,14 @@ an Error entry), or if an expected-locus negative control is supported only by
 free-text descriptions instead of a structured segment/field path. For each
 validator execution, its local report binds the input message byte SHA-256,
 raw captured stdout/stderr SHA-256 values, and subprocess exit status. Stderr
-is never interpreted as authoritative validator JSON. An input file mutation
-during execution invalidates the receipt.
+is never interpreted as authoritative validator JSON. Before invoking Java,
+the runner copies the exact input bytes into a private temporary directory,
+passes that read-only snapshot to Java, verifies the snapshot afterwards, and
+removes the snapshot on exit. The receipt hashes those same bytes, preventing
+a mutable original file from changing and being restored while Java is
+reading it. A lasting mutation of the original also invalidates custody.
+Private filesystem isolation is not a cryptographic signature or defense
+against a privileged attacker able to modify the runner's own temporary files.
 
 These receipts establish byte-level traceability for this **optional local
 profile** tooling, not the authenticity or completeness of any private profile,
