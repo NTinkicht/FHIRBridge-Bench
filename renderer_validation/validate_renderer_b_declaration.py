@@ -60,7 +60,19 @@ def check_graph(graph: Any, case_id: str, errors: list[str]) -> None:
                     continue
                 normalized = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", key)
                 normalized = normalized.casefold().replace("-", "_").replace(" ", "_")
-                if normalized.startswith(SENSITIVE) or normalized in SENSITIVE_EXACT:
+                # Compound namespaces must not bypass a leading-name denylist:
+                # semanticVerifierClassification, seededFaultLabel, and
+                # sourceRendererAOutput are sensitive even with neutral prefixes.
+                # Avoid banning reference_range, a legitimate canonical field.
+                sensitive_concepts = (
+                    "renderer", "verifier", "fault", "gold", "expected",
+                    "sealed", "answer", "oracle",
+                )
+                if (
+                    normalized.startswith(SENSITIVE)
+                    or normalized in SENSITIVE_EXACT
+                    or any(concept in normalized for concept in sensitive_concepts)
+                ):
                     errors.append(f"{location}.{key}: prohibited reference/output field")
                 walk(child, f"{location}.{key}")
         elif isinstance(value, list):
@@ -105,6 +117,11 @@ def assess(declaration_file: Path, expected_file: Path, challenge_dir: Path) -> 
     else:
         manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
         actual_hash = manifest.get("manifest_sha256", "")
+        if (
+            manifest.get("challenge_id") != "FHIRBRIDGE-RENDERER-B-DEV-001"
+            or manifest.get("challenge_id") != inputs.get("challenge_id")
+        ):
+            errors.append("challenge manifest ID disagrees with the custody record")
         if manifest.get("version") != "0.3.0" or manifest.get("partition") != "development":
             errors.append("challenge version/partition mismatch")
         if manifest.get("contract", {}).get("version") != "0.3.0":
