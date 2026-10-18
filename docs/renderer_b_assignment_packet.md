@@ -77,6 +77,25 @@ manifest SHA-256, and contract SHA-256. The implementer copies the
 identity, not an independence claim.
 
 
+### Enforced challenge-content preflight
+
+The challenge generator validates the **actual canonical graph contents**
+before it writes any handoff files. It fails closed on non-development or
+non-synthetic cases, mismatched graph hashes, duplicate case/graph identities,
+or nested source/reference-output fields (Renderer A output, gold target
+serializations, verifier decisions, fault labels, sealed cases and answer keys).
+The manifest flags alone are **not** accepted as evidence that these
+sensitive outputs are absent.
+
+The resulting sanitized challenge may be passed to an isolated Codex
+development session **only after** its exact handoff hashes and permitted-file
+boundary are recorded. Do not give Codex broader access to `protocol-v1`,
+unrestricted GitHub search, Renderer A PR diffs or any source/verifier/gold
+content not explicitly allowlisted. A passing exposure check reduces
+accidental leakage; it does **not** prove agent isolation, implementation
+independence or normative accuracy. Codex mapping code must still be reported
+as AI-authored exploratory work.
+
 The package contains one deterministic canonical development graph for each
 `LAB-001` through `LAB-012`, plus a manifest with graph hashes. The v0.3
 challenge now includes one source-grounded canonical `order` fact per case and
