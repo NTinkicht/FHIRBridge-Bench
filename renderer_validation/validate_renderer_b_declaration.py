@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = "contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml"
 SCHEMAS = ROOT / "renderer_validation" / "schema"
 SENSITIVE = (
-    "renderer_a", "verifier", "gold", "expected_", "fault_", "sealed_",
+    "renderer_a", "expected_", "fault_", "sealed_",
     "answer_key", "reference_renderer_", "reference_fhir", "reference_hl7",
     "reference_output",
 )
@@ -58,20 +58,20 @@ def check_graph(graph: Any, case_id: str, errors: list[str]) -> None:
                 if not isinstance(key, str):
                     errors.append(f"{location}: non-string graph key")
                     continue
-                normalized = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", key)
+                snake = re.sub(r"(?<=[A-Z])(?=[A-Z][a-z])", "_", key)
+                normalized = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", snake)
                 normalized = normalized.casefold().replace("-", "_").replace(" ", "_")
-                # Compound namespaces must not bypass a leading-name denylist:
-                # semanticVerifierClassification, seededFaultLabel, and
-                # sourceRendererAOutput are sensitive even with neutral prefixes.
-                # Avoid banning reference_range, a legitimate canonical field.
-                sensitive_concepts = (
+                # Whole tokens reject sourceRendererAOutput and
+                # semanticVerifierClassification while preserving valid
+                # "default", "unexpected_status", and "reference_range".
+                sensitive_tokens = {
                     "renderer", "verifier", "fault", "gold", "expected",
                     "sealed", "answer", "oracle",
-                )
+                }
                 if (
                     normalized.startswith(SENSITIVE)
                     or normalized in SENSITIVE_EXACT
-                    or any(concept in normalized for concept in sensitive_concepts)
+                    or bool(set(normalized.split("_")) & sensitive_tokens)
                 ):
                     errors.append(f"{location}.{key}: prohibited reference/output field")
                 walk(child, f"{location}.{key}")
