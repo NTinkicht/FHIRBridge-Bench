@@ -1,4 +1,4 @@
-schema_version: "0.1.0"
+schema_version: "0.2.0"
 renderer_id: "RENDERER-B-TO-BE-ASSIGNED"
 renderer_version: "0.1.0-dev"
 contributor:
@@ -10,6 +10,15 @@ implementation:
   major_libraries: []
   source_commit: "0000000"
   implementation_notes: null
+clean_room_inputs:
+  repository_full_name: "NTinkicht/FHIRBridge-Bench"
+  branch: "renderer-b-cleanroom"
+  starting_commit: "0000000000000000000000000000000000000000"
+  challenge_id: "FHIRBRIDGE-RENDERER-B-DEV-001"
+  challenge_version: "0.3.0"
+  challenge_manifest_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  contract_path: "contracts/fhir_to_v2/lab_oru_r01_v0.3.yaml"
+  contract_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
 contract:
   contract_id: "F2V-LAB-ORU-R01-001"
   contract_version: "0.3.0"
