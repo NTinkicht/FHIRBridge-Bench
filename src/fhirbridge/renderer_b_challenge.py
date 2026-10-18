@@ -29,7 +29,7 @@ _SEED_BASE = 15000
 # matching alone is inadequate. Do not ban generic "reference_" because
 # canonical clinical graphs legitimately contain reference_range.
 _FORBIDDEN_KEY_PREFIXES = (
-    "renderer_a", "verifier", "gold", "expected_", "fault_",
+    "renderer_a", "expected_", "fault_",
     "sealed_", "answer_key", "reference_renderer_", "reference_fhir",
     "reference_hl7", "reference_output",
 )
@@ -88,12 +88,22 @@ def validate_renderer_b_challenge_inputs(
                 # Match snake_case, kebab-case and CamelCase labels.
                 # Physical clinical fields such as reference_range and
                 # target_fact_id must remain legal canonical inputs.
+                snake = re.sub(r"(?<=[A-Z])(?=[A-Z][a-z])", "_", key)
                 normalized = re.sub(
-                    r"(?<=[a-z0-9])(?=[A-Z])", "_", key
+                    r"(?<=[a-z0-9])(?=[A-Z])", "_", snake
                 ).casefold().replace("-", "_").replace(" ", "_")
+                # Match sensitive *tokens* anywhere in compound names. Bare
+                # substring matching would falsely reject default or
+                # unexpected_status; clinical reference_range is also valid.
+                tokens = set(normalized.split("_"))
+                sensitive_concepts = {
+                    "renderer", "verifier", "fault", "gold",
+                    "expected", "sealed", "answer", "oracle",
+                }
                 if (
                     normalized in _FORBIDDEN_PAYLOAD_KEYS
                     or normalized.startswith(_FORBIDDEN_KEY_PREFIXES)
+                    or bool(tokens & sensitive_concepts)
                 ):
                     raise ValueError(
                         "Renderer B challenge contains prohibited reference "
