@@ -156,7 +156,7 @@ class IsolatedHandoffTests(unittest.TestCase):
                 self._relock_after_mutation()
 
     def test_benign_substrings_remain_permitted_after_full_rehash(self):
-        for field in ("default", "default_unit", "unexpected_status"):
+        for field in ("default", "default_unit", "unexpected_status", "goldman_score"):
             with self.subTest(field=field):
                 case = self.challenge / "inputs" / "RB-001.json"
                 original = json.loads(case.read_text(encoding="utf-8"))
