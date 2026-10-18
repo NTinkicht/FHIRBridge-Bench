@@ -23,6 +23,11 @@ SENSITIVE = (
     "answer_key", "reference_renderer_", "reference_fhir", "reference_hl7",
     "reference_output",
 )
+SENSITIVE_EXACT = frozenset({
+    "target_gold_serialization", "target_serialization", "test_answer",
+    "semantic_verifier_result", "semantic_verifier_decision",
+    "reference_renderer_output",
+})
 
 
 def canonical_sha(value: Any) -> str:
@@ -41,9 +46,9 @@ def check_graph(graph: Any, case_id: str, errors: list[str]) -> None:
     if not isinstance(graph, dict):
         errors.append(f"{case_id}: not a graph object")
         return
-    if "assertions" in graph or "expected_rule_ids" in graph.get("scenario_metadata", {}):
-        errors.append(f"{case_id}: leaked developer answer assertions/rule IDs")
     metadata = graph.get("scenario_metadata", {})
+    if "assertions" in graph or (isinstance(metadata, dict) and "expected_rule_ids" in metadata):
+        errors.append(f"{case_id}: leaked developer answer assertions/rule IDs")
     if not isinstance(metadata, dict) or metadata.get("partition") != "development" or metadata.get("synthetic_only") is not True:
         errors.append(f"{case_id}: not a synthetic development graph")
 
@@ -55,7 +60,7 @@ def check_graph(graph: Any, case_id: str, errors: list[str]) -> None:
                     continue
                 normalized = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", key)
                 normalized = normalized.casefold().replace("-", "_").replace(" ", "_")
-                if normalized.startswith(SENSITIVE):
+                if normalized.startswith(SENSITIVE) or normalized in SENSITIVE_EXACT:
                     errors.append(f"{location}.{key}: prohibited reference/output field")
                 walk(child, f"{location}.{key}")
         elif isinstance(value, list):
@@ -100,6 +105,15 @@ def assess(declaration_file: Path, expected_file: Path, challenge_dir: Path) -> 
     else:
         manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
         actual_hash = manifest.get("manifest_sha256", "")
+        if manifest.get("version") != "0.3.0" or manifest.get("partition") != "development":
+            errors.append("challenge version/partition mismatch")
+        if manifest.get("contract", {}).get("version") != "0.3.0":
+            errors.append("challenge references a different draft contract version")
+        if any(manifest.get(flag) is not False for flag in (
+            "contains_renderer_a_output", "contains_target_gold_serialization",
+            "contains_verifier_decisions", "contains_fault_labels",
+        )):
+            errors.append("challenge manifest does not assert no reference-output exposure")
         canonical_content = {k: v for k, v in manifest.items() if k != "manifest_sha256"}
         if actual_hash != canonical_sha(canonical_content) or actual_hash != inputs.get("challenge_manifest_sha256"):
             errors.append("challenge manifest self-hash/custodian hash mismatch")
